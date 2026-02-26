@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ROC Interpolation Playground</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <h1>ROC Interpolation Playground</h1>
+        <p>
+          One-variable threshold classifier with synthetic two-class data. Compare triangle interpolation against
+          smoother alternatives.
+        </p>
+      </header>
+
+      <section class="layout">
+        <aside class="panel controls">
+          <h2>Controls</h2>
+
+          <label class="control">
+            <span>Preset</span>
+            <select id="preset">
+              <option value="overlap">High Overlap (near diagonal)</option>
+              <option value="separated" selected>Good Separation (strong belly)</option>
+              <option value="unequal">Unequal Variance</option>
+              <option value="kink">Positive Outliers (kink)</option>
+            </select>
+          </label>
+
+          <div class="grid-two">
+            <label class="control">
+              <span>Negative mean</span>
+              <input id="muNeg" type="range" min="-4" max="4" step="0.05" value="0" />
+              <output id="muNegValue"></output>
+            </label>
+            <label class="control">
+              <span>Negative sd</span>
+              <input id="sdNeg" type="range" min="0.2" max="3" step="0.05" value="1" />
+              <output id="sdNegValue"></output>
+            </label>
+            <label class="control">
+              <span>Positive mean</span>
+              <input id="muPos" type="range" min="-4" max="6" step="0.05" value="2" />
+              <output id="muPosValue"></output>
+            </label>
+            <label class="control">
+              <span>Positive sd</span>
+              <input id="sdPos" type="range" min="0.2" max="3" step="0.05" value="1" />
+              <output id="sdPosValue"></output>
+            </label>
+          </div>
+
+          <div class="grid-two">
+            <label class="control">
+              <span>Samples per class</span>
+              <input id="nPerClass" type="range" min="50" max="2000" step="10" value="500" />
+              <output id="nPerClassValue"></output>
+            </label>
+            <label class="control">
+              <span>Positive outlier frac</span>
+              <input id="outlierFrac" type="range" min="0" max="0.5" step="0.01" value="0" />
+              <output id="outlierFracValue"></output>
+            </label>
+          </div>
+
+          <div class="grid-two">
+            <label class="control">
+              <span>Seed</span>
+              <input id="seed" type="number" min="1" max="999999" step="1" value="13" />
+            </label>
+            <button id="resample" class="btn">Resample (seed + 1)</button>
+          </div>
+
+          <hr />
+
+          <label class="control">
+            <span>Threshold (classifier: predict positive if score >= threshold)</span>
+            <input id="threshold" type="range" min="-5" max="5" step="0.001" value="1" />
+            <output id="thresholdValue"></output>
+          </label>
+
+          <p class="hint">Tip: click on the ROC plot to snap threshold to the nearest empirical operating point.</p>
+
+          <fieldset class="checks">
+            <legend>Overlay curves</legend>
+            <label><input type="checkbox" id="showTriangle" checked /> Triangle interpolation</label>
+            <label><input type="checkbox" id="showPower" checked /> Power-curve interpolation (smooth through operating point)</label>
+            <label><input type="checkbox" id="showHull" checked /> Concave hull interpolation (data-driven)</label>
+            <label><input type="checkbox" id="showGaussian" checked /> Gaussian model ROC (parametric)</label>
+          </fieldset>
+        </aside>
+
+        <section class="panel plots">
+          <div class="plot-block">
+            <h2>ROC Space</h2>
+            <svg id="rocSvg" viewBox="0 0 760 420" role="img" aria-label="ROC plot"></svg>
+          </div>
+
+          <div class="plot-block">
+            <h2>Score Distributions</h2>
+            <svg id="distSvg" viewBox="0 0 760 320" role="img" aria-label="Score distribution plot"></svg>
+          </div>
+
+          <div class="metrics">
+            <h2>Correctness Checks and Metrics</h2>
+            <pre id="metricsText"></pre>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel notes">
+        <h2>What Is Better Than a Triangle?</h2>
+        <p>
+          A triangle uses only three points, so it ignores shape information. Better choices are a concave hull
+          interpolation (non-parametric, data-driven) or a Gaussian model ROC (parametric, smooth "belly").
+        </p>
+        <p>Simple examples that yield different ROC shapes:</p>
+        <ul>
+          <li>Large mean gap, similar variances: strong top-left belly and high AUC.</li>
+          <li>Small mean gap: curve close to the diagonal baseline.</li>
+          <li>Unequal variances: asymmetric curvature and slope changes.</li>
+          <li>Outliers in the positive class: visible kink/shoulder in empirical ROC.</li>
+        </ul>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
