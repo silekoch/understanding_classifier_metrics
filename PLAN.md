@@ -185,21 +185,42 @@ For users who want formulas, provide collapsible "Show the math" sections:
 These are NEVER shown by default. They're there for the student who wants to
 go deeper, not for the student who needs to build intuition first.
 
-## Critical Architectural Decisions (resolve before writing code)
+---
 
-### 1. Build System: Vite
+## Critical Architectural Decisions
 
-The current zero-tooling IIFE cannot support ES modules, Web Workers, or testing.
-Vite is the right choice:
+### 1. Value-First Ordering
+
+The phases in this plan are ordered by **pedagogical impact**, not by
+architectural elegance. Phase 0 ships the three highest-leverage features
+(confusion matrix, FP/FN region shading, PR curve) in the current single-file
+architecture. The Vite migration and module extraction follow in Phase 1.
+
+Rationale: the three Phase 0 features have zero technical dependency on the
+architectural migration. They need only `computeOperatingPoint()` (which
+exists), histogram bins (which exist), and a PR computation (which is
+structurally identical to the existing ROC computation). Building them in
+the current architecture means they can ship in days, not weeks.
+
+The tradeoff: Phase 0 adds ~300–400 lines to app.js, which must be
+refactored during Phase 1. This is a small cost compared to the benefit
+of early user feedback and immediate pedagogical improvement.
+
+### 2. Build System: Vite (Phase 1)
+
+The current zero-tooling IIFE will be migrated to Vite in Phase 1, after
+the core features ship. Vite is the right choice:
 - Zero-config, ESM-native
-- `?worker` imports for bootstrap computation (Phase 4)
+- `?worker` imports for bootstrap computation (Phase 5)
 - Vitest for unit testing core math
 - Dev server with HMR for fast iteration
 - Single-file production build for easy deployment
 
-### 2. State Architecture: Reactive pub/sub
+### 3. State Architecture: Reactive pub/sub (Phase 1)
 
-The current flat mutable singleton will not support linked views. Design from day 1:
+The current flat mutable singleton with `renderAll()` works for Phase 0
+but will not support bidirectional cross-view linking (Phase 2). Design
+during Phase 1:
 
 ```
 state.subscribe('threshold', callback)  — views register interest
@@ -211,7 +232,11 @@ All views (ROC, PR, distributions, confusion matrix) subscribe to state changes.
 No view ever reads state directly during render — it receives the relevant slice
 via its callback. This makes adding new linked views trivial.
 
-### 3. Prevalence is a deployment parameter, NOT a data generation parameter
+Phase 0 features are built with the current `renderAll()` pattern. The
+migration to pub/sub in Phase 1 is mechanical: each render function becomes
+a subscriber, and `renderAll()` is replaced by `state.set()`.
+
+### 4. Prevalence is a deployment parameter, NOT a data generation parameter
 
 This is the single most important conceptual distinction in the tool.
 Architecturally:
@@ -221,19 +246,19 @@ Architecturally:
   prevalence in any meaningful way — it's a sample size control.
 - `prevalence` (π) is a deployment parameter. It does NOT change the ROC curve.
   It DOES change: the optimal operating point under costs, the deployment card
-  counts, and the PR curve. It is introduced in Phase 2.
+  counts, and the PR curve. It is introduced in Phase 3.
 - The UI must make this crystal clear: "ROC is the same regardless of prevalence.
   That's its superpower — and its limitation."
 
-### 4. Interpolation methods become an optional advanced layer
+### 5. Interpolation methods become an optional advanced layer
 
 The current app's focus on triangle/power/hull/Gaussian interpolation comparison
-is technically interesting but pedagogically secondary. In the new app:
+is technically interesting but pedagogically secondary. Starting in Phase 0:
 - Interpolation toggles move to an "Advanced: Interpolation Methods" collapsible
 - The default ROC view shows only: empirical curve, diagonal baseline, threshold dot
 - This declutters the default experience and centers the fundamental concepts
 
-### 5. Two worlds of score distributions: unbounded and [0,1]
+### 6. Two worlds of score distributions: unbounded and [0,1]
 
 The current app generates scores on (-∞, +∞). This is useful for understanding
 ROC theory, but real classifiers output probabilities in [0,1]. The tool must
@@ -244,7 +269,7 @@ support both worlds:
 - These are the current presets. They remain valuable for exploring how
   distribution shapes affect ROC curve geometry.
 
-**New "realistic model" families** (scores in [0,1]):
+**New "realistic model" families** (scores in [0,1], added in Phase 1):
 
 - **Beta(α, β) per class** — the Swiss army knife for [0,1] scores.
   By varying α and β, this single family can model:
@@ -276,7 +301,7 @@ the characteristic output shapes of real model families:
 When a [0,1] family is active, the distribution plot x-axis locks to [0,1]
 and the label changes from "Score" to "Predicted Probability."
 
-### 6. Calibration is tractable with synthetic data
+### 7. Calibration is tractable with synthetic data
 
 Calibration might seem like a separate problem domain, but with [0,1]
 score families this concern dissolves. Since we generate data
@@ -297,24 +322,142 @@ Any monotone transformation of scores preserves the ROC curve. AUC tells you
 about ranking quality. Calibration tells you whether "0.8" means "80% likely."
 A model can have superb AUC and terrible calibration. Students must see this.
 
-Calibration connects naturally to the existing prevalence (π) parameter:
+Calibration connects naturally to the prevalence (π) parameter:
 the true posterior depends on π, so changing deployment prevalence changes
 what "well-calibrated" means. This ties the calibration view directly into
-the Decision Lab (Phase 2).
+the Decision Lab (Phase 3).
 
-### 7. No external visualization libraries
+### 8. No external visualization libraries
 
 Stay with hand-rolled SVG. The current rendering code is clean and performant.
 Benefits: zero bundle bloat, full control over every pixel, no API churn.
-Add a thin rendering utility layer (`viz/svg.js`) extracted from the current code.
+A thin rendering utility layer (`viz/svg.js`) will be extracted from the
+current code during Phase 1.
 
 ---
 
-## Phase 0: Foundation (Week 1)
+## Phase 0: Core Pedagogical Features (Current Architecture)
 
-**Goal**: Same visual output as current app, but on solid architecture.
+**Goal**: Ship the three highest-impact features immediately, in the current
+single-file architecture. No build system, no refactoring — just add the
+features that transform the tool from "ROC interpolation comparison" to
+"classifier evaluation playground." All work happens in the existing app.js,
+following the existing `renderAll()` pattern.
 
-### 0.1 Vite project setup
+### 0.1 Confusion matrix visualization
+
+**This is the highest-leverage single addition.**
+
+- Live 2×2 grid below the distribution plot
+- Cells color-coded to match distribution regions:
+  TP (teal), FP (amber-red), TN (amber-green), FN (teal-muted)
+- Cell size proportional to count (area-encoded, not just numbers)
+- Shows both raw count AND rate in each cell (e.g., "423 (84.6%)")
+- Updates instantly as threshold changes
+- Derived rates shown beneath: TPR, FPR, Precision, Recall, Specificity, F1
+- Implementation: new `drawConfusionMatrix()` function, added to `renderAll()`.
+  Data comes from the existing `computeOperatingPoint()` which already returns
+  `{tp, fp, tn, fn, tpr, fpr, precision}`.
+
+**Deferred to Phase 2**: click-to-highlight linking (clicking a matrix cell
+highlights the corresponding distribution region). This bidirectional
+interaction benefits from reactive state. The display-only matrix is already
+enormously valuable.
+
+Why first: the confusion matrix is the conceptual bridge between "threshold on
+distributions" and "point on ROC curve." Without it, students see two disconnected
+visualizations. With it, the causal chain is complete:
+**threshold → regions on distributions → counts in matrix → rates → point on curves**
+
+### 0.2 Distribution plot enhancements: FP/FN/TP/TN region shading
+
+**Make the trade-off literally visible.**
+
+- Shade the area right of threshold under negative distribution as FP
+  (amber, semi-transparent)
+- Shade the area left of threshold under positive distribution as FN
+  (teal-muted, semi-transparent)
+- TP and TN regions also subtly shaded with their respective colors
+- These regions directly correspond to confusion matrix cells — same colors
+- When threshold moves, regions update instantly
+
+Implementation: extend the existing `drawDist()` function. For each histogram
+bin, determine which side of the threshold it falls on and apply the
+appropriate fill color. This adds ~40–60 lines to the function.
+
+As you lower the threshold, the FP region grows and the FN region shrinks.
+This is the single most important visual for building threshold intuition.
+
+### 0.3 PR curve view
+
+- New `computePrPoints()` function: walk sorted data (same structure as
+  `computeRocPoints()`), tracking precision and recall at each threshold
+- New `drawPr()` function: renders the PR curve in a new SVG panel
+- Show current operating point on PR curve (linked to same threshold)
+- Show random baseline (horizontal line at P/(P+N) — with equal class
+  sizes this is 0.5; becomes dynamic when prevalence is added in Phase 3)
+- Compute Average Precision (AP) via trapezoidal approximation
+- Show AP in the metrics panel alongside AUC
+- Layout: PR curve below ROC, or side by side if viewport permits
+
+The PR curve uses the same threshold and data as ROC. Moving the threshold
+slider updates both curves simultaneously via the existing `renderAll()`.
+
+### 0.4 Draggable threshold handle on distribution plot
+
+- The threshold is a vertical line with a **circular grab handle** on the
+  distribution plot. The user grabs and drags it horizontally.
+- Current threshold value displayed next to the handle
+- Pointer cursor changes on hover to indicate draggability
+- On drag: update `state.threshold`, update the slider, call `renderAll()`
+- Keyboard accessible: left/right arrows move in small steps,
+  Shift+arrows for large steps
+- `touch-action: none` on the SVG area prevents scroll conflicts on mobile
+- Replaces the separate slider as the primary threshold interaction
+  (slider remains as a fallback/alternative)
+
+This is a natural extension of the existing ROC-click-to-snap-threshold
+interaction (`app.js:1199`), applied to the distribution plot.
+
+### 0.5 UI adjustments
+
+- De-emphasize interpolation: move interpolation checkboxes into the existing
+  "Advanced Distribution Parameters" collapsible section (or a new
+  "Advanced: Interpolation" collapsible). Default: all unchecked except
+  empirical ROC.
+- Default ROC view shows only: empirical curve, diagonal baseline,
+  threshold operating point. Clean and focused.
+- Update hero text: "Classifier Evaluation Playground" (or similar)
+- Add the confusion matrix and PR curve panels to the layout
+
+### 0.6 URL state encoding
+
+- Serialize all controls to URL search params on every state change (debounced)
+- On load, parse URL params and restore state
+- This enables sharing from day one: professors assign scenarios, students
+  share discoveries
+- Lightweight: just `URLSearchParams` get/set, no library needed
+
+### Definition of Done
+- Confusion matrix displays TP/FP/TN/FN counts and rates, updates in real-time
+- Distribution plot shows color-coded FP/FN/TP/TN regions matching matrix cells
+- PR curve visible alongside ROC with shared threshold
+- Threshold draggable directly on the distribution plot at 60fps
+- Interpolation methods de-emphasized (collapsible, off by default)
+- URL sharing works (copy URL → paste → same state)
+- All existing presets and features continue to work
+- A first-time visitor can understand the threshold/confusion-matrix/ROC/PR
+  relationship within 60 seconds of playing, without reading any text
+
+---
+
+## Phase 1: Foundation & Architecture Migration
+
+**Goal**: Migrate to solid architecture for future development. Same visual
+output as Phase 0, but modular, testable, and extensible. Also add the
+[0,1] distribution families needed for the calibration story.
+
+### 1.1 Vite project setup
 - `npm init`, add `vite` and `vitest` as dev dependencies
 - Move `index.html` to project root (Vite convention)
 - Convert IIFE in `app.js` to ES modules
@@ -323,38 +466,44 @@ Add a thin rendering utility layer (`viz/svg.js`) extracted from the current cod
   src/
     core/
       state.js          — reactive state with pub/sub
-      data.js            — RNG, sampling, data generation (all families)
-      metrics.js         — ROC computation, AUC, confusion matrix, PR, calibration
-      distributions.js   — preset definitions (theory + model archetypes)
+      data.js           — RNG, sampling, data generation (all families)
+      metrics.js        — ROC computation, AUC, confusion matrix, PR, calibration
+      distributions.js  — preset definitions (theory + model archetypes)
     viz/
-      svg.js             — SVG element helpers (createEl, clear, drawAxes, addPath)
-      roc.js             — ROC curve renderer
-      pr.js              — PR curve renderer (Phase 1)
-      dist.js            — score distribution renderer
-      matrix.js          — confusion matrix renderer (Phase 1)
-      calibration.js     — reliability diagram renderer (Phase 2)
+      svg.js            — SVG element helpers (createEl, clear, drawAxes, addPath)
+      roc.js            — ROC curve renderer
+      pr.js             — PR curve renderer
+      dist.js           — score distribution renderer
+      matrix.js         — confusion matrix renderer
+      calibration.js    — reliability diagram renderer (Phase 3)
     ui/
-      controls.js        — input binding and sync
-      tour.js            — guided tour engine (Phase 3)
-    main.js              — entry point, wires everything together
+      controls.js       — input binding and sync
+      tour.js           — guided tour engine (Phase 4)
+    main.js             — entry point, wires everything together
   ```
 
-### 0.2 Reactive state
-- Implement `createState(defaults)` returning `{ get, set, batch, subscribe }`
-- Subscriptions are by key or `'*'` for any change
-- `batch()` defers notifications until the batch function completes
-- Port all current state reads/writes to use this
-
-### 0.3 Core math extraction and new distribution families
-- Move to `core/metrics.js`: `computeRocPoints`, `computeAucTrapezoid`,
-  `computeAucRank`, `computeOperatingPoint`
+### 1.2 Module extraction
+- Move to `core/metrics.js`: `computeRocPoints`, `computePrPoints`,
+  `computeAucTrapezoid`, `computeAucRank`, `computeOperatingPoint`
 - Move to `core/data.js`: `mulberry32`, `sampleNormal`, `sampleScoreByPreset`,
   `generateData`, `meanSd`
 - Move to `core/distributions.js`: `PRESETS`, `erf`, `normalCdf`
 - Move to `viz/svg.js`: `createSvgEl`, `clear`, `drawAxes`, `linePathFromRoc`,
   `addPath`, `drawLegend`, `histogram`
+- Move to `viz/roc.js`: `drawRoc`
+- Move to `viz/pr.js`: `drawPr`
+- Move to `viz/dist.js`: `drawDist` (with FP/FN region shading)
+- Move to `viz/matrix.js`: `drawConfusionMatrix`
 
-**New in this phase — add [0,1] distribution families:**
+### 1.3 Reactive state
+- Implement `createState(defaults)` returning `{ get, set, batch, subscribe }`
+- Subscriptions are by key or `'*'` for any change
+- `batch()` defers notifications until the batch function completes
+- Port all current state reads/writes to use this
+- Replace `renderAll()` with targeted subscriptions: each view subscribes
+  to the state keys it depends on
+
+### 1.4 New distribution families and model archetype presets
 
 - **Beta sampler** in `core/data.js`:
   - `sampleBeta(rng, alpha, beta)` using Jöhnk's or rejection method
@@ -369,7 +518,7 @@ Add a thin rendering utility layer (`viz/svg.js`) extracted from the current cod
     the change-of-variables formula
 
 - **Model archetype presets** in `core/distributions.js`:
-  - Add all 7 archetype presets (see Architectural Decision 5)
+  - Add all 7 archetype presets (see Architectural Decision 6)
   - Each preset specifies: `family: 'beta'|'logit_normal'`, per-class
     parameters, description, and `bounded: true` flag
   - The `bounded` flag tells the distribution renderer to lock x-axis to [0,1]
@@ -380,12 +529,13 @@ Add a thin rendering utility layer (`viz/svg.js`) extracted from the current cod
     - "Model Archetypes" (new: Logistic Regression, Random Forest, etc.)
   - Preset selector in UI shows both groups with optgroup labels
 
-### 0.4 Tests
+### 1.5 Tests
 - Vitest unit tests for:
   - `computeAucTrapezoid` === `computeAucRank` for all presets (within 1e-10)
   - `computeRocPoints` returns monotonically non-decreasing TPR and FPR
   - `computeOperatingPoint` confusion matrix sums to total sample count
   - `computeRocPoints` starts at (0,0) and ends at (1,1)
+  - `computePrPoints` returns valid precision/recall values
   - Each preset generates valid data (no NaN, finite values)
   - **Beta sampler**: output in [0,1] for all parameter combinations,
     mean ≈ α/(α+β) within sampling tolerance
@@ -395,84 +545,32 @@ Add a thin rendering utility layer (`viz/svg.js`) extracted from the current cod
   - **betaPdf**: matches known values, integrates to ≈1 numerically
 - Run with `npx vitest`
 
-### 0.5 URL state encoding
-- Serialize all controls to URL search params on every state change (debounced)
-- On load, parse URL params and restore state
-- This enables sharing from day one: professors assign scenarios, students share discoveries
-- Lightweight: just `URLSearchParams` get/set, no library needed
-
 ### Definition of Done
-- `npm run dev` serves the app with identical behavior to current prototype
+- `npm run dev` serves the app with identical behavior to Phase 0 output
 - All existing presets work as before
 - New model archetype presets produce valid [0,1] data and correct ROC/AUC
 - Distribution plot correctly locks x-axis to [0,1] for bounded families
 - Preset selector shows two optgroups: "Distribution Shapes" and "Model Archetypes"
 - `npm test` passes all math tests (including new sampler tests)
-- URL sharing works (copy URL → paste → same state)
 - Code is modular with clean imports
+- Reactive state drives all view updates
 
 ---
 
-## Phase 1: Core Playground (Weeks 2–3)
+## Phase 2: Playground Enhancements
 
-**Goal**: The default landing becomes a world-class ROC/PR exploration tool.
-Every fundamental concept is visually represented and interactively linked.
+**Goal**: Cross-view linking, metrics dashboard, and the interaction patterns
+that make the tool feel like a single coherent instrument, not a collection
+of separate charts.
 
-### 1.1 Confusion matrix visualization
-**This is the highest-leverage single addition.**
+### 2.1 Bidirectional cross-view linking
 
-- Live 2×2 grid below the distribution plot
-- Cells color-coded to match distribution regions:
-  TP (teal), FP (amber-red), TN (amber-green), FN (teal-muted)
-- Cell size proportional to count (area-encoded, not just numbers)
-- Shows both raw count AND rate in each cell (e.g., "423 (84.6%)")
-- Updates instantly as threshold changes with smooth size transitions
-- Derived rates shown beneath: TPR, FPR, Precision, Recall, Specificity, F1, MCC
-- **Click any cell → highlights the corresponding region in the distribution
-  plot** (the FP cell glows → the FP-shaded region in distributions pulses).
-  This bidirectional link is a key aha-moment enabler.
-
-Why first: the confusion matrix is the conceptual bridge between "threshold on
-distributions" and "point on ROC curve." Without it, students see two disconnected
-visualizations. With it, the causal chain is complete:
-**threshold → regions on distributions → counts in matrix → rates → point on curves**
-
-### 1.2 Distribution plot enhancements
-
-**FP/FN region highlighting:**
-- Shade the area right of threshold under negative distribution as FP (amber, semi-transparent)
-- Shade the area left of threshold under positive distribution as FN (teal-muted, semi-transparent)
-- TP and TN regions also subtly shaded with their respective colors
-- These regions directly correspond to confusion matrix cells — same colors
-- Hover any region → tooltip shows what it represents + count
-- When threshold moves, regions animate smoothly
-
-This makes the trade-off literally visible: as you lower the threshold,
-FP region grows and FN region shrinks.
-
-**Draggable threshold handle:**
-- The threshold is a vertical line with a **circular grab handle** (not just
-  a slider below the plot). The user grabs and drags it horizontally.
-- Current threshold value displayed next to the handle
-- Pointer cursor changes on hover to indicate draggability
-- Keyboard accessible: left/right arrows move in small steps,
-  Shift+arrows for large steps
-- `touch-action: none` on the plot area prevents scroll conflicts on mobile
-
-### 1.3 PR curve view
-- Add PR curve panel alongside ROC
-- Compute precision-recall curve from the same sorted data
-- Show current operating point on PR curve (linked to same threshold)
-- Show random baseline (horizontal line at π = P/(P+N))
-- Compute Average Precision (AP) via trapezoidal approximation
-- Layout: ROC and PR side by side (or tabbed on mobile)
-
-### 1.4 Bidirectional cross-view linking
 All views are projections of the same data. The linking must be bidirectional:
 
 **Threshold linking (all views share one threshold):**
 - Dragging threshold handle on distribution plot → all views update
 - Clicking on ROC plot → threshold snaps to nearest operating point
+  (already implemented — extend to PR plot)
 - Clicking on PR plot → threshold snaps to nearest operating point
 - Slider still works as fallback
 - All views update synchronously at 60fps via state subscriptions
@@ -486,19 +584,12 @@ All views are projections of the same data. The linking must be bidirectional:
 - This cross-linking is the mechanism that makes the "one mental model"
   principle tangible. It's the single most important interaction pattern.
 
-### 1.5 Pairwise AUC animation
-**The best feature for building probabilistic intuition about AUC,
-and it requires minimal code.**
+**Click-to-highlight on confusion matrix** (deferred from Phase 0):
+- Click any cell → highlights the corresponding region in the distribution
+  plot (the FP cell glows → the FP-shaded region in distributions pulses).
+  This bidirectional link is a key aha-moment enabler.
 
-- Small panel or overlay on the ROC view
-- "Animate" button: randomly draws one positive and one negative sample
-- Shows both scores, highlights which is higher
-- Running tally: "X of Y pairs concordant → estimated AUC = X/Y"
-- After ~50-100 pairs, the estimate converges to the empirical AUC
-- Student viscerally understands: AUC = P(score+ > score-)
-- Optional: show the two points on the distribution plot as they're sampled
-
-### 1.6 Metrics dashboard
+### 2.2 Metrics dashboard
 
 - Row of metric tiles: Accuracy, Precision, Recall, F1, Specificity,
   Balanced Accuracy, MCC — each with a number + small spark-bar
@@ -512,7 +603,19 @@ and it requires minimal code.**
   thresholds — there is no single "best" threshold for all metrics.
   Toggle on/off to reduce visual clutter.
 
-### 1.7 View focus bar (panel visibility control)
+### 2.3 Pairwise AUC animation
+**The best feature for building probabilistic intuition about AUC,
+and it requires minimal code.**
+
+- Small panel or overlay on the ROC view
+- "Animate" button: randomly draws one positive and one negative sample
+- Shows both scores, highlights which is higher
+- Running tally: "X of Y pairs concordant → estimated AUC = X/Y"
+- After ~50-100 pairs, the estimate converges to the empirical AUC
+- Student viscerally understands: AUC = P(score+ > score-)
+- Optional: show the two points on the distribution plot as they're sampled
+
+### 2.4 View focus bar (panel visibility control)
 
 A compact toggle bar at the top of the visualization area. Each panel gets
 a small pill/chip: `[Distributions] [Matrix] [ROC] [PR] [Metrics]`.
@@ -541,42 +644,35 @@ playground. Both write to the same `state.visiblePanels` set. When the
 tour is active, the view bar is hidden (the tour controls visibility).
 When the user exits the tour, their previous panel selection is restored.
 
-### 1.8 UI redesign for playground focus
+### 2.5 UI redesign and dynamic microcopy
+
 - New hero text: "Classifier Playground — Explore how score distributions
   create ROC and PR curves"
-- Remove interpolation toggles from default view → move to collapsible
-  "Advanced: Interpolation Methods" section
-- Default shows: empirical ROC only (clean, uncluttered)
 - Layout: controls left, plots right (keep current grid), but plots now show
   ROC + PR side by side on top, distributions + confusion matrix below
 - View focus bar above the visualization grid
 - Dynamic "What you're seeing" caption below each plot (see Content &
   Microcopy System section)
+- Smooth size transitions on confusion matrix cells
 
 ### Definition of Done
-- Threshold draggable via handle on distribution plot at 60fps
-- FP/FN/TP/TN regions color-coded and matching confusion matrix cells
-- Confusion matrix updates in real-time; clicking a cell highlights the
-  corresponding distribution region
-- ROC and PR curves visible simultaneously with linked threshold
 - Hover any view → cross-highlights in all other views
+- Click confusion matrix cell → distribution region highlights
 - Metrics dashboard shows all rates with hover definitions
 - Metrics-vs-threshold chart shows different metrics peak at different thresholds
 - Pairwise AUC animation runs and converges to correct value
 - View focus bar: toggling panels off/on works, remaining panels reflow;
   preset buttons switch to common combinations in one click
 - Dynamic captions update with each interaction
-- A first-time visitor can understand the ROC/threshold relationship within
-  60 seconds of playing, without reading any text
 
 ---
 
-## Phase 2: Decision Lab (Weeks 4–5)
+## Phase 3: Decision Lab
 
 **Goal**: Students learn that the "right" threshold depends on context,
 not just on the curve shape. ROC goes from abstract to actionable.
 
-### 2.1 Deployment parameters panel
+### 3.1 Deployment parameters panel
 New control section: "Deployment Context"
 
 - **Prevalence (π)** slider: 0.01 to 0.99, default 0.5
@@ -610,7 +706,7 @@ New control section: "Deployment Context"
   - Teaches: real datasets have imperfect labels. The ROC curve you see
     is built on labels you assume are correct — but what if they're not?
 
-### 2.2 Iso-cost lines on ROC
+### 3.2 Iso-cost lines on ROC
 **Show the lines BEFORE the optimal point** (discovery, not magic)
 
 - Draw a family of iso-expected-cost lines on ROC space
@@ -621,7 +717,7 @@ New control section: "Deployment Context"
 - Annotation: "Each line represents equal expected cost. The best threshold
   is where the curve touches the lowest-cost line."
 
-### 2.3 Deployment card
+### 3.3 Deployment card
 **Make this the centerpiece of the Decision Lab.**
 
 A prominent card/panel showing:
@@ -655,7 +751,7 @@ A prominent card/panel showing:
 - Uses scenario-specific vocabulary when a scenario is active
   (e.g., "Missed diagnoses: 800" instead of "Missed: 800")
 
-### 2.4 Calibration plot (reliability diagram)
+### 3.4 Calibration plot (reliability diagram)
 **Only shown when a [0,1] score family is active** (beta or logit-normal).
 When an unbounded distribution is active, this panel shows a note:
 "Calibration applies when scores represent probabilities. Switch to a
@@ -668,7 +764,7 @@ Model Archetype preset to explore calibration."
 - Compute true posterior: `P(y=1|s) = π·f₁(s) / [π·f₁(s) + (1−π)·f₀(s)]`
   - For beta family: f₀ = betaPdf(s, α₀, β₀), f₁ = betaPdf(s, α₁, β₁)
   - For logit-normal: compute numerically via change-of-variables
-- The prevalence π slider from 2.1 feeds directly into this computation
+- The prevalence π slider from 3.1 feeds directly into this computation
 - Show both:
   - "Empirical" calibration (binned: for each bin, fraction actually positive)
   - "Theoretical" calibration curve (smooth: the true posterior)
@@ -684,7 +780,7 @@ AUC, but calibration much closer to diagonal. This is the aha moment:
 shifts because the true posterior depends on prevalence. This teaches:
 *a model calibrated for one population isn't calibrated for another.*
 
-### 2.5 Real-world scenario presets
+### 3.5 Real-world scenario presets
 Four named scenarios that set distributions, model archetype, deployment context,
 AND vocabulary — grounding abstract curves in real decisions:
 
@@ -738,7 +834,7 @@ These demonstrate four things simultaneously:
 - Deployment card shows concrete per-10k counts
 - Calibration plot shows diagonal for well-calibrated models, S-curve for
   overconfident models; updates when prevalence changes
-- The three scenarios produce visibly different optimal operating points
+- The four scenarios produce visibly different optimal operating points
   and visibly different calibration profiles
 - Student can explain why "highest AUC" doesn't mean "best deployment"
 - Student can explain what calibration means and why it matters separately
@@ -746,13 +842,13 @@ These demonstrate four things simultaneously:
 
 ---
 
-## Phase 3: Guided Learning Tour (Weeks 6–7)
+## Phase 4: Guided Learning Tour
 
 **Goal**: A 10-chapter progressive walkthrough (chapters 0–9) that takes a
 student from "I sort of know what ROC is" to "I can reason about classifier
 deployment in my sleep."
 
-### 3.1 Tour engine
+### 4.1 Tour engine
 - Lightweight tour system in `ui/tour.js`
 - State: `currentChapter`, `currentStep`, `completedChapters`, per-chapter
   exercise state
@@ -775,7 +871,7 @@ deployment in my sleep."
 - Brief reveal text: "Precision went DOWN because..." (1 sentence)
 - These are defined per-chapter in the config object
 
-### 3.2 Chapter content
+### 4.2 Chapter content
 
 **Chapter 0: "The Prediction Game"**
 - Visuals: distribution plot only, NO threshold yet. Two groups of colored
@@ -930,7 +1026,7 @@ deployment in my sleep."
 - Completion state: "You've completed the tour. You now understand
   classifier evaluation better than most practitioners. Go build something."
 
-### 3.3 Content writing process
+### 4.3 Content writing process
 - Draft all 10 chapters as markdown BEFORE implementing the tour engine
 - Each chapter: ~100-150 words of narrative, 1 prediction prompt (where
   applicable), 1 task, 1 key insight sentence
@@ -954,11 +1050,11 @@ deployment in my sleep."
 
 ---
 
-## Phase 4: Polish & Advanced (Week 8)
+## Phase 5: Polish & Advanced
 
 **Goal**: Robustness, performance, accessibility, and advanced features.
 
-### 4.1 Bootstrap uncertainty (Web Worker)
+### 5.1 Bootstrap uncertainty (Web Worker)
 - Implement stratified bootstrap in `src/workers/bootstrap.js`
 - Worker message protocol designed first:
   ```
@@ -977,7 +1073,7 @@ deployment in my sleep."
   variability across resamples. This prevents the common misconception that
   curves are perfectly smooth truths.
 
-### 4.2 Accessibility
+### 5.2 Accessibility
 - Keyboard navigation for threshold (arrow keys, fine/coarse step with shift)
 - ARIA labels on all SVG elements
 - Screen reader text for key metrics
@@ -985,13 +1081,13 @@ deployment in my sleep."
   - Current palette is already somewhat safe; verify and adjust
 - Respect `prefers-reduced-motion` for animations
 
-### 4.3 Performance
+### 5.3 Performance
 - Throttle/debounce slider input events to 60fps
 - Profile rendering at nPerClass=2000; optimize if >16ms frame time
 - Consider requestAnimationFrame for slider-driven updates
 - Lazy-load tour content (don't ship chapter text in main bundle)
 
-### 4.4 Responsive layout
+### 5.4 Responsive layout
 
 Three explicit breakpoints:
 
@@ -1008,7 +1104,7 @@ Three explicit breakpoints:
 - Tour navigation works on all breakpoints
 - Test on iPhone Safari, Android Chrome, iPad Safari
 
-### 4.5 Visual polish
+### 5.5 Visual polish
 - Smooth transitions when switching presets (interpolate distribution params)
 - Hover tooltips on ROC/PR curves showing threshold at cursor position
 - Micro-animations: confusion matrix cell count changes ease in/out
@@ -1059,7 +1155,7 @@ the MVP just logs to console for developer insight.
 
 ## What This Plan Deliberately Excludes (and Future Phases)
 
-### Excluded from Phases 0–4
+### Excluded from Phases 0–5
 
 1. **Post-hoc calibration methods** (Platt scaling, isotonic regression,
    temperature scaling as a learnable transform) — the tool shows what
@@ -1074,20 +1170,20 @@ the MVP just logs to console for developer insight.
 
 ### Future Phases (post-MVP, scoped but not scheduled)
 
-**Phase 5 — Multi-Model Comparison**
+**Phase 6 — Multi-Model Comparison**
 - Show two distributions/curves side by side, compare operating points
 - "Model A vs. Model B" toggle with separate threshold controls
 - DeLong test for AUC comparison with confidence interval
 - Teaches: when is a difference in AUC meaningful?
 
-**Phase 6 — Real Data Mode**
+**Phase 7 — Real Data Mode**
 - Small CSV upload (two columns: score, label)
 - Or choose from built-in datasets (UCI, Kaggle classics)
 - All views work identically — the engine doesn't care if data is
   synthetic or real
 - Teaches: bridge from sandbox to real workflows
 
-**Phase 7 — Classroom & Sharing**
+**Phase 8 — Classroom & Sharing**
 - Teacher mode: create scenario assignments with locked controls
 - Student mode: complete assignments, export results
 - Embeddable mode: `<iframe>` with configurable initial state
@@ -1098,65 +1194,71 @@ the MVP just logs to console for developer insight.
 ## Dependency Graph
 
 ```
-Phase 0 (foundation)
-  ├── 0.1 Vite setup
-  ├── 0.2 Reactive state
-  ├── 0.3 Core math extraction + Beta/logit-normal families + model archetypes
-  ├── 0.4 Tests (including new sampler tests)
-  └── 0.5 URL encoding
+Phase 0 (core features — current architecture, no prerequisites)
+  ├── 0.1 Confusion matrix visualization
+  ├── 0.2 FP/FN/TP/TN region shading on distributions
+  │       — depends on 0.1 (matching colors)
+  ├── 0.3 PR curve view
+  ├── 0.4 Draggable threshold handle
+  ├── 0.5 UI adjustments (de-emphasize interpolation)
+  └── 0.6 URL state encoding
        │
-Phase 1 (core playground) — depends on all of Phase 0
-  ├── 1.1 Confusion matrix viz (with click-to-highlight)
-  ├── 1.2 Distribution enhancements (FP/FN regions + draggable handle)
-  │       — depends on 1.1 (matching colors)
-  ├── 1.3 PR curve view — depends on 0.3 (metrics module)
-  ├── 1.4 Bidirectional cross-view linking — depends on 0.2 (reactive state)
-  ├── 1.5 Pairwise AUC animation
-  ├── 1.6 Metrics dashboard (tiles + metrics-vs-threshold chart)
-  ├── 1.7 View focus bar (panel visibility toggles + presets)
-  │       — depends on 0.2 (reads/writes state.visiblePanels)
-  └── 1.8 UI redesign + dynamic microcopy
-  │       — depends on 1.1, 1.3, 1.6, 1.7 (layout requires knowing all panels)
+Phase 1 (foundation — architecture migration)
+  │     All of Phase 1 depends on Phase 0 being complete (so we know
+  │     what code we're refactoring). Items within Phase 1 are sequential:
+  ├── 1.1 Vite project setup
+  ├── 1.2 Module extraction — depends on 1.1
+  ├── 1.3 Reactive state — depends on 1.2
+  ├── 1.4 New distribution families + model archetypes — depends on 1.2
+  └── 1.5 Tests — depends on 1.2 (needs module imports)
        │
-Phase 2 (decision lab) — depends on Phase 1
-  ├── 2.1 Deployment parameters (costs + capacity + constraints + label noise)
-  │       — depends on 1.3 (PR curve uses prevalence)
-  ├── 2.2 Iso-cost lines + feasible region highlighting — depends on 2.1
-  ├── 2.3 Deployment card — depends on 2.1, 2.2
-  ├── 2.4 Calibration plot — depends on 0.3 (betaPdf), 2.1 (prevalence)
-  └── 2.5 Scenario presets (4 scenarios with vocabulary)
-  │       — depends on 2.1, 2.4
+Phase 2 (playground enhancements) — depends on 1.3 (reactive state)
+  ├── 2.1 Bidirectional cross-view linking — depends on 1.3
+  ├── 2.2 Metrics dashboard
+  ├── 2.3 Pairwise AUC animation
+  ├── 2.4 View focus bar — depends on 1.3 (reads/writes state.visiblePanels)
+  └── 2.5 UI redesign + microcopy
+  │       — depends on 2.1, 2.2, 2.4 (layout requires knowing all panels)
        │
-Phase 3 (guided tour) — depends on Phase 2
-  ├── 3.1 Tour engine (with prediction prompts, dot trail, lock threshold)
-  ├── 3.2 Chapter content: 10 chapters (writing starts in Phase 0, in parallel)
-  └── 3.3 Content integration — depends on 3.1, 3.2
+Phase 3 (decision lab) — depends on Phase 2
+  ├── 3.1 Deployment parameters (prevalence, costs, constraints, label noise)
+  │       — depends on 0.3 (PR curve uses prevalence)
+  ├── 3.2 Iso-cost lines — depends on 3.1
+  ├── 3.3 Deployment card — depends on 3.1, 3.2
+  ├── 3.4 Calibration plot — depends on 1.4 (betaPdf), 3.1 (prevalence)
+  └── 3.5 Scenario presets — depends on 3.1, 3.4
        │
-Phase 4 (polish) — depends on Phase 2, partially on Phase 3
-  ├── 4.1 Bootstrap uncertainty + repeat sample (independent, needs only Phase 0)
-  ├── 4.2 Accessibility (can start during Phase 1)
-  ├── 4.3 Performance
-  ├── 4.4 Responsive layout (3 breakpoints)
-  └── 4.5 Visual polish
+Phase 4 (guided tour) — depends on Phase 3
+  ├── 4.1 Tour engine
+  ├── 4.2 Chapter content (writing starts in Phase 0, in parallel)
+  └── 4.3 Content integration — depends on 4.1, 4.2
+       │
+Phase 5 (polish) — depends on Phase 3, partially on Phase 4
+  ├── 5.1 Bootstrap uncertainty (independent, needs only Phase 1)
+  ├── 5.2 Accessibility (can start during Phase 2)
+  ├── 5.3 Performance
+  ├── 5.4 Responsive layout
+  └── 5.5 Visual polish
 ```
 
 ## Parallel Content Track
 
 **Critical**: Tour chapter text must be drafted alongside engineering work.
-Do not defer writing to Phase 3 implementation.
+Do not defer writing to Phase 4 implementation.
 
-| Week | Engineering          | Content Writing                                         |
-|------|---------------------|---------------------------------------------------------|
-| 1    | Phase 0: Foundation | Draft chapters 0–2 (prediction game, threshold, rates)  |
-| 2-3  | Phase 1: Playground | Draft chapters 3–5 (ROC curve, AUC, PR)                 |
-| 4-5  | Phase 2: Decision   | Draft chapters 6–9 (calibration, costs, drift, synthesis)|
-| 6-7  | Phase 3: Tour       | Integrate, test, refine all 10 chapters                 |
-| 8    | Phase 4: Polish     | Final copy edit, user testing, prediction prompt tuning  |
+| Sprint | Engineering               | Content Writing                                          |
+|--------|--------------------------|----------------------------------------------------------|
+| 1      | Phase 0: Core features   | Draft chapters 0–2 (prediction game, threshold, rates)   |
+| 2      | Phase 1: Foundation      | Draft chapters 3–5 (ROC curve, AUC, PR)                  |
+| 3      | Phase 2: Enhancements    | Draft chapters 6–7 (calibration, costs)                   |
+| 4      | Phase 3: Decision Lab    | Draft chapters 8–9 (drift, synthesis)                     |
+| 5      | Phase 4: Tour            | Integrate, test, refine all 10 chapters                   |
+| 6      | Phase 5: Polish          | Final copy edit, user testing, prediction prompt tuning    |
 
 ## Technical Constraints
 
 - Zero runtime dependencies (no D3, no Chart.js, no React)
-- Dev dependencies only: Vite, Vitest
+- Dev dependencies only: Vite, Vitest (added in Phase 1)
 - Web fonts loaded via `<link>` (Google Fonts: Newsreader + JetBrains Mono)
 - Target: ES2020+ browsers (no IE11)
 - Single index.html production build (easy to deploy anywhere)
