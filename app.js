@@ -14,6 +14,10 @@
     p0Neg: 0.42,
     p0Pos: 0.12,
     zeroValue: 0,
+    alphaNeg: 2.0,
+    betaNeg: 8.0,
+    alphaPos: 8.0,
+    betaPos: 2.0,
     nPerClass: 500,
     outlierFrac: 0,
     seed: 13,
@@ -58,6 +62,7 @@
     shapeStudent: document.getElementById("shapeStudent"),
     shapeMixture: document.getElementById("shapeMixture"),
     shapeZeroInflated: document.getElementById("shapeZeroInflated"),
+    shapeBeta: document.getElementById("shapeBeta"),
     shapeNoExtra: document.getElementById("shapeNoExtra"),
     muNegValue: document.getElementById("muNegValue"),
     sdNegValue: document.getElementById("sdNegValue"),
@@ -81,6 +86,14 @@
     p0PosValue: document.getElementById("p0PosValue"),
     zeroValue: document.getElementById("zeroValue"),
     zeroValueOut: document.getElementById("zeroValueOut"),
+    alphaNeg: document.getElementById("alphaNeg"),
+    alphaNegValue: document.getElementById("alphaNegValue"),
+    betaNeg: document.getElementById("betaNeg"),
+    betaNegValue: document.getElementById("betaNegValue"),
+    alphaPos: document.getElementById("alphaPos"),
+    alphaPosValue: document.getElementById("alphaPosValue"),
+    betaPos: document.getElementById("betaPos"),
+    betaPosValue: document.getElementById("betaPosValue"),
     nPerClassValue: document.getElementById("nPerClassValue"),
     outlierFracValue: document.getElementById("outlierFracValue"),
     thresholdValue: document.getElementById("thresholdValue"),
@@ -195,6 +208,46 @@
       nPerClass: 700,
       desc: "Expected shape: skewed ROC curvature from one-sided tails.",
     },
+    probGoodSep: {
+      mode: "beta",
+      alphaNeg: 1.3,
+      betaNeg: 10.5,
+      alphaPos: 10.5,
+      betaPos: 1.3,
+      outlierFrac: 0,
+      nPerClass: 700,
+      desc: "Probability-like scores in [0,1] with clear class separation.",
+    },
+    probOverlap: {
+      mode: "beta",
+      alphaNeg: 2.7,
+      betaNeg: 4.1,
+      alphaPos: 4.1,
+      betaPos: 2.7,
+      outlierFrac: 0,
+      nPerClass: 700,
+      desc: "Probability-like scores in [0,1] with substantial overlap.",
+    },
+    probOverconfident: {
+      mode: "beta",
+      alphaNeg: 0.35,
+      betaNeg: 3.5,
+      alphaPos: 3.5,
+      betaPos: 0.35,
+      outlierFrac: 0,
+      nPerClass: 700,
+      desc: "Overconfident probabilities: many near 0/1, with some high-confidence mistakes.",
+    },
+    probMidrange: {
+      mode: "beta",
+      alphaNeg: 8.0,
+      betaNeg: 12.0,
+      alphaPos: 12.0,
+      betaPos: 8.0,
+      outlierFrac: 0,
+      nPerClass: 700,
+      desc: "Probability-like scores concentrated in the middle, with moderate separability.",
+    },
   };
 
   const URL_NUM_KEYS = [
@@ -211,6 +264,10 @@
     "p0Neg",
     "p0Pos",
     "zeroValue",
+    "alphaNeg",
+    "betaNeg",
+    "alphaPos",
+    "betaPos",
     "nPerClass",
     "outlierFrac",
     "seed",
@@ -292,6 +349,10 @@
     state.p0Neg = toNumber(ids.p0Neg);
     state.p0Pos = toNumber(ids.p0Pos);
     state.zeroValue = toNumber(ids.zeroValue);
+    state.alphaNeg = toNumber(ids.alphaNeg);
+    state.betaNeg = toNumber(ids.betaNeg);
+    state.alphaPos = toNumber(ids.alphaPos);
+    state.betaPos = toNumber(ids.betaPos);
     state.nPerClass = Math.round(toNumber(ids.nPerClass));
     state.outlierFrac = toNumber(ids.outlierFrac);
     const seedRaw = Math.round(toNumber(ids.seed));
@@ -312,22 +373,31 @@
   function updateConditionalParameterUI(preset) {
     const mode = preset.mode || "normal";
     const isNormal = mode === "normal";
+    const isBeta = mode === "beta";
     ids.muNegLabel.textContent = isNormal ? "Negative mean" : "Negative location";
     ids.sdNegLabel.textContent = isNormal ? "Negative sd" : "Negative scale";
     ids.muPosLabel.textContent = isNormal ? "Positive mean" : "Positive location";
     ids.sdPosLabel.textContent = isNormal ? "Positive sd" : "Positive scale";
+    if (isBeta) {
+      ids.muNegLabel.textContent = "Negative location (fixed in beta mode)";
+      ids.sdNegLabel.textContent = "Negative scale (fixed in beta mode)";
+      ids.muPosLabel.textContent = "Positive location (fixed in beta mode)";
+      ids.sdPosLabel.textContent = "Positive scale (fixed in beta mode)";
+    }
 
     setHidden(ids.shapeNormal, mode !== "normal");
     setHidden(ids.shapeLognormal, mode !== "lognormal");
     setHidden(ids.shapeStudent, mode !== "student_t");
     setHidden(ids.shapeMixture, mode !== "mixture_pos");
     setHidden(ids.shapeZeroInflated, mode !== "zero_inflated");
+    setHidden(ids.shapeBeta, mode !== "beta");
     setHidden(ids.shapeNoExtra, !(mode === "uniform" || mode === "exponential"));
   }
 
   function syncControlOutputs() {
     const preset = PRESETS[state.preset] || PRESETS.separated;
     const outlierEnabled = preset.mode === "normal";
+    const betaMode = preset.mode === "beta";
     ids.muNegValue.textContent = fmt(state.muNeg, 2);
     ids.sdNegValue.textContent = fmt(state.sdNeg, 2);
     ids.muPosValue.textContent = fmt(state.muPos, 2);
@@ -341,9 +411,17 @@
     ids.p0NegValue.textContent = fmt(state.p0Neg, 2);
     ids.p0PosValue.textContent = fmt(state.p0Pos, 2);
     ids.zeroValueOut.textContent = fmt(state.zeroValue, 2);
+    ids.alphaNegValue.textContent = fmt(state.alphaNeg, 2);
+    ids.betaNegValue.textContent = fmt(state.betaNeg, 2);
+    ids.alphaPosValue.textContent = fmt(state.alphaPos, 2);
+    ids.betaPosValue.textContent = fmt(state.betaPos, 2);
     ids.nPerClassValue.textContent = String(state.nPerClass);
     ids.outlierFracValue.textContent = outlierEnabled ? fmt(state.outlierFrac, 2) : `${fmt(state.outlierFrac, 2)} (normal only)`;
     ids.outlierFrac.disabled = !outlierEnabled;
+    ids.muNeg.disabled = betaMode;
+    ids.sdNeg.disabled = betaMode;
+    ids.muPos.disabled = betaMode;
+    ids.sdPos.disabled = betaMode;
     ids.thresholdValue.textContent = fmt(state.threshold, 3);
     ids.seed.value = String(state.seed);
     ids.presetDesc.textContent = preset.desc || "";
@@ -374,6 +452,10 @@
       "p0Neg",
       "p0Pos",
       "zeroValue",
+      "alphaNeg",
+      "betaNeg",
+      "alphaPos",
+      "betaPos",
       "outlierFrac",
       "nPerClass",
     ];
@@ -406,6 +488,36 @@
     }
     const t = z / Math.sqrt(Math.max(1e-12, chi2 / dof));
     return t / Math.sqrt(dof / (dof - 2));
+  }
+
+  function sampleGamma(rng, shape) {
+    const k = Math.max(0.05, shape);
+    if (k < 1) {
+      const u = clamp(rng(), 1e-12, 1 - 1e-12);
+      return sampleGamma(rng, k + 1) * Math.pow(u, 1 / k);
+    }
+
+    const d = k - 1 / 3;
+    const c = 1 / Math.sqrt(9 * d);
+    while (true) {
+      const x = sampleNormal(rng, 0, 1);
+      let v = 1 + c * x;
+      if (v <= 0) continue;
+      v = v * v * v;
+      const u = clamp(rng(), 1e-12, 1 - 1e-12);
+      if (u < 1 - 0.0331 * Math.pow(x, 4)) return d * v;
+      if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+    }
+  }
+
+  function sampleBeta(rng, alpha, beta) {
+    const a = Math.max(0.05, alpha);
+    const b = Math.max(0.05, beta);
+    const x = sampleGamma(rng, a);
+    const y = sampleGamma(rng, b);
+    const denom = x + y;
+    if (denom <= 0) return 0.5;
+    return clamp(x / denom, 0, 1);
   }
 
   function sampleStandardized(mode, rng, label) {
@@ -455,6 +567,12 @@
       const p0 = clamp(label === 1 ? state.p0Pos : state.p0Neg, 0, 0.99);
       if (rng() < p0) return state.zeroValue;
       return sampleNormal(rng, mu, sd);
+    }
+
+    if (mode === "beta") {
+      const alpha = label === 1 ? state.alphaPos : state.alphaNeg;
+      const beta = label === 1 ? state.betaPos : state.betaNeg;
+      return sampleBeta(rng, alpha, beta);
     }
 
     const z = sampleStandardized(mode, rng, label);
@@ -1689,6 +1807,10 @@
       ids.p0Neg,
       ids.p0Pos,
       ids.zeroValue,
+      ids.alphaNeg,
+      ids.betaNeg,
+      ids.alphaPos,
+      ids.betaPos,
       ids.nPerClass,
       ids.outlierFrac,
       ids.seed,

@@ -32,6 +32,10 @@
               <option value="zeroinflated">Zero-inflated scores (steps/ties)</option>
               <option value="uniform">Uniform classes (piecewise-linear feel)</option>
               <option value="exponential">Exponential classes (skewed)</option>
+              <option value="probGoodSep">Probability scores [0,1]: good separation</option>
+              <option value="probOverlap">Probability scores [0,1]: overlap</option>
+              <option value="probOverconfident">Probability scores [0,1]: overconfident</option>
+              <option value="probMidrange">Probability scores [0,1]: midrange</option>
             </select>
           </label>
           <p id="presetDesc" class="hint"></p>
@@ -154,6 +158,29 @@
                 <span>Zero score value</span>
                 <input id="zeroValue" type="range" min="-3" max="3" step="0.05" value="0" />
                 <output id="zeroValueOut"></output>
+              </label>
+            </div>
+
+            <div id="shapeBeta" class="shape-panel grid-two">
+              <label class="control">
+                <span>Negative alpha</span>
+                <input id="alphaNeg" type="range" min="0.2" max="20" step="0.1" value="2.0" />
+                <output id="alphaNegValue"></output>
+              </label>
+              <label class="control">
+                <span>Negative beta</span>
+                <input id="betaNeg" type="range" min="0.2" max="20" step="0.1" value="8.0" />
+                <output id="betaNegValue"></output>
+              </label>
+              <label class="control">
+                <span>Positive alpha</span>
+                <input id="alphaPos" type="range" min="0.2" max="20" step="0.1" value="8.0" />
+                <output id="alphaPosValue"></output>
+              </label>
+              <label class="control">
+                <span>Positive beta</span>
+                <input id="betaPos" type="range" min="0.2" max="20" step="0.1" value="2.0" />
+                <output id="betaPosValue"></output>
               </label>
             </div>
 
