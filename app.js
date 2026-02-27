@@ -902,30 +902,139 @@
     svg.appendChild(path);
   }
 
-  function drawLegend(svg, items) {
-    const baseX = 486;
-    const baseY = 30;
-    const dy = 18;
+  function getSvgViewSize(svg, fallbackW = 760, fallbackH = 420) {
+    const vb = svg && svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
+    if (vb && vb.width > 0 && vb.height > 0) {
+      return { width: vb.width, height: vb.height };
+    }
+    return { width: fallbackW, height: fallbackH };
+  }
+
+  function eventToSvgCoordinates(evt, svg, fallbackW = 760, fallbackH = 420) {
+    const rect = svg.getBoundingClientRect();
+    const view = getSvgViewSize(svg, fallbackW, fallbackH);
+    return {
+      x: ((evt.clientX - rect.left) / rect.width) * view.width,
+      y: ((evt.clientY - rect.top) / rect.height) * view.height,
+    };
+  }
+
+  function computeCurveLayout(svg, mode = "single") {
+    const view = getSvgViewSize(svg);
+    const cfg = mode === "two-up"
+      ? {
+          padTop: 22,
+          padRight: 48,
+          padBottom: 64,
+          padLeft: 48,
+          legendPad: 12,
+          legendRow: 19,
+          legendLine: 20,
+          strokeMain: 3.6,
+          strokeAux: 2.6,
+          pointRadius: 7,
+          pointStroke: 2.2,
+        }
+      : {
+          padTop: 20,
+          padRight: 200,
+          padBottom: 58,
+          padLeft: 70,
+          legendPad: 10,
+          legendRow: 18,
+          legendLine: 20,
+          strokeMain: 3,
+          strokeAux: 2,
+          pointRadius: 6,
+          pointStroke: 2,
+        };
+
+    const availW = Math.max(20, view.width - cfg.padLeft - cfg.padRight);
+    const availH = Math.max(20, view.height - cfg.padTop - cfg.padBottom);
+    const side = Math.min(availW, availH);
+    const box = {
+      left: cfg.padLeft + (availW - side) / 2,
+      top: cfg.padTop + (availH - side) / 2,
+      width: side,
+      height: side,
+    };
+
+    return { view, box, cfg };
+  }
+
+  function drawLegend(svg, items, box, cfg, anchor = "outside-right") {
+    const row = cfg.legendRow || 18;
+    const lineLen = cfg.legendLine || 20;
+    const pad = cfg.legendPad || 10;
+    const startY = box.top + box.height - pad - (items.length - 1) * row;
+
     items.forEach((item, idx) => {
-      const y = baseY + idx * dy;
-      svg.appendChild(
-        createSvgEl("line", {
-          x1: baseX,
-          y1: y,
-          x2: baseX + 20,
-          y2: y,
-          stroke: item.color,
-          "stroke-width": 3,
-          "stroke-dasharray": item.dash || "",
-        })
-      );
-      svg.appendChild(
-        createSvgEl("text", {
-          x: baseX + 26,
-          y: y + 4,
-          class: "legend",
-        })
-      ).textContent = item.label;
+      const y = startY + idx * row;
+      if (anchor === "inside-right") {
+        const x2 = box.left + box.width - pad;
+        const x1 = x2 - lineLen;
+        svg.appendChild(
+          createSvgEl("line", {
+            x1,
+            y1: y,
+            x2,
+            y2: y,
+            stroke: item.color,
+            "stroke-width": 3,
+            "stroke-dasharray": item.dash || "",
+          })
+        );
+        svg.appendChild(
+          createSvgEl("text", {
+            x: x1 - 6,
+            y: y + 4,
+            class: "legend",
+            "text-anchor": "end",
+          })
+        ).textContent = item.label;
+      } else if (anchor === "inside-left") {
+        const x1 = box.left + pad;
+        const x2 = x1 + lineLen;
+        svg.appendChild(
+          createSvgEl("line", {
+            x1,
+            y1: y,
+            x2,
+            y2: y,
+            stroke: item.color,
+            "stroke-width": 3,
+            "stroke-dasharray": item.dash || "",
+          })
+        );
+        svg.appendChild(
+          createSvgEl("text", {
+            x: x2 + 6,
+            y: y + 4,
+            class: "legend",
+          })
+        ).textContent = item.label;
+      } else {
+        const x1 = box.left + box.width + 12;
+        const x2 = x1 + lineLen;
+        svg.appendChild(
+          createSvgEl("line", {
+            x1,
+            y1: y,
+            x2,
+            y2: y,
+            stroke: item.color,
+            "stroke-width": 3,
+            "stroke-dasharray": item.dash || "",
+          })
+        );
+        svg.appendChild(
+          createSvgEl("text", {
+            x: x2 + 6,
+            y: y + 4,
+            class: "legend",
+          })
+        ).textContent = item.label;
+      }
     });
   }
 
@@ -933,8 +1042,8 @@
     const svg = ids.rocSvg;
     clear(svg);
 
-    const side = 320;
-    const box = { left: 70, top: 20, width: side, height: side };
+    const layout = computeCurveLayout(svg, "two-up");
+    const box = layout.box;
     state.rocClickBox = box;
     drawAxes(svg, box, 10, 10, "False Positive Rate", "True Positive Rate");
 
@@ -946,26 +1055,26 @@
       ],
       box,
       "var(--diag)",
-      2,
+      layout.cfg.strokeAux,
       "6 6"
     );
 
-    addPath(svg, state.roc.empirical, box, "var(--emp)", 3);
+    addPath(svg, state.roc.empirical, box, "var(--emp)", layout.cfg.strokeMain);
 
     if (state.showTriangle) {
-      addPath(svg, state.roc.triangle, box, "var(--tri)", 2.5, "5 5");
+      addPath(svg, state.roc.triangle, box, "var(--tri)", layout.cfg.strokeAux, "5 5");
     }
 
     if (state.showPower) {
-      addPath(svg, state.roc.power.points, box, "var(--pow)", 2.5);
+      addPath(svg, state.roc.power.points, box, "var(--pow)", layout.cfg.strokeAux);
     }
 
     if (state.showHull) {
-      addPath(svg, state.roc.hull, box, "var(--hull)", 2.5, "10 4");
+      addPath(svg, state.roc.hull, box, "var(--hull)", layout.cfg.strokeAux, "10 4");
     }
 
     if (state.showGaussian) {
-      addPath(svg, state.roc.gaussian, box, "var(--gauss)", 2.5, "3 4");
+      addPath(svg, state.roc.gaussian, box, "var(--gauss)", layout.cfg.strokeAux, "3 4");
     }
 
     const op = state.roc.op;
@@ -976,10 +1085,10 @@
       createSvgEl("circle", {
         cx,
         cy,
-        r: 6,
+        r: layout.cfg.pointRadius,
         fill: "#ffffff",
         stroke: "#000",
-        "stroke-width": 2,
+        "stroke-width": layout.cfg.pointStroke,
       })
     );
 
@@ -999,15 +1108,15 @@
     if (state.showPower) legendItems.push({ label: "Power interpolation", color: "var(--pow)" });
     if (state.showHull) legendItems.push({ label: "Concave hull interpolation", color: "var(--hull)", dash: "10 4" });
     if (state.showGaussian) legendItems.push({ label: "Gaussian model ROC", color: "var(--gauss)", dash: "3 4" });
-    drawLegend(svg, legendItems);
+    drawLegend(svg, legendItems, box, layout.cfg, "inside-right");
   }
 
   function drawPr() {
     const svg = ids.prSvg;
     clear(svg);
 
-    const side = 320;
-    const box = { left: 70, top: 20, width: side, height: side };
+    const layout = computeCurveLayout(svg, "two-up");
+    const box = layout.box;
     drawAxes(svg, box, 10, 10, "Recall", "Precision");
 
     const baselineY = box.top + (1 - state.pr.prevalence) * box.height;
@@ -1018,12 +1127,12 @@
         x2: box.left + box.width,
         y2: baselineY,
         stroke: "var(--diag)",
-        "stroke-width": 2,
+        "stroke-width": layout.cfg.strokeAux,
         "stroke-dasharray": "6 6",
       })
     );
 
-    addPath(svg, state.pr.points, box, "var(--emp)", 3, null, "recall", "precision");
+    addPath(svg, state.pr.points, box, "var(--emp)", layout.cfg.strokeMain, null, "recall", "precision");
 
     const op = state.pr.op;
     const cx = box.left + op.recall * box.width;
@@ -1033,10 +1142,10 @@
       createSvgEl("circle", {
         cx,
         cy,
-        r: 6,
+        r: layout.cfg.pointRadius,
         fill: "#ffffff",
         stroke: "#000",
-        "stroke-width": 2,
+        "stroke-width": layout.cfg.pointStroke,
       })
     );
 
@@ -1048,10 +1157,16 @@
       })
     ).textContent = `threshold = ${fmt(state.threshold, 3)}`;
 
-    drawLegend(svg, [
-      { label: "Empirical PR", color: "var(--emp)" },
-      { label: `Random baseline (${fmt(state.pr.prevalence, 3)})`, color: "var(--diag)", dash: "6 6" },
-    ]);
+    drawLegend(
+      svg,
+      [
+        { label: "Empirical PR", color: "var(--emp)" },
+        { label: `Random baseline (${fmt(state.pr.prevalence, 3)})`, color: "var(--diag)", dash: "6 6" },
+      ],
+      box,
+      layout.cfg,
+      "inside-left"
+    );
   }
 
   function histogram(values, bins, min, max) {
@@ -1416,9 +1531,8 @@
   function thresholdFromDistPointer(evt) {
     const view = state.distView;
     if (!view) return state.threshold;
-    const rect = ids.distSvg.getBoundingClientRect();
-    const xPx = evt.clientX - rect.left;
-    const x = (xPx / rect.width) * 760;
+    const point = eventToSvgCoordinates(evt, ids.distSvg, 760, 320);
+    const x = point.x;
     const u = clamp((x - view.box.left) / view.box.width, 0, 1);
     return view.minX + u * (view.maxX - view.minX);
   }
@@ -1624,12 +1738,9 @@
       const box = state.rocClickBox;
       if (!box) return;
 
-      const rect = ids.rocSvg.getBoundingClientRect();
-      const xPx = evt.clientX - rect.left;
-      const yPx = evt.clientY - rect.top;
-
-      const x = (xPx / rect.width) * 760;
-      const y = (yPx / rect.height) * 420;
+      const point = eventToSvgCoordinates(evt, ids.rocSvg, 760, 420);
+      const x = point.x;
+      const y = point.y;
 
       const fpr = clamp((x - box.left) / box.width, 0, 1);
       const tpr = clamp(1 - (y - box.top) / box.height, 0, 1);
