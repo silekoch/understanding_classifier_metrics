@@ -15,12 +15,11 @@ Then visit `http://localhost:8000`.
 ## What you can explore
 
 - Two-class data sampled from normal distributions (with optional positive outliers)
+- Additional preset families: log-normal, Student-t heavy-tail, positive-mixture, zero-inflated, uniform, exponential
 - A single threshold classifier: predict positive if `score >= threshold`
 - ROC curve with live operating point
 - Triangle interpolation versus smoother alternatives
-- AUC cross-checks for correctness:
-  - empirical trapezoidal AUC
-  - rank-statistic AUC (Mann-Whitney form)
+- AUC cross-checks for correctness: empirical trapezoidal AUC and rank-statistic AUC (Mann-Whitney form)
 
 ## Better alternatives to a triangle
 

@@ -23,12 +23,18 @@
           <label class="control">
             <span>Preset</span>
             <select id="preset">
-              <option value="overlap">High Overlap (near diagonal)</option>
+              <option value="overlap">Gaussian overlap (near diagonal)</option>
               <option value="separated" selected>Good Separation (strong belly)</option>
-              <option value="unequal">Unequal Variance</option>
-              <option value="kink">Positive Outliers (kink)</option>
+              <option value="unequal">Gaussian unequal variance (asymmetric)</option>
+              <option value="lognormal">Log-normal classes (right-skewed)</option>
+              <option value="heavytail">Student-t heavy tails</option>
+              <option value="mixture">Positive mixture (kink/shoulder)</option>
+              <option value="zeroinflated">Zero-inflated scores (steps/ties)</option>
+              <option value="uniform">Uniform classes (piecewise-linear feel)</option>
+              <option value="exponential">Exponential classes (skewed)</option>
             </select>
           </label>
+          <p id="presetDesc" class="hint"></p>
 
           <div class="grid-two">
             <label class="control">

@@ -1,5 +1,6 @@
 (function () {
   const state = {
+    preset: "separated",
     muNeg: 0,
     sdNeg: 1,
     muPos: 2,
@@ -40,9 +41,112 @@
     nPerClassValue: document.getElementById("nPerClassValue"),
     outlierFracValue: document.getElementById("outlierFracValue"),
     thresholdValue: document.getElementById("thresholdValue"),
+    presetDesc: document.getElementById("presetDesc"),
     rocSvg: document.getElementById("rocSvg"),
     distSvg: document.getElementById("distSvg"),
     metricsText: document.getElementById("metricsText"),
+  };
+
+  const PRESETS = {
+    overlap: {
+      mode: "normal",
+      muNeg: 0,
+      sdNeg: 1,
+      muPos: 0.55,
+      sdPos: 1,
+      outlierFrac: 0,
+      nPerClass: 500,
+      desc: "Expected shape: close to diagonal baseline (high overlap).",
+    },
+    separated: {
+      mode: "normal",
+      muNeg: 0,
+      sdNeg: 1,
+      muPos: 2.2,
+      sdPos: 1,
+      outlierFrac: 0,
+      nPerClass: 500,
+      desc: "Expected shape: pronounced top-left belly (good separation).",
+    },
+    unequal: {
+      mode: "normal",
+      muNeg: 0,
+      sdNeg: 0.8,
+      muPos: 1.6,
+      sdPos: 1.7,
+      outlierFrac: 0,
+      nPerClass: 600,
+      desc: "Expected shape: asymmetric curvature from unequal variances.",
+    },
+    lognormal: {
+      mode: "lognormal",
+      muNeg: 0.0,
+      sdNeg: 1.0,
+      muPos: 1.0,
+      sdPos: 1.0,
+      outlierFrac: 0,
+      nPerClass: 700,
+      logSigma: 0.7,
+      desc: "Expected shape: smooth but skew-driven bend (not symmetric like Gaussian).",
+    },
+    heavytail: {
+      mode: "student_t",
+      muNeg: 0,
+      sdNeg: 1,
+      muPos: 1.45,
+      sdPos: 1,
+      outlierFrac: 0,
+      nPerClass: 700,
+      dfNeg: 3,
+      dfPos: 3,
+      desc: "Expected shape: flatter shoulders from heavy tails/outliers.",
+    },
+    mixture: {
+      mode: "mixture_pos",
+      muNeg: 0,
+      sdNeg: 1,
+      muPos: 2.3,
+      sdPos: 0.9,
+      outlierFrac: 0,
+      nPerClass: 800,
+      mixWeight: 0.24,
+      mixOffset: 0.15,
+      mixSdMult: 1.1,
+      desc: "Expected shape: visible kink/shoulder from class heterogeneity.",
+    },
+    zeroinflated: {
+      mode: "zero_inflated",
+      muNeg: -0.2,
+      sdNeg: 0.9,
+      muPos: 1.8,
+      sdPos: 1.0,
+      outlierFrac: 0,
+      nPerClass: 900,
+      p0Neg: 0.42,
+      p0Pos: 0.12,
+      zeroValue: 0,
+      desc: "Expected shape: step-like ROC segments from many tied zero scores.",
+    },
+    uniform: {
+      mode: "uniform",
+      muNeg: 0.0,
+      sdNeg: 1.0,
+      muPos: 1.5,
+      sdPos: 1.0,
+      outlierFrac: 0,
+      nPerClass: 700,
+      desc: "Expected shape: piecewise-linear style with gentler bends.",
+    },
+    exponential: {
+      mode: "exponential",
+      muNeg: -0.2,
+      sdNeg: 0.9,
+      muPos: 0.95,
+      sdPos: 0.9,
+      outlierFrac: 0,
+      nPerClass: 700,
+      desc: "Expected shape: skewed ROC curvature from one-sided tails.",
+    },
   };
 
   function mulberry32(seed) {
@@ -100,6 +204,7 @@
   }
 
   function readControls() {
+    state.preset = ids.preset.value;
     state.muNeg = toNumber(ids.muNeg);
     state.sdNeg = toNumber(ids.sdNeg);
     state.muPos = toNumber(ids.muPos);
@@ -115,25 +220,25 @@
   }
 
   function syncControlOutputs() {
+    const preset = PRESETS[state.preset] || PRESETS.separated;
+    const outlierEnabled = preset.mode === "normal";
     ids.muNegValue.textContent = fmt(state.muNeg, 2);
     ids.sdNegValue.textContent = fmt(state.sdNeg, 2);
     ids.muPosValue.textContent = fmt(state.muPos, 2);
     ids.sdPosValue.textContent = fmt(state.sdPos, 2);
     ids.nPerClassValue.textContent = String(state.nPerClass);
-    ids.outlierFracValue.textContent = fmt(state.outlierFrac, 2);
+    ids.outlierFracValue.textContent = outlierEnabled ? fmt(state.outlierFrac, 2) : `${fmt(state.outlierFrac, 2)} (normal only)`;
+    ids.outlierFrac.disabled = !outlierEnabled;
     ids.thresholdValue.textContent = fmt(state.threshold, 3);
     ids.seed.value = String(state.seed);
+    ids.presetDesc.textContent = preset.desc || "";
   }
 
   function applyPreset(name) {
-    const p = {
-      overlap: { muNeg: 0, sdNeg: 1, muPos: 0.6, sdPos: 1, outlierFrac: 0.0, nPerClass: 500 },
-      separated: { muNeg: 0, sdNeg: 1, muPos: 2.2, sdPos: 1, outlierFrac: 0.0, nPerClass: 500 },
-      unequal: { muNeg: 0, sdNeg: 0.8, muPos: 1.6, sdPos: 1.7, outlierFrac: 0.0, nPerClass: 500 },
-      kink: { muNeg: 0, sdNeg: 1, muPos: 2.1, sdPos: 0.9, outlierFrac: 0.18, nPerClass: 700 },
-    }[name];
+    const p = PRESETS[name];
 
     if (!p) return;
+    ids.preset.value = name;
     ids.muNeg.value = String(p.muNeg);
     ids.sdNeg.value = String(p.sdNeg);
     ids.muPos.value = String(p.muPos);
@@ -144,23 +249,104 @@
     regenerateAndRender();
   }
 
+  function getActivePreset() {
+    return PRESETS[state.preset] || PRESETS.separated;
+  }
+
+  function sampleStudentTStd(rng, df) {
+    const dof = Math.max(3, Math.round(df));
+    const z = sampleNormal(rng, 0, 1);
+    let chi2 = 0;
+    for (let i = 0; i < dof; i += 1) {
+      const g = sampleNormal(rng, 0, 1);
+      chi2 += g * g;
+    }
+    const t = z / Math.sqrt(Math.max(1e-12, chi2 / dof));
+    return t / Math.sqrt(dof / (dof - 2));
+  }
+
+  function sampleStandardized(mode, rng, preset, label) {
+    if (mode === "lognormal") {
+      const sigma = preset.logSigma || 0.7;
+      const y = Math.exp(sampleNormal(rng, -0.5 * sigma * sigma, sigma));
+      return (y - 1) / Math.sqrt(Math.exp(sigma * sigma) - 1);
+    }
+    if (mode === "student_t") {
+      const df = label === 1 ? preset.dfPos || 3 : preset.dfNeg || 3;
+      return sampleStudentTStd(rng, df);
+    }
+    if (mode === "uniform") {
+      return (rng() * 2 - 1) * Math.sqrt(3);
+    }
+    if (mode === "exponential") {
+      const u = clamp(rng(), 1e-12, 1 - 1e-12);
+      return -Math.log(1 - u) - 1;
+    }
+    return sampleNormal(rng, 0, 1);
+  }
+
+  function sampleScoreByPreset(rng, label, preset) {
+    const mode = preset.mode || "normal";
+    const mu = label === 1 ? state.muPos : state.muNeg;
+    const sd = Math.max(1e-6, label === 1 ? state.sdPos : state.sdNeg);
+
+    if (mode === "normal") {
+      if (label === 1 && state.outlierFrac > 0 && rng() < state.outlierFrac) {
+        return sampleNormal(rng, state.muNeg, Math.max(1e-6, state.sdNeg * 1.15));
+      }
+      return sampleNormal(rng, mu, sd);
+    }
+
+    if (mode === "mixture_pos") {
+      if (label === 0) return sampleNormal(rng, state.muNeg, Math.max(1e-6, state.sdNeg));
+      const w = preset.mixWeight || 0.2;
+      if (rng() < w) {
+        const offset = preset.mixOffset || 0.2;
+        const spread = Math.max(1e-6, (preset.mixSdMult || 1.1) * state.sdNeg);
+        return sampleNormal(rng, state.muNeg + offset * state.sdNeg, spread);
+      }
+      return sampleNormal(rng, state.muPos, Math.max(1e-6, state.sdPos));
+    }
+
+    if (mode === "zero_inflated") {
+      const p0 = label === 1 ? preset.p0Pos || 0.1 : preset.p0Neg || 0.35;
+      if (rng() < p0) return preset.zeroValue || 0;
+      return sampleNormal(rng, mu, sd);
+    }
+
+    const z = sampleStandardized(mode, rng, preset, label);
+    return mu + sd * z;
+  }
+
+  function meanSd(values) {
+    const n = values.length;
+    if (!n) return { mean: 0, sd: 0 };
+    let sum = 0;
+    for (const v of values) sum += v;
+    const mean = sum / n;
+    let ss = 0;
+    for (const v of values) {
+      const d = v - mean;
+      ss += d * d;
+    }
+    return { mean, sd: Math.sqrt(ss / n) };
+  }
+
   function generateData() {
     const rng = mulberry32(state.seed);
+    const preset = getActivePreset();
     const negatives = [];
     const positives = [];
     const all = [];
 
     for (let i = 0; i < state.nPerClass; i += 1) {
-      const x = sampleNormal(rng, state.muNeg, state.sdNeg);
+      const x = sampleScoreByPreset(rng, 0, preset);
       negatives.push(x);
       all.push({ score: x, label: 0 });
     }
 
     for (let i = 0; i < state.nPerClass; i += 1) {
-      const fromOutlier = rng() < state.outlierFrac;
-      const mu = fromOutlier ? state.muNeg : state.muPos;
-      const sd = fromOutlier ? state.sdNeg * 1.15 : state.sdPos;
-      const x = sampleNormal(rng, mu, sd);
+      const x = sampleScoreByPreset(rng, 1, preset);
       positives.push(x);
       all.push({ score: x, label: 1 });
     }
@@ -174,7 +360,19 @@
       { min: Infinity, max: -Infinity }
     );
 
-    state.data = { negatives, positives, all, min: stats.min, max: stats.max };
+    const negStats = meanSd(negatives);
+    const posStats = meanSd(positives);
+    state.data = {
+      negatives,
+      positives,
+      all,
+      min: stats.min,
+      max: stats.max,
+      negMean: negStats.mean,
+      negSd: negStats.sd,
+      posMean: posStats.mean,
+      posSd: posStats.sd,
+    };
   }
 
   function computeRocPoints(all) {
@@ -323,23 +521,27 @@
   }
 
   function computeGaussianRoc(n = 260) {
+    const muNeg = state.data.negMean;
+    const muPos = state.data.posMean;
+    const sdNeg = Math.max(1e-6, state.data.negSd);
+    const sdPos = Math.max(1e-6, state.data.posSd);
     const points = [];
-    const sigmaPad = 4.5 * Math.max(state.sdNeg, state.sdPos);
-    const tMin = Math.min(state.muNeg, state.muPos) - sigmaPad;
-    const tMax = Math.max(state.muNeg, state.muPos) + sigmaPad;
+    const sigmaPad = 4.5 * Math.max(sdNeg, sdPos);
+    const tMin = Math.min(muNeg, muPos) - sigmaPad;
+    const tMax = Math.max(muNeg, muPos) + sigmaPad;
 
     for (let i = 0; i < n; i += 1) {
       const u = i / (n - 1);
       const t = tMax - u * (tMax - tMin);
-      const fpr = 1 - normalCdf(t, state.muNeg, state.sdNeg);
-      const tpr = 1 - normalCdf(t, state.muPos, state.sdPos);
+      const fpr = 1 - normalCdf(t, muNeg, sdNeg);
+      const tpr = 1 - normalCdf(t, muPos, sdPos);
       points.push({ fpr: clamp(fpr, 0, 1), tpr: clamp(tpr, 0, 1) });
     }
 
     points[0] = { fpr: 0, tpr: 0 };
     points[points.length - 1] = { fpr: 1, tpr: 1 };
     const aucParam = normalCdf(
-      (state.muPos - state.muNeg) / Math.sqrt(state.sdPos * state.sdPos + state.sdNeg * state.sdNeg),
+      (muPos - muNeg) / Math.sqrt(sdPos * sdPos + sdNeg * sdNeg),
       0,
       1
     );
@@ -531,7 +733,8 @@
     const svg = ids.rocSvg;
     clear(svg);
 
-    const box = { left: 70, top: 20, width: 640, height: 320 };
+    const side = 320;
+    const box = { left: 70, top: 20, width: side, height: side };
     state.rocClickBox = box;
     drawAxes(svg, box, 10, 10, "False Positive Rate", "True Positive Rate");
 
@@ -793,11 +996,14 @@
   }
 
   function renderMetrics() {
+    const preset = getActivePreset();
     const op = state.roc.op;
     const m = state.metrics;
     const pass = m.aucAbsDiff < 1e-10 ? "PASS" : "CHECK";
+    const gaussianReference = preset.mode !== "normal" || state.outlierFrac > 0;
 
     ids.metricsText.textContent = [
+      `Preset                  ${state.preset}`,
       `Threshold               ${fmt(state.threshold, 4)}`,
       `TPR, FPR                ${fmt(op.tpr, 4)}, ${fmt(op.fpr, 4)}`,
       `Precision               ${fmt(op.precision, 4)}`,
@@ -814,7 +1020,7 @@
       "",
       "Interpretation: triangle is simple but usually too coarse.",
       "Concave hull is safer (data-driven). Gaussian model is smooth if the normal assumption is reasonable.",
-      state.outlierFrac > 0 ? "Note: outliers violate the strict Gaussian assumption, so Gaussian AUC is only a reference." : "",
+      gaussianReference ? "Note: Gaussian overlay/AUC is a fitted reference in this preset, not the exact generating model." : "",
     ].join("\n");
   }
 
