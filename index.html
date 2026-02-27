@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ROC Interpolation Playground</title>
+    <title>Classifier Evaluation Playground</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="shell">
       <header class="hero">
-        <h1>ROC Interpolation Playground</h1>
+        <h1>Classifier Evaluation Playground</h1>
         <p>
-          One-variable threshold classifier with synthetic two-class data. Compare triangle interpolation against
-          smoother alternatives.
+          One-variable threshold classifier with synthetic two-class data. Drag the threshold and watch distributions,
+          confusion matrix, ROC, and PR views update together.
         </p>
       </header>
 
@@ -58,7 +58,7 @@
             <output id="thresholdValue"></output>
           </label>
 
-          <p class="hint">Tip: click on the ROC plot to snap threshold to the nearest empirical operating point.</p>
+          <p class="hint">Tip: drag the threshold handle on the distribution plot, or click on the ROC plot to snap to the nearest empirical operating point.</p>
 
           <div class="stats-mini">
             <h3>Implied Sample Stats</h3>
@@ -160,13 +160,16 @@
             <p id="shapeNoExtra" class="hint">No extra shape parameters for this distribution family.</p>
           </details>
 
-          <fieldset class="checks">
-            <legend>Overlay curves</legend>
-            <label><input type="checkbox" id="showTriangle" checked /> Triangle interpolation</label>
-            <label><input type="checkbox" id="showPower" checked /> Power-curve interpolation (smooth through operating point)</label>
-            <label><input type="checkbox" id="showHull" checked /> Concave hull interpolation (data-driven)</label>
-            <label><input type="checkbox" id="showGaussian" checked /> Gaussian model ROC (parametric)</label>
-          </fieldset>
+          <details id="interpolationDetails" class="advanced">
+            <summary>Advanced: Interpolation Methods</summary>
+            <fieldset class="checks">
+              <legend>Optional ROC overlays</legend>
+              <label><input type="checkbox" id="showTriangle" /> Triangle interpolation</label>
+              <label><input type="checkbox" id="showPower" /> Power-curve interpolation (smooth through operating point)</label>
+              <label><input type="checkbox" id="showHull" /> Concave hull interpolation (data-driven)</label>
+              <label><input type="checkbox" id="showGaussian" /> Gaussian model ROC (parametric)</label>
+            </fieldset>
+          </details>
         </aside>
 
         <section class="panel plots">
@@ -176,24 +179,36 @@
           </div>
 
           <div class="plot-block">
+            <h2>Precision-Recall Space</h2>
+            <svg id="prSvg" viewBox="0 0 760 420" role="img" aria-label="Precision-recall plot"></svg>
+          </div>
+
+          <div class="plot-block">
             <h2>Score Distributions</h2>
             <svg id="distSvg" viewBox="0 0 760 320" role="img" aria-label="Score distribution plot"></svg>
           </div>
 
+          <div class="plot-block">
+            <h2>Confusion Matrix</h2>
+            <svg id="confusionSvg" viewBox="0 0 760 360" role="img" aria-label="Confusion matrix"></svg>
+            <div id="derivedRates" class="derived-rates"></div>
+          </div>
+
           <div class="metrics">
-            <h2>Correctness Checks and Metrics</h2>
+            <h2>Metrics</h2>
             <pre id="metricsText"></pre>
           </div>
         </section>
       </section>
 
       <section class="panel notes">
-        <h2>What Is Better Than a Triangle?</h2>
+        <h2>How To Read This Playground</h2>
         <p>
-          A triangle uses only three points, so it ignores shape information. Better choices are a concave hull
-          interpolation (non-parametric, data-driven) or a Gaussian model ROC (parametric, smooth "belly").
+          The key chain is: threshold on distributions -> confusion matrix counts -> rates (TPR/FPR/precision/recall)
+          -> points on ROC and PR curves.
         </p>
-        <p>Simple examples that yield different ROC shapes:</p>
+        <p>Interpolation overlays are optional in the advanced section so the default view stays focused on empirical behavior.</p>
+        <p>Simple examples that yield different curve shapes:</p>
         <ul>
           <li>Large mean gap, similar variances: strong top-left belly and high AUC.</li>
           <li>Small mean gap: curve close to the diagonal baseline.</li>

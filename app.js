@@ -18,13 +18,17 @@
     outlierFrac: 0,
     seed: 13,
     threshold: 1,
-    showTriangle: true,
-    showPower: true,
-    showHull: true,
-    showGaussian: true,
+    showTriangle: false,
+    showPower: false,
+    showHull: false,
+    showGaussian: false,
     rocClickBox: null,
+    distView: null,
+    draggingThreshold: false,
+    urlSyncTimer: null,
     data: null,
     roc: null,
+    pr: null,
     metrics: null,
   };
 
@@ -44,6 +48,7 @@
     showHull: document.getElementById("showHull"),
     showGaussian: document.getElementById("showGaussian"),
     advancedDetails: document.getElementById("advancedDetails"),
+    interpolationDetails: document.getElementById("interpolationDetails"),
     muNegLabel: document.getElementById("muNegLabel"),
     sdNegLabel: document.getElementById("sdNegLabel"),
     muPosLabel: document.getElementById("muPosLabel"),
@@ -83,7 +88,10 @@
     negStatsValue: document.getElementById("negStatsValue"),
     posStatsValue: document.getElementById("posStatsValue"),
     rocSvg: document.getElementById("rocSvg"),
+    prSvg: document.getElementById("prSvg"),
     distSvg: document.getElementById("distSvg"),
+    confusionSvg: document.getElementById("confusionSvg"),
+    derivedRates: document.getElementById("derivedRates"),
     metricsText: document.getElementById("metricsText"),
   };
 
@@ -189,6 +197,28 @@
     },
   };
 
+  const URL_NUM_KEYS = [
+    "muNeg",
+    "sdNeg",
+    "muPos",
+    "sdPos",
+    "logSigma",
+    "dfNeg",
+    "dfPos",
+    "mixWeight",
+    "mixOffset",
+    "mixSdMult",
+    "p0Neg",
+    "p0Pos",
+    "zeroValue",
+    "nPerClass",
+    "outlierFrac",
+    "seed",
+    "threshold",
+  ];
+
+  const URL_BOOL_KEYS = ["showTriangle", "showPower", "showHull", "showGaussian"];
+
   function mulberry32(seed) {
     let t = seed >>> 0;
     return function () {
@@ -239,6 +269,10 @@
     return num.toFixed(digits);
   }
 
+  function fmtPct(value, digits = 1) {
+    return `${fmt(value * 100, digits)}%`;
+  }
+
   function toNumber(el) {
     return Number(el.value);
   }
@@ -262,6 +296,8 @@
     state.outlierFrac = toNumber(ids.outlierFrac);
     const seedRaw = Math.round(toNumber(ids.seed));
     state.seed = Number.isFinite(seedRaw) ? Math.max(1, seedRaw) : 1;
+    const thresholdRaw = toNumber(ids.threshold);
+    if (Number.isFinite(thresholdRaw)) state.threshold = thresholdRaw;
     state.showTriangle = ids.showTriangle.checked;
     state.showPower = ids.showPower.checked;
     state.showHull = ids.showHull.checked;
@@ -322,7 +358,7 @@
     }
   }
 
-  function applyPreset(name) {
+  function applyPresetValues(name) {
     const p = PRESETS[name];
     const keys = [
       "muNeg",
@@ -348,6 +384,10 @@
         ids[key].value = String(p[key]);
       }
     }
+  }
+
+  function applyPreset(name) {
+    applyPresetValues(name);
     readControls();
     regenerateAndRender();
   }
@@ -508,6 +548,51 @@
     return points;
   }
 
+  function computePrPoints(all) {
+    const sorted = all.slice().sort((a, b) => b.score - a.score);
+    const P = sorted.reduce((acc, d) => acc + (d.label === 1 ? 1 : 0), 0);
+    const N = sorted.length - P;
+
+    let tp = 0;
+    let fp = 0;
+    const points = [{ threshold: Infinity, recall: 0, precision: 1 }];
+
+    let i = 0;
+    while (i < sorted.length) {
+      const s = sorted[i].score;
+      let j = i;
+      while (j < sorted.length && sorted[j].score === s) {
+        if (sorted[j].label === 1) tp += 1;
+        else fp += 1;
+        j += 1;
+      }
+
+      const recall = P > 0 ? tp / P : 0;
+      const precision = tp + fp > 0 ? tp / (tp + fp) : 1;
+      points.push({ threshold: s, recall, precision });
+      i = j;
+    }
+
+    const last = points[points.length - 1];
+    const prevalence = P + N > 0 ? P / (P + N) : 0;
+    if (last.recall < 1) {
+      points.push({ threshold: -Infinity, recall: 1, precision: prevalence });
+    }
+    return { points, prevalence };
+  }
+
+  function computeApTrapezoid(prPoints) {
+    let ap = 0;
+    for (let i = 1; i < prPoints.length; i += 1) {
+      const x0 = prPoints[i - 1].recall;
+      const x1 = prPoints[i].recall;
+      const y0 = prPoints[i - 1].precision;
+      const y1 = prPoints[i].precision;
+      ap += Math.max(0, x1 - x0) * (y0 + y1) * 0.5;
+    }
+    return clamp(ap, 0, 1);
+  }
+
   function computeAucTrapezoid(points) {
     let auc = 0;
     for (let i = 1; i < points.length; i += 1) {
@@ -567,8 +652,11 @@
     const tpr = P > 0 ? tp / P : 0;
     const fpr = N > 0 ? fp / N : 0;
     const precision = tp + fp > 0 ? tp / (tp + fp) : 0;
+    const recall = tpr;
+    const specificity = N > 0 ? tn / N : 0;
+    const f1 = precision + recall > 0 ? (2 * precision * recall) / (precision + recall) : 0;
 
-    return { tp, fp, tn, fn, tpr, fpr, precision };
+    return { tp, fp, tn, fn, tpr, fpr, precision, recall, specificity, f1, P, N };
   }
 
   function computeTriangleAuc(op) {
@@ -654,9 +742,11 @@
 
   function computeEverything() {
     const rocPoints = computeRocPoints(state.data.all);
+    const pr = computePrPoints(state.data.all);
     const aucTrap = computeAucTrapezoid(rocPoints);
     const aucRank = computeAucRank(state.data.all);
     const op = computeOperatingPoint(state.threshold, state.data.all);
+    const apTrap = computeApTrapezoid(pr.points);
     const triAuc = computeTriangleAuc(op);
     const power = computePowerInterpolation(op);
     const hullPoints = computeConcaveHull(rocPoints);
@@ -676,10 +766,17 @@
       gaussian: gauss.points,
     };
 
+    state.pr = {
+      points: pr.points,
+      prevalence: pr.prevalence,
+      op: { recall: op.recall, precision: op.precision },
+    };
+
     state.metrics = {
       aucTrap,
       aucRank,
       aucAbsDiff: Math.abs(aucTrap - aucRank),
+      apTrap,
       triAuc,
       powerAuc: power.auc,
       hullAuc,
@@ -779,22 +876,22 @@
     svg.appendChild(axis);
   }
 
-  function linePathFromRoc(points, box) {
+  function linePathFromUnitPoints(points, box, xKey, yKey) {
     if (!points.length) return "";
     const first = points[0];
-    let d = `M ${box.left + first.fpr * box.width} ${box.top + (1 - first.tpr) * box.height}`;
+    let d = `M ${box.left + first[xKey] * box.width} ${box.top + (1 - first[yKey]) * box.height}`;
     for (let i = 1; i < points.length; i += 1) {
       const p = points[i];
-      const x = box.left + p.fpr * box.width;
-      const y = box.top + (1 - p.tpr) * box.height;
+      const x = box.left + p[xKey] * box.width;
+      const y = box.top + (1 - p[yKey]) * box.height;
       d += ` L ${x} ${y}`;
     }
     return d;
   }
 
-  function addPath(svg, points, box, stroke, width, dash) {
+  function addPath(svg, points, box, stroke, width, dash, xKey = "fpr", yKey = "tpr") {
     const path = createSvgEl("path", {
-      d: linePathFromRoc(points, box),
+      d: linePathFromUnitPoints(points, box, xKey, yKey),
       fill: "none",
       stroke,
       "stroke-width": width,
@@ -905,6 +1002,58 @@
     drawLegend(svg, legendItems);
   }
 
+  function drawPr() {
+    const svg = ids.prSvg;
+    clear(svg);
+
+    const side = 320;
+    const box = { left: 70, top: 20, width: side, height: side };
+    drawAxes(svg, box, 10, 10, "Recall", "Precision");
+
+    const baselineY = box.top + (1 - state.pr.prevalence) * box.height;
+    svg.appendChild(
+      createSvgEl("line", {
+        x1: box.left,
+        y1: baselineY,
+        x2: box.left + box.width,
+        y2: baselineY,
+        stroke: "var(--diag)",
+        "stroke-width": 2,
+        "stroke-dasharray": "6 6",
+      })
+    );
+
+    addPath(svg, state.pr.points, box, "var(--emp)", 3, null, "recall", "precision");
+
+    const op = state.pr.op;
+    const cx = box.left + op.recall * box.width;
+    const cy = box.top + (1 - op.precision) * box.height;
+
+    svg.appendChild(
+      createSvgEl("circle", {
+        cx,
+        cy,
+        r: 6,
+        fill: "#ffffff",
+        stroke: "#000",
+        "stroke-width": 2,
+      })
+    );
+
+    svg.appendChild(
+      createSvgEl("text", {
+        x: cx + 10,
+        y: cy - 10,
+        class: "legend",
+      })
+    ).textContent = `threshold = ${fmt(state.threshold, 3)}`;
+
+    drawLegend(svg, [
+      { label: "Empirical PR", color: "var(--emp)" },
+      { label: `Random baseline (${fmt(state.pr.prevalence, 3)})`, color: "var(--diag)", dash: "6 6" },
+    ]);
+  }
+
   function histogram(values, bins, min, max) {
     const out = new Array(bins).fill(0);
     const width = max - min;
@@ -930,6 +1079,7 @@
     const hNeg = histogram(data.negatives, bins, minX, maxX);
     const hPos = histogram(data.positives, bins, minX, maxX);
     const yMax = Math.max(...hNeg, ...hPos, 1);
+    state.distView = { box, minX, maxX };
 
     const axis = createSvgEl("g", {});
     for (let i = 0; i <= 10; i += 1) {
@@ -989,6 +1139,7 @@
     svg.appendChild(axis);
 
     const binW = box.width / bins;
+    const threshold = clamp(state.threshold, minX, maxX);
 
     for (let i = 0; i < bins; i += 1) {
       const x = box.left + i * binW;
@@ -1018,8 +1169,8 @@
       );
     }
 
-    const threshold = clamp(state.threshold, minX, maxX);
     const tx = box.left + ((threshold - minX) / (maxX - minX)) * box.width;
+    const handleY = box.top + box.height / 2;
     svg.appendChild(
       createSvgEl("line", {
         x1: tx,
@@ -1029,6 +1180,39 @@
         stroke: "#000",
         "stroke-width": 2,
         "stroke-dasharray": "7 5",
+        "data-role": "threshold-line",
+        class: "threshold-grab",
+      })
+    );
+
+    svg.appendChild(
+      createSvgEl("circle", {
+        cx: tx,
+        cy: handleY,
+        r: 12,
+        fill: "rgba(120,120,120,0.25)",
+        stroke: "#000000",
+        "stroke-width": 2,
+        "data-role": "threshold-handle",
+        class: "threshold-grab",
+        tabindex: 0,
+        role: "slider",
+        "aria-label": "Threshold handle",
+        "aria-valuemin": fmt(minX, 3),
+        "aria-valuemax": fmt(maxX, 3),
+        "aria-valuenow": fmt(state.threshold, 3),
+      })
+    );
+
+    svg.appendChild(
+      createSvgEl("circle", {
+        cx: tx,
+        cy: handleY,
+        r: 18,
+        fill: "transparent",
+        stroke: "none",
+        "data-role": "threshold-handle",
+        class: "threshold-grab",
       })
     );
 
@@ -1065,6 +1249,145 @@
     ).textContent = "blue = positive class";
   }
 
+  function drawConfusionMatrix() {
+    const svg = ids.confusionSvg;
+    clear(svg);
+
+    const op = state.roc.op;
+    const total = op.tp + op.fp + op.tn + op.fn;
+
+    const grid = { left: 170, top: 70, cellW: 230, cellH: 110 };
+    const cells = [
+      { key: "tp", label: "TP", col: 0, row: 0, color: "var(--pos)", denom: op.P },
+      { key: "fn", label: "FN", col: 1, row: 0, color: "var(--pos)", denom: op.P },
+      { key: "fp", label: "FP", col: 0, row: 1, color: "var(--neg)", denom: op.N },
+      { key: "tn", label: "TN", col: 1, row: 1, color: "var(--neg)", denom: op.N },
+    ];
+
+    svg.appendChild(
+      createSvgEl("text", {
+        x: grid.left + grid.cellW,
+        y: 28,
+        class: "axis-label",
+        "text-anchor": "middle",
+      })
+    ).textContent = "Predicted class";
+
+    svg.appendChild(
+      createSvgEl("text", {
+        x: grid.left + grid.cellW * 0.5,
+        y: 52,
+        class: "legend",
+        "text-anchor": "middle",
+      })
+    ).textContent = "Predicted Positive";
+
+    svg.appendChild(
+      createSvgEl("text", {
+        x: grid.left + grid.cellW * 1.5,
+        y: 52,
+        class: "legend",
+        "text-anchor": "middle",
+      })
+    ).textContent = "Predicted Negative";
+
+    const yLabel = createSvgEl("text", {
+      x: 60,
+      y: grid.top + grid.cellH,
+      class: "axis-label",
+      "text-anchor": "middle",
+      transform: `rotate(-90 60 ${grid.top + grid.cellH})`,
+    });
+    yLabel.textContent = "Actual class";
+    svg.appendChild(yLabel);
+
+    svg.appendChild(
+      createSvgEl("text", {
+        x: 132,
+        y: grid.top + grid.cellH * 0.5 + 4,
+        class: "legend",
+        "text-anchor": "middle",
+      })
+    ).textContent = "Actual Positive";
+
+    svg.appendChild(
+      createSvgEl("text", {
+        x: 132,
+        y: grid.top + grid.cellH * 1.5 + 4,
+        class: "legend",
+        "text-anchor": "middle",
+      })
+    ).textContent = "Actual Negative";
+
+    for (const cell of cells) {
+      const count = op[cell.key];
+      const rate = cell.denom > 0 ? count / cell.denom : 0;
+      const x = grid.left + cell.col * grid.cellW;
+      const y = grid.top + cell.row * grid.cellH;
+
+      svg.appendChild(
+        createSvgEl("rect", {
+          x,
+          y,
+          width: grid.cellW,
+          height: grid.cellH,
+          fill: cell.color,
+          opacity: 0.18,
+          stroke: "rgba(0,0,0,0.2)",
+        })
+      );
+
+      if (rate > 0) {
+        const scale = Math.sqrt(rate);
+        const innerW = Math.max(6, grid.cellW * scale);
+        const innerH = Math.max(6, grid.cellH * scale);
+        const innerX = x + (grid.cellW - innerW) / 2;
+        const innerY = y + (grid.cellH - innerH) / 2;
+
+        svg.appendChild(
+          createSvgEl("rect", {
+            x: innerX,
+            y: innerY,
+            width: innerW,
+            height: innerH,
+            fill: cell.color,
+            opacity: 0.72,
+            stroke: "rgba(0,0,0,0.18)",
+          })
+        );
+      }
+
+      svg.appendChild(
+        createSvgEl("text", {
+          x: x + 10,
+          y: y + 22,
+          class: "legend",
+        })
+      ).textContent = cell.label;
+
+      svg.appendChild(
+        createSvgEl("text", {
+          x: x + 10,
+          y: y + 44,
+          class: "legend",
+        })
+      ).textContent = `${count} (${fmtPct(rate, 1)})`;
+    }
+
+    svg.appendChild(
+      createSvgEl("text", {
+        x: grid.left,
+        y: grid.top + grid.cellH * 2 + 26,
+        class: "legend",
+      })
+    ).textContent = `Total samples: ${total}`;
+
+    ids.derivedRates.textContent = [
+      `TPR: ${fmt(op.tpr, 4)}   FPR: ${fmt(op.fpr, 4)}   Precision: ${fmt(op.precision, 4)}`,
+      `Recall: ${fmt(op.recall, 4)}   Specificity: ${fmt(op.specificity, 4)}   F1: ${fmt(op.f1, 4)}`,
+    ].join("\n");
+  }
+
   function nearestFiniteThreshold(rocPoints, fprTarget, tprTarget) {
     let best = null;
     let bestDist = Infinity;
@@ -1083,6 +1406,29 @@
     return best;
   }
 
+  function setThreshold(next) {
+    const minT = Number(ids.threshold.min);
+    const maxT = Number(ids.threshold.max);
+    state.threshold = clamp(next, minT, maxT);
+    ids.threshold.value = String(state.threshold);
+  }
+
+  function thresholdFromDistPointer(evt) {
+    const view = state.distView;
+    if (!view) return state.threshold;
+    const rect = ids.distSvg.getBoundingClientRect();
+    const xPx = evt.clientX - rect.left;
+    const x = (xPx / rect.width) * 760;
+    const u = clamp((x - view.box.left) / view.box.width, 0, 1);
+    return view.minX + u * (view.maxX - view.minX);
+  }
+
+  function isThresholdTarget(el) {
+    if (!el || typeof el.getAttribute !== "function") return false;
+    const role = el.getAttribute("data-role");
+    return role === "threshold-handle" || role === "threshold-line";
+  }
+
   function updateThresholdRange() {
     const data = state.data;
     const span = Math.max(1e-6, data.max - data.min);
@@ -1093,9 +1439,76 @@
     ids.threshold.step = String(span / 1000);
 
     if (state.threshold < minT || state.threshold > maxT) {
-      state.threshold = (minT + maxT) / 2;
+      state.threshold = clamp(state.threshold, minT, maxT);
       ids.threshold.value = String(state.threshold);
     }
+  }
+
+  function saveStateToUrl() {
+    const params = new URLSearchParams();
+    params.set("preset", state.preset);
+    for (const key of URL_NUM_KEYS) {
+      if (typeof state[key] === "number" && Number.isFinite(state[key])) {
+        params.set(key, String(state[key]));
+      }
+    }
+    for (const key of URL_BOOL_KEYS) {
+      params.set(key, state[key] ? "1" : "0");
+    }
+    params.set("advancedOpen", ids.advancedDetails.open ? "1" : "0");
+    params.set("interpolationOpen", ids.interpolationDetails.open ? "1" : "0");
+
+    const next = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+    window.history.replaceState(null, "", next);
+  }
+
+  function scheduleUrlSync() {
+    if (state.urlSyncTimer) window.clearTimeout(state.urlSyncTimer);
+    state.urlSyncTimer = window.setTimeout(() => {
+      saveStateToUrl();
+      state.urlSyncTimer = null;
+    }, 120);
+  }
+
+  function parseBoolParam(value, fallback = false) {
+    if (value == null) return fallback;
+    return value === "1" || value === "true";
+  }
+
+  function restoreStateFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.toString()) return false;
+
+    const preset = params.get("preset");
+    if (preset && PRESETS[preset]) {
+      applyPresetValues(preset);
+    } else {
+      applyPresetValues(ids.preset.value);
+    }
+
+    for (const key of URL_NUM_KEYS) {
+      if (!ids[key]) continue;
+      const raw = params.get(key);
+      if (raw == null) continue;
+      const num = Number(raw);
+      if (Number.isFinite(num)) ids[key].value = String(num);
+    }
+
+    for (const key of URL_BOOL_KEYS) {
+      if (!ids[key]) continue;
+      const raw = params.get(key);
+      if (raw == null) continue;
+      ids[key].checked = parseBoolParam(raw, ids[key].checked);
+    }
+
+    if (params.has("advancedOpen")) {
+      ids.advancedDetails.open = parseBoolParam(params.get("advancedOpen"));
+    }
+    if (params.has("interpolationOpen")) {
+      ids.interpolationDetails.open = parseBoolParam(params.get("interpolationOpen"));
+    }
+
+    return true;
   }
 
   function renderMetrics() {
@@ -1109,12 +1522,14 @@
       `Preset                  ${state.preset}`,
       `Threshold               ${fmt(state.threshold, 4)}`,
       `TPR, FPR                ${fmt(op.tpr, 4)}, ${fmt(op.fpr, 4)}`,
-      `Precision               ${fmt(op.precision, 4)}`,
+      `Precision, Recall       ${fmt(op.precision, 4)}, ${fmt(op.recall, 4)}`,
+      `Specificity, F1         ${fmt(op.specificity, 4)}, ${fmt(op.f1, 4)}`,
       `TP, FP, TN, FN          ${op.tp}, ${op.fp}, ${op.tn}, ${op.fn}`,
       "",
       `AUC empirical (trap)    ${fmt(m.aucTrap, 6)}`,
       `AUC empirical (rank)    ${fmt(m.aucRank, 6)}`,
       `|difference|            ${fmt(m.aucAbsDiff, 12)}  ${pass}`,
+      `AP empirical (trap)     ${fmt(m.apTrap, 6)}`,
       "",
       `AUC triangle            ${fmt(m.triAuc, 6)}`,
       `AUC power interpolation ${fmt(m.powerAuc, 6)}`,
@@ -1130,9 +1545,12 @@
   function renderAll() {
     computeEverything();
     syncControlOutputs();
-    drawRoc();
     drawDist();
+    drawConfusionMatrix();
+    drawRoc();
+    drawPr();
     renderMetrics();
+    scheduleUrlSync();
   }
 
   function regenerateAndRender() {
@@ -1175,7 +1593,7 @@
     });
 
     ids.threshold.addEventListener("input", () => {
-      state.threshold = toNumber(ids.threshold);
+      setThreshold(toNumber(ids.threshold));
       renderAll();
     });
 
@@ -1196,6 +1614,12 @@
       applyPreset(e.target.value);
     });
 
+    [ids.advancedDetails, ids.interpolationDetails].forEach((el) => {
+      el.addEventListener("toggle", () => {
+        scheduleUrlSync();
+      });
+    });
+
     ids.rocSvg.addEventListener("click", (evt) => {
       const box = state.rocClickBox;
       if (!box) return;
@@ -1213,15 +1637,73 @@
       const nearest = nearestFiniteThreshold(state.roc.empirical, fpr, tpr);
       if (!nearest) return;
 
-      state.threshold = nearest.threshold;
-      ids.threshold.value = String(state.threshold);
+      setThreshold(nearest.threshold);
+      renderAll();
+    });
+
+    ids.distSvg.addEventListener("pointerdown", (evt) => {
+      if (!isThresholdTarget(evt.target)) return;
+      evt.preventDefault();
+      state.draggingThreshold = true;
+      ids.distSvg.setPointerCapture(evt.pointerId);
+      setThreshold(thresholdFromDistPointer(evt));
+      renderAll();
+    });
+
+    ids.distSvg.addEventListener("pointermove", (evt) => {
+      if (!state.draggingThreshold) return;
+      evt.preventDefault();
+      setThreshold(thresholdFromDistPointer(evt));
+      renderAll();
+    });
+
+    ids.distSvg.addEventListener("pointerup", (evt) => {
+      if (!state.draggingThreshold) return;
+      state.draggingThreshold = false;
+      if (ids.distSvg.hasPointerCapture(evt.pointerId)) {
+        ids.distSvg.releasePointerCapture(evt.pointerId);
+      }
+    });
+
+    ids.distSvg.addEventListener("pointercancel", (evt) => {
+      if (!state.draggingThreshold) return;
+      state.draggingThreshold = false;
+      if (ids.distSvg.hasPointerCapture(evt.pointerId)) {
+        ids.distSvg.releasePointerCapture(evt.pointerId);
+      }
+    });
+
+    ids.distSvg.addEventListener("keydown", (evt) => {
+      if (!isThresholdTarget(evt.target)) return;
+      const step = Number(ids.threshold.step) || 0.001;
+      const delta = evt.shiftKey ? step * 20 : step;
+      if (evt.key === "ArrowLeft") {
+        evt.preventDefault();
+        setThreshold(state.threshold - delta);
+      } else if (evt.key === "ArrowRight") {
+        evt.preventDefault();
+        setThreshold(state.threshold + delta);
+      } else if (evt.key === "Home") {
+        evt.preventDefault();
+        setThreshold(Number(ids.threshold.min));
+      } else if (evt.key === "End") {
+        evt.preventDefault();
+        setThreshold(Number(ids.threshold.max));
+      } else {
+        return;
+      }
       renderAll();
     });
   }
 
   function init() {
     initHandlers();
-    applyPreset(ids.preset.value);
+    if (restoreStateFromUrl()) {
+      readControls();
+      regenerateAndRender();
+    } else {
+      applyPreset(ids.preset.value);
+    }
   }
 
   init();

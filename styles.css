@@ -176,6 +176,7 @@ hr {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  margin: 0;
 }
 
 .plots {
@@ -191,6 +192,30 @@ svg {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.87);
+}
+
+#distSvg {
+  touch-action: none;
+}
+
+.threshold-grab {
+  cursor: ew-resize;
+}
+
+.threshold-grab:focus {
+  outline: none;
+}
+
+.derived-rates {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(252, 250, 245, 0.9);
+  font-size: 0.84rem;
+  color: var(--muted);
+  font-family: "Menlo", "Consolas", monospace;
+  line-height: 1.5;
 }
 
 .metrics pre {
