@@ -17,6 +17,7 @@ Then visit `http://localhost:8000`.
 - Two-class data sampled from normal distributions (with optional positive outliers)
 - Additional preset families: log-normal, Student-t heavy-tail, positive-mixture, zero-inflated, uniform, exponential
 - Probability-style score presets in `[0,1]` using Beta families (good separation, overlap, overconfident, midrange)
+- Evaluation sample imbalance control (positive class fraction) to see how empirical PR and confusion counts shift
 - A single threshold classifier: predict positive if `score >= threshold`
 - Progressive controls: global controls stay visible, and family-specific parameters appear in the Advanced section
 - ROC curve with live operating point

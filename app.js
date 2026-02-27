@@ -18,6 +18,7 @@
     betaNeg: 8.0,
     alphaPos: 8.0,
     betaPos: 2.0,
+    samplePosFrac: 0.5,
     nPerClass: 500,
     outlierFrac: 0,
     seed: 13,
@@ -43,6 +44,7 @@
     muPos: document.getElementById("muPos"),
     sdPos: document.getElementById("sdPos"),
     nPerClass: document.getElementById("nPerClass"),
+    samplePosFrac: document.getElementById("samplePosFrac"),
     outlierFrac: document.getElementById("outlierFrac"),
     seed: document.getElementById("seed"),
     threshold: document.getElementById("threshold"),
@@ -95,6 +97,7 @@
     betaPos: document.getElementById("betaPos"),
     betaPosValue: document.getElementById("betaPosValue"),
     nPerClassValue: document.getElementById("nPerClassValue"),
+    samplePosFracValue: document.getElementById("samplePosFracValue"),
     outlierFracValue: document.getElementById("outlierFracValue"),
     thresholdValue: document.getElementById("thresholdValue"),
     presetDesc: document.getElementById("presetDesc"),
@@ -117,6 +120,7 @@
       sdPos: 1,
       outlierFrac: 0,
       nPerClass: 500,
+      samplePosFrac: 0.5,
       desc: "Expected shape: close to diagonal baseline (high overlap).",
     },
     separated: {
@@ -127,6 +131,7 @@
       sdPos: 1,
       outlierFrac: 0,
       nPerClass: 500,
+      samplePosFrac: 0.5,
       desc: "Expected shape: pronounced top-left belly (good separation).",
     },
     unequal: {
@@ -137,6 +142,7 @@
       sdPos: 1.7,
       outlierFrac: 0,
       nPerClass: 600,
+      samplePosFrac: 0.5,
       desc: "Expected shape: asymmetric curvature from unequal variances.",
     },
     lognormal: {
@@ -147,6 +153,7 @@
       sdPos: 1.0,
       outlierFrac: 0,
       nPerClass: 700,
+      samplePosFrac: 0.5,
       logSigma: 0.7,
       desc: "Expected shape: smooth but skew-driven bend (not symmetric like Gaussian).",
     },
@@ -158,6 +165,7 @@
       sdPos: 1,
       outlierFrac: 0,
       nPerClass: 700,
+      samplePosFrac: 0.5,
       dfNeg: 3,
       dfPos: 3,
       desc: "Expected shape: flatter shoulders from heavy tails/outliers.",
@@ -170,6 +178,7 @@
       sdPos: 0.9,
       outlierFrac: 0,
       nPerClass: 800,
+      samplePosFrac: 0.5,
       mixWeight: 0.24,
       mixOffset: 0.15,
       mixSdMult: 1.1,
@@ -183,6 +192,7 @@
       sdPos: 1.0,
       outlierFrac: 0,
       nPerClass: 900,
+      samplePosFrac: 0.5,
       p0Neg: 0.42,
       p0Pos: 0.12,
       zeroValue: 0,
@@ -196,6 +206,7 @@
       sdPos: 1.0,
       outlierFrac: 0,
       nPerClass: 700,
+      samplePosFrac: 0.5,
       desc: "Expected shape: piecewise-linear style with gentler bends.",
     },
     exponential: {
@@ -206,6 +217,7 @@
       sdPos: 0.9,
       outlierFrac: 0,
       nPerClass: 700,
+      samplePosFrac: 0.5,
       desc: "Expected shape: skewed ROC curvature from one-sided tails.",
     },
     probGoodSep: {
@@ -216,6 +228,7 @@
       betaPos: 1.3,
       outlierFrac: 0,
       nPerClass: 700,
+      samplePosFrac: 0.5,
       desc: "Probability-like scores in [0,1] with clear class separation.",
     },
     probOverlap: {
@@ -226,6 +239,7 @@
       betaPos: 2.7,
       outlierFrac: 0,
       nPerClass: 700,
+      samplePosFrac: 0.5,
       desc: "Probability-like scores in [0,1] with substantial overlap.",
     },
     probOverconfident: {
@@ -236,6 +250,7 @@
       betaPos: 0.35,
       outlierFrac: 0,
       nPerClass: 700,
+      samplePosFrac: 0.5,
       desc: "Overconfident probabilities: many near 0/1, with some high-confidence mistakes.",
     },
     probMidrange: {
@@ -246,6 +261,7 @@
       betaPos: 8.0,
       outlierFrac: 0,
       nPerClass: 700,
+      samplePosFrac: 0.5,
       desc: "Probability-like scores concentrated in the middle, with moderate separability.",
     },
   };
@@ -269,6 +285,7 @@
     "alphaPos",
     "betaPos",
     "nPerClass",
+    "samplePosFrac",
     "outlierFrac",
     "seed",
     "threshold",
@@ -354,6 +371,7 @@
     state.alphaPos = toNumber(ids.alphaPos);
     state.betaPos = toNumber(ids.betaPos);
     state.nPerClass = Math.round(toNumber(ids.nPerClass));
+    state.samplePosFrac = toNumber(ids.samplePosFrac);
     state.outlierFrac = toNumber(ids.outlierFrac);
     const seedRaw = Math.round(toNumber(ids.seed));
     state.seed = Number.isFinite(seedRaw) ? Math.max(1, seedRaw) : 1;
@@ -416,6 +434,7 @@
     ids.alphaPosValue.textContent = fmt(state.alphaPos, 2);
     ids.betaPosValue.textContent = fmt(state.betaPos, 2);
     ids.nPerClassValue.textContent = String(state.nPerClass);
+    ids.samplePosFracValue.textContent = fmtPct(state.samplePosFrac, 1);
     ids.outlierFracValue.textContent = outlierEnabled ? fmt(state.outlierFrac, 2) : `${fmt(state.outlierFrac, 2)} (normal only)`;
     ids.outlierFrac.disabled = !outlierEnabled;
     ids.muNeg.disabled = betaMode;
@@ -458,6 +477,7 @@
       "betaPos",
       "outlierFrac",
       "nPerClass",
+      "samplePosFrac",
     ];
     if (!p) return;
     ids.preset.value = name;
@@ -596,17 +616,21 @@
   function generateData() {
     const rng = mulberry32(state.seed);
     const preset = getActivePreset();
+    const totalSamples = Math.max(2, 2 * state.nPerClass);
+    const fracPos = clamp(state.samplePosFrac, 0.02, 0.98);
+    const nPos = clamp(Math.round(totalSamples * fracPos), 1, totalSamples - 1);
+    const nNeg = totalSamples - nPos;
     const negatives = [];
     const positives = [];
     const all = [];
 
-    for (let i = 0; i < state.nPerClass; i += 1) {
+    for (let i = 0; i < nNeg; i += 1) {
       const x = sampleScoreByPreset(rng, 0, preset);
       negatives.push(x);
       all.push({ score: x, label: 0 });
     }
 
-    for (let i = 0; i < state.nPerClass; i += 1) {
+    for (let i = 0; i < nPos; i += 1) {
       const x = sampleScoreByPreset(rng, 1, preset);
       positives.push(x);
       all.push({ score: x, label: 1 });
@@ -633,6 +657,9 @@
       negSd: negStats.sd,
       posMean: posStats.mean,
       posSd: posStats.sd,
+      nNeg,
+      nPos,
+      samplePrevalence: nPos / (nNeg + nPos),
     };
   }
 
@@ -1753,6 +1780,7 @@
     ids.metricsText.textContent = [
       `Preset                  ${state.preset}`,
       `Threshold               ${fmt(state.threshold, 4)}`,
+      `Sample prevalence (P)   ${fmt(state.data.samplePrevalence, 4)}  (${state.data.nPos}/${state.data.nPos + state.data.nNeg})`,
       `TPR, FPR                ${fmt(op.tpr, 4)}, ${fmt(op.fpr, 4)}`,
       `Precision, Recall       ${fmt(op.precision, 4)}, ${fmt(op.recall, 4)}`,
       `Specificity, F1         ${fmt(op.specificity, 4)}, ${fmt(op.f1, 4)}`,
@@ -1812,6 +1840,7 @@
       ids.alphaPos,
       ids.betaPos,
       ids.nPerClass,
+      ids.samplePosFrac,
       ids.outlierFrac,
       ids.seed,
     ];
