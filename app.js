@@ -18,6 +18,9 @@
     betaNeg: 8.0,
     alphaPos: 8.0,
     betaPos: 2.0,
+    epsPos: 0.12,
+    epsNeg: 0.08,
+    confSharpness: 14.0,
     samplePosFrac: 0.5,
     nPerClass: 500,
     outlierFrac: 0,
@@ -65,6 +68,7 @@
     shapeMixture: document.getElementById("shapeMixture"),
     shapeZeroInflated: document.getElementById("shapeZeroInflated"),
     shapeBeta: document.getElementById("shapeBeta"),
+    shapeBetaConf: document.getElementById("shapeBetaConf"),
     shapeNoExtra: document.getElementById("shapeNoExtra"),
     muNegValue: document.getElementById("muNegValue"),
     sdNegValue: document.getElementById("sdNegValue"),
@@ -96,6 +100,12 @@
     alphaPosValue: document.getElementById("alphaPosValue"),
     betaPos: document.getElementById("betaPos"),
     betaPosValue: document.getElementById("betaPosValue"),
+    epsPos: document.getElementById("epsPos"),
+    epsPosValue: document.getElementById("epsPosValue"),
+    epsNeg: document.getElementById("epsNeg"),
+    epsNegValue: document.getElementById("epsNegValue"),
+    confSharpness: document.getElementById("confSharpness"),
+    confSharpnessValue: document.getElementById("confSharpnessValue"),
     nPerClassValue: document.getElementById("nPerClassValue"),
     samplePosFracValue: document.getElementById("samplePosFracValue"),
     outlierFracValue: document.getElementById("outlierFracValue"),
@@ -264,6 +274,16 @@
       samplePosFrac: 0.5,
       desc: "Probability-like scores concentrated in the middle, with moderate separability.",
     },
+    probConfidentErrors: {
+      mode: "beta_conf_mixture",
+      epsPos: 0.12,
+      epsNeg: 0.08,
+      confSharpness: 14.0,
+      outlierFrac: 0,
+      nPerClass: 700,
+      samplePosFrac: 0.5,
+      desc: "Mostly high-confidence correct scores, with a minority of high-confidence mistakes on both classes.",
+    },
   };
 
   const URL_NUM_KEYS = [
@@ -284,6 +304,9 @@
     "betaNeg",
     "alphaPos",
     "betaPos",
+    "epsPos",
+    "epsNeg",
+    "confSharpness",
     "nPerClass",
     "samplePosFrac",
     "outlierFrac",
@@ -370,6 +393,9 @@
     state.betaNeg = toNumber(ids.betaNeg);
     state.alphaPos = toNumber(ids.alphaPos);
     state.betaPos = toNumber(ids.betaPos);
+    state.epsPos = toNumber(ids.epsPos);
+    state.epsNeg = toNumber(ids.epsNeg);
+    state.confSharpness = toNumber(ids.confSharpness);
     state.nPerClass = Math.round(toNumber(ids.nPerClass));
     state.samplePosFrac = toNumber(ids.samplePosFrac);
     state.outlierFrac = toNumber(ids.outlierFrac);
@@ -392,15 +418,16 @@
     const mode = preset.mode || "normal";
     const isNormal = mode === "normal";
     const isBeta = mode === "beta";
+    const isBetaConf = mode === "beta_conf_mixture";
     ids.muNegLabel.textContent = isNormal ? "Negative mean" : "Negative location";
     ids.sdNegLabel.textContent = isNormal ? "Negative sd" : "Negative scale";
     ids.muPosLabel.textContent = isNormal ? "Positive mean" : "Positive location";
     ids.sdPosLabel.textContent = isNormal ? "Positive sd" : "Positive scale";
-    if (isBeta) {
-      ids.muNegLabel.textContent = "Negative location (fixed in beta mode)";
-      ids.sdNegLabel.textContent = "Negative scale (fixed in beta mode)";
-      ids.muPosLabel.textContent = "Positive location (fixed in beta mode)";
-      ids.sdPosLabel.textContent = "Positive scale (fixed in beta mode)";
+    if (isBeta || isBetaConf) {
+      ids.muNegLabel.textContent = "Negative location (fixed in beta-family mode)";
+      ids.sdNegLabel.textContent = "Negative scale (fixed in beta-family mode)";
+      ids.muPosLabel.textContent = "Positive location (fixed in beta-family mode)";
+      ids.sdPosLabel.textContent = "Positive scale (fixed in beta-family mode)";
     }
 
     setHidden(ids.shapeNormal, mode !== "normal");
@@ -409,6 +436,7 @@
     setHidden(ids.shapeMixture, mode !== "mixture_pos");
     setHidden(ids.shapeZeroInflated, mode !== "zero_inflated");
     setHidden(ids.shapeBeta, mode !== "beta");
+    setHidden(ids.shapeBetaConf, mode !== "beta_conf_mixture");
     setHidden(ids.shapeNoExtra, !(mode === "uniform" || mode === "exponential"));
   }
 
@@ -416,6 +444,7 @@
     const preset = PRESETS[state.preset] || PRESETS.separated;
     const outlierEnabled = preset.mode === "normal";
     const betaMode = preset.mode === "beta";
+    const betaConfMode = preset.mode === "beta_conf_mixture";
     ids.muNegValue.textContent = fmt(state.muNeg, 2);
     ids.sdNegValue.textContent = fmt(state.sdNeg, 2);
     ids.muPosValue.textContent = fmt(state.muPos, 2);
@@ -433,14 +462,17 @@
     ids.betaNegValue.textContent = fmt(state.betaNeg, 2);
     ids.alphaPosValue.textContent = fmt(state.alphaPos, 2);
     ids.betaPosValue.textContent = fmt(state.betaPos, 2);
+    ids.epsPosValue.textContent = fmtPct(state.epsPos, 1);
+    ids.epsNegValue.textContent = fmtPct(state.epsNeg, 1);
+    ids.confSharpnessValue.textContent = fmt(state.confSharpness, 1);
     ids.nPerClassValue.textContent = String(state.nPerClass);
     ids.samplePosFracValue.textContent = fmtPct(state.samplePosFrac, 1);
     ids.outlierFracValue.textContent = outlierEnabled ? fmt(state.outlierFrac, 2) : `${fmt(state.outlierFrac, 2)} (normal only)`;
     ids.outlierFrac.disabled = !outlierEnabled;
-    ids.muNeg.disabled = betaMode;
-    ids.sdNeg.disabled = betaMode;
-    ids.muPos.disabled = betaMode;
-    ids.sdPos.disabled = betaMode;
+    ids.muNeg.disabled = betaMode || betaConfMode;
+    ids.sdNeg.disabled = betaMode || betaConfMode;
+    ids.muPos.disabled = betaMode || betaConfMode;
+    ids.sdPos.disabled = betaMode || betaConfMode;
     ids.thresholdValue.textContent = fmt(state.threshold, 3);
     ids.seed.value = String(state.seed);
     ids.presetDesc.textContent = preset.desc || "";
@@ -475,6 +507,9 @@
       "betaNeg",
       "alphaPos",
       "betaPos",
+      "epsPos",
+      "epsNeg",
+      "confSharpness",
       "outlierFrac",
       "nPerClass",
       "samplePosFrac",
@@ -540,6 +575,15 @@
     return clamp(x / denom, 0, 1);
   }
 
+  function betaByMeanAndKappa(mean, kappa) {
+    const m = clamp(mean, 0.001, 0.999);
+    const k = Math.max(0.1, kappa);
+    return {
+      alpha: Math.max(0.05, m * k),
+      beta: Math.max(0.05, (1 - m) * k),
+    };
+  }
+
   function sampleStandardized(mode, rng, label) {
     if (mode === "lognormal") {
       const sigma = Math.max(0.05, state.logSigma);
@@ -593,6 +637,22 @@
       const alpha = label === 1 ? state.alphaPos : state.alphaNeg;
       const beta = label === 1 ? state.betaPos : state.betaNeg;
       return sampleBeta(rng, alpha, beta);
+    }
+
+    if (mode === "beta_conf_mixture") {
+      const kappa = Math.max(2, state.confSharpness);
+      const hi = betaByMeanAndKappa(0.96, kappa);
+      const lo = betaByMeanAndKappa(0.04, kappa);
+
+      if (label === 1) {
+        const eps = clamp(state.epsPos, 0, 0.49);
+        if (rng() < eps) return sampleBeta(rng, lo.alpha, lo.beta);
+        return sampleBeta(rng, hi.alpha, hi.beta);
+      }
+
+      const eps = clamp(state.epsNeg, 0, 0.49);
+      if (rng() < eps) return sampleBeta(rng, hi.alpha, hi.beta);
+      return sampleBeta(rng, lo.alpha, lo.beta);
     }
 
     const z = sampleStandardized(mode, rng, label);
@@ -1839,6 +1899,9 @@
       ids.betaNeg,
       ids.alphaPos,
       ids.betaPos,
+      ids.epsPos,
+      ids.epsNeg,
+      ids.confSharpness,
       ids.nPerClass,
       ids.samplePosFrac,
       ids.outlierFrac,

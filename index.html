@@ -35,6 +35,7 @@
               <option value="probGoodSep">Probability scores [0,1]: good separation</option>
               <option value="probOverlap">Probability scores [0,1]: overlap</option>
               <option value="probOverconfident">Probability scores [0,1]: overconfident</option>
+              <option value="probConfidentErrors">Probability scores [0,1]: confident errors mix</option>
               <option value="probMidrange">Probability scores [0,1]: midrange</option>
             </select>
           </label>
@@ -187,6 +188,24 @@
                 <span>Positive beta</span>
                 <input id="betaPos" type="range" min="0.2" max="20" step="0.1" value="2.0" />
                 <output id="betaPosValue"></output>
+              </label>
+            </div>
+
+            <div id="shapeBetaConf" class="shape-panel grid-two">
+              <label class="control">
+                <span>Positive class confident-error rate</span>
+                <input id="epsPos" type="range" min="0" max="0.45" step="0.01" value="0.12" />
+                <output id="epsPosValue"></output>
+              </label>
+              <label class="control">
+                <span>Negative class confident-error rate</span>
+                <input id="epsNeg" type="range" min="0" max="0.45" step="0.01" value="0.08" />
+                <output id="epsNegValue"></output>
+              </label>
+              <label class="control">
+                <span>Confidence sharpness</span>
+                <input id="confSharpness" type="range" min="2" max="40" step="0.5" value="14" />
+                <output id="confSharpnessValue"></output>
               </label>
             </div>
 
