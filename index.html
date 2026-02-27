@@ -36,41 +36,11 @@
           </label>
           <p id="presetDesc" class="hint"></p>
 
-          <div class="grid-two">
-            <label class="control">
-              <span>Negative mean</span>
-              <input id="muNeg" type="range" min="-4" max="4" step="0.05" value="0" />
-              <output id="muNegValue"></output>
-            </label>
-            <label class="control">
-              <span>Negative sd</span>
-              <input id="sdNeg" type="range" min="0.2" max="3" step="0.05" value="1" />
-              <output id="sdNegValue"></output>
-            </label>
-            <label class="control">
-              <span>Positive mean</span>
-              <input id="muPos" type="range" min="-4" max="6" step="0.05" value="2" />
-              <output id="muPosValue"></output>
-            </label>
-            <label class="control">
-              <span>Positive sd</span>
-              <input id="sdPos" type="range" min="0.2" max="3" step="0.05" value="1" />
-              <output id="sdPosValue"></output>
-            </label>
-          </div>
-
-          <div class="grid-two">
-            <label class="control">
-              <span>Samples per class</span>
-              <input id="nPerClass" type="range" min="50" max="2000" step="10" value="500" />
-              <output id="nPerClassValue"></output>
-            </label>
-            <label class="control">
-              <span>Positive outlier frac</span>
-              <input id="outlierFrac" type="range" min="0" max="0.5" step="0.01" value="0" />
-              <output id="outlierFracValue"></output>
-            </label>
-          </div>
+          <label class="control">
+            <span>Samples per class</span>
+            <input id="nPerClass" type="range" min="50" max="2000" step="10" value="500" />
+            <output id="nPerClassValue"></output>
+          </label>
 
           <div class="grid-two">
             <label class="control">
@@ -89,6 +59,106 @@
           </label>
 
           <p class="hint">Tip: click on the ROC plot to snap threshold to the nearest empirical operating point.</p>
+
+          <div class="stats-mini">
+            <h3>Implied Sample Stats</h3>
+            <p>Negative class mean/sd: <output id="negStatsValue"></output></p>
+            <p>Positive class mean/sd: <output id="posStatsValue"></output></p>
+          </div>
+
+          <details id="advancedDetails" class="advanced">
+            <summary>Advanced Distribution Parameters</summary>
+
+            <div class="grid-two">
+              <label class="control">
+                <span id="muNegLabel">Negative mean</span>
+                <input id="muNeg" type="range" min="-4" max="4" step="0.05" value="0" />
+                <output id="muNegValue"></output>
+              </label>
+              <label class="control">
+                <span id="sdNegLabel">Negative sd</span>
+                <input id="sdNeg" type="range" min="0.2" max="3" step="0.05" value="1" />
+                <output id="sdNegValue"></output>
+              </label>
+              <label class="control">
+                <span id="muPosLabel">Positive mean</span>
+                <input id="muPos" type="range" min="-4" max="6" step="0.05" value="2" />
+                <output id="muPosValue"></output>
+              </label>
+              <label class="control">
+                <span id="sdPosLabel">Positive sd</span>
+                <input id="sdPos" type="range" min="0.2" max="3" step="0.05" value="1" />
+                <output id="sdPosValue"></output>
+              </label>
+            </div>
+
+            <div id="shapeNormal" class="shape-panel">
+              <label class="control">
+                <span>Positive outlier frac</span>
+                <input id="outlierFrac" type="range" min="0" max="0.5" step="0.01" value="0" />
+                <output id="outlierFracValue"></output>
+              </label>
+            </div>
+
+            <div id="shapeLognormal" class="shape-panel">
+              <label class="control">
+                <span>Log-normal shape sigma</span>
+                <input id="logSigma" type="range" min="0.2" max="1.6" step="0.01" value="0.7" />
+                <output id="logSigmaValue"></output>
+              </label>
+            </div>
+
+            <div id="shapeStudent" class="shape-panel grid-two">
+              <label class="control">
+                <span>Negative degrees of freedom</span>
+                <input id="dfNeg" type="range" min="3" max="30" step="1" value="3" />
+                <output id="dfNegValue"></output>
+              </label>
+              <label class="control">
+                <span>Positive degrees of freedom</span>
+                <input id="dfPos" type="range" min="3" max="30" step="1" value="3" />
+                <output id="dfPosValue"></output>
+              </label>
+            </div>
+
+            <div id="shapeMixture" class="shape-panel grid-two">
+              <label class="control">
+                <span>Mixture weight (in positive class)</span>
+                <input id="mixWeight" type="range" min="0" max="0.8" step="0.01" value="0.24" />
+                <output id="mixWeightValue"></output>
+              </label>
+              <label class="control">
+                <span>Mixture component offset</span>
+                <input id="mixOffset" type="range" min="-1" max="2" step="0.01" value="0.15" />
+                <output id="mixOffsetValue"></output>
+              </label>
+              <label class="control">
+                <span>Mixture spread multiplier</span>
+                <input id="mixSdMult" type="range" min="0.2" max="2.5" step="0.01" value="1.1" />
+                <output id="mixSdMultValue"></output>
+              </label>
+            </div>
+
+            <div id="shapeZeroInflated" class="shape-panel grid-two">
+              <label class="control">
+                <span>Negative zero probability</span>
+                <input id="p0Neg" type="range" min="0" max="0.95" step="0.01" value="0.42" />
+                <output id="p0NegValue"></output>
+              </label>
+              <label class="control">
+                <span>Positive zero probability</span>
+                <input id="p0Pos" type="range" min="0" max="0.95" step="0.01" value="0.12" />
+                <output id="p0PosValue"></output>
+              </label>
+              <label class="control">
+                <span>Zero score value</span>
+                <input id="zeroValue" type="range" min="-3" max="3" step="0.05" value="0" />
+                <output id="zeroValueOut"></output>
+              </label>
+            </div>
+
+            <p id="shapeNoExtra" class="hint">No extra shape parameters for this distribution family.</p>
+          </details>
 
           <fieldset class="checks">
             <legend>Overlay curves</legend>

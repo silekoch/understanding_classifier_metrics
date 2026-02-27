@@ -5,6 +5,15 @@
     sdNeg: 1,
     muPos: 2,
     sdPos: 1,
+    logSigma: 0.7,
+    dfNeg: 3,
+    dfPos: 3,
+    mixWeight: 0.24,
+    mixOffset: 0.15,
+    mixSdMult: 1.1,
+    p0Neg: 0.42,
+    p0Pos: 0.12,
+    zeroValue: 0,
     nPerClass: 500,
     outlierFrac: 0,
     seed: 13,
@@ -34,14 +43,45 @@
     showPower: document.getElementById("showPower"),
     showHull: document.getElementById("showHull"),
     showGaussian: document.getElementById("showGaussian"),
+    advancedDetails: document.getElementById("advancedDetails"),
+    muNegLabel: document.getElementById("muNegLabel"),
+    sdNegLabel: document.getElementById("sdNegLabel"),
+    muPosLabel: document.getElementById("muPosLabel"),
+    sdPosLabel: document.getElementById("sdPosLabel"),
+    shapeNormal: document.getElementById("shapeNormal"),
+    shapeLognormal: document.getElementById("shapeLognormal"),
+    shapeStudent: document.getElementById("shapeStudent"),
+    shapeMixture: document.getElementById("shapeMixture"),
+    shapeZeroInflated: document.getElementById("shapeZeroInflated"),
+    shapeNoExtra: document.getElementById("shapeNoExtra"),
     muNegValue: document.getElementById("muNegValue"),
     sdNegValue: document.getElementById("sdNegValue"),
     muPosValue: document.getElementById("muPosValue"),
     sdPosValue: document.getElementById("sdPosValue"),
+    logSigma: document.getElementById("logSigma"),
+    logSigmaValue: document.getElementById("logSigmaValue"),
+    dfNeg: document.getElementById("dfNeg"),
+    dfNegValue: document.getElementById("dfNegValue"),
+    dfPos: document.getElementById("dfPos"),
+    dfPosValue: document.getElementById("dfPosValue"),
+    mixWeight: document.getElementById("mixWeight"),
+    mixWeightValue: document.getElementById("mixWeightValue"),
+    mixOffset: document.getElementById("mixOffset"),
+    mixOffsetValue: document.getElementById("mixOffsetValue"),
+    mixSdMult: document.getElementById("mixSdMult"),
+    mixSdMultValue: document.getElementById("mixSdMultValue"),
+    p0Neg: document.getElementById("p0Neg"),
+    p0NegValue: document.getElementById("p0NegValue"),
+    p0Pos: document.getElementById("p0Pos"),
+    p0PosValue: document.getElementById("p0PosValue"),
+    zeroValue: document.getElementById("zeroValue"),
+    zeroValueOut: document.getElementById("zeroValueOut"),
     nPerClassValue: document.getElementById("nPerClassValue"),
     outlierFracValue: document.getElementById("outlierFracValue"),
     thresholdValue: document.getElementById("thresholdValue"),
     presetDesc: document.getElementById("presetDesc"),
+    negStatsValue: document.getElementById("negStatsValue"),
+    posStatsValue: document.getElementById("posStatsValue"),
     rocSvg: document.getElementById("rocSvg"),
     distSvg: document.getElementById("distSvg"),
     metricsText: document.getElementById("metricsText"),
@@ -209,6 +249,15 @@
     state.sdNeg = toNumber(ids.sdNeg);
     state.muPos = toNumber(ids.muPos);
     state.sdPos = toNumber(ids.sdPos);
+    state.logSigma = toNumber(ids.logSigma);
+    state.dfNeg = Math.max(3, Math.round(toNumber(ids.dfNeg)));
+    state.dfPos = Math.max(3, Math.round(toNumber(ids.dfPos)));
+    state.mixWeight = toNumber(ids.mixWeight);
+    state.mixOffset = toNumber(ids.mixOffset);
+    state.mixSdMult = toNumber(ids.mixSdMult);
+    state.p0Neg = toNumber(ids.p0Neg);
+    state.p0Pos = toNumber(ids.p0Pos);
+    state.zeroValue = toNumber(ids.zeroValue);
     state.nPerClass = Math.round(toNumber(ids.nPerClass));
     state.outlierFrac = toNumber(ids.outlierFrac);
     const seedRaw = Math.round(toNumber(ids.seed));
@@ -219,6 +268,27 @@
     state.showGaussian = ids.showGaussian.checked;
   }
 
+  function setHidden(el, hidden) {
+    if (!el) return;
+    el.style.display = hidden ? "none" : "";
+  }
+
+  function updateConditionalParameterUI(preset) {
+    const mode = preset.mode || "normal";
+    const isNormal = mode === "normal";
+    ids.muNegLabel.textContent = isNormal ? "Negative mean" : "Negative location";
+    ids.sdNegLabel.textContent = isNormal ? "Negative sd" : "Negative scale";
+    ids.muPosLabel.textContent = isNormal ? "Positive mean" : "Positive location";
+    ids.sdPosLabel.textContent = isNormal ? "Positive sd" : "Positive scale";
+
+    setHidden(ids.shapeNormal, mode !== "normal");
+    setHidden(ids.shapeLognormal, mode !== "lognormal");
+    setHidden(ids.shapeStudent, mode !== "student_t");
+    setHidden(ids.shapeMixture, mode !== "mixture_pos");
+    setHidden(ids.shapeZeroInflated, mode !== "zero_inflated");
+    setHidden(ids.shapeNoExtra, !(mode === "uniform" || mode === "exponential"));
+  }
+
   function syncControlOutputs() {
     const preset = PRESETS[state.preset] || PRESETS.separated;
     const outlierEnabled = preset.mode === "normal";
@@ -226,25 +296,58 @@
     ids.sdNegValue.textContent = fmt(state.sdNeg, 2);
     ids.muPosValue.textContent = fmt(state.muPos, 2);
     ids.sdPosValue.textContent = fmt(state.sdPos, 2);
+    ids.logSigmaValue.textContent = fmt(state.logSigma, 2);
+    ids.dfNegValue.textContent = String(state.dfNeg);
+    ids.dfPosValue.textContent = String(state.dfPos);
+    ids.mixWeightValue.textContent = fmt(state.mixWeight, 2);
+    ids.mixOffsetValue.textContent = fmt(state.mixOffset, 2);
+    ids.mixSdMultValue.textContent = fmt(state.mixSdMult, 2);
+    ids.p0NegValue.textContent = fmt(state.p0Neg, 2);
+    ids.p0PosValue.textContent = fmt(state.p0Pos, 2);
+    ids.zeroValueOut.textContent = fmt(state.zeroValue, 2);
     ids.nPerClassValue.textContent = String(state.nPerClass);
     ids.outlierFracValue.textContent = outlierEnabled ? fmt(state.outlierFrac, 2) : `${fmt(state.outlierFrac, 2)} (normal only)`;
     ids.outlierFrac.disabled = !outlierEnabled;
     ids.thresholdValue.textContent = fmt(state.threshold, 3);
     ids.seed.value = String(state.seed);
     ids.presetDesc.textContent = preset.desc || "";
+    updateConditionalParameterUI(preset);
+
+    if (state.data) {
+      ids.negStatsValue.textContent = `${fmt(state.data.negMean, 3)} / ${fmt(state.data.negSd, 3)}`;
+      ids.posStatsValue.textContent = `${fmt(state.data.posMean, 3)} / ${fmt(state.data.posSd, 3)}`;
+    } else {
+      ids.negStatsValue.textContent = "-";
+      ids.posStatsValue.textContent = "-";
+    }
   }
 
   function applyPreset(name) {
     const p = PRESETS[name];
-
+    const keys = [
+      "muNeg",
+      "sdNeg",
+      "muPos",
+      "sdPos",
+      "logSigma",
+      "dfNeg",
+      "dfPos",
+      "mixWeight",
+      "mixOffset",
+      "mixSdMult",
+      "p0Neg",
+      "p0Pos",
+      "zeroValue",
+      "outlierFrac",
+      "nPerClass",
+    ];
     if (!p) return;
     ids.preset.value = name;
-    ids.muNeg.value = String(p.muNeg);
-    ids.sdNeg.value = String(p.sdNeg);
-    ids.muPos.value = String(p.muPos);
-    ids.sdPos.value = String(p.sdPos);
-    ids.outlierFrac.value = String(p.outlierFrac);
-    ids.nPerClass.value = String(p.nPerClass);
+    for (const key of keys) {
+      if (Object.prototype.hasOwnProperty.call(p, key) && ids[key]) {
+        ids[key].value = String(p[key]);
+      }
+    }
     readControls();
     regenerateAndRender();
   }
@@ -265,14 +368,14 @@
     return t / Math.sqrt(dof / (dof - 2));
   }
 
-  function sampleStandardized(mode, rng, preset, label) {
+  function sampleStandardized(mode, rng, label) {
     if (mode === "lognormal") {
-      const sigma = preset.logSigma || 0.7;
+      const sigma = Math.max(0.05, state.logSigma);
       const y = Math.exp(sampleNormal(rng, -0.5 * sigma * sigma, sigma));
       return (y - 1) / Math.sqrt(Math.exp(sigma * sigma) - 1);
     }
     if (mode === "student_t") {
-      const df = label === 1 ? preset.dfPos || 3 : preset.dfNeg || 3;
+      const df = label === 1 ? state.dfPos : state.dfNeg;
       return sampleStudentTStd(rng, df);
     }
     if (mode === "uniform") {
@@ -299,22 +402,22 @@
 
     if (mode === "mixture_pos") {
       if (label === 0) return sampleNormal(rng, state.muNeg, Math.max(1e-6, state.sdNeg));
-      const w = preset.mixWeight || 0.2;
+      const w = clamp(state.mixWeight, 0, 0.98);
       if (rng() < w) {
-        const offset = preset.mixOffset || 0.2;
-        const spread = Math.max(1e-6, (preset.mixSdMult || 1.1) * state.sdNeg);
+        const offset = state.mixOffset;
+        const spread = Math.max(1e-6, state.mixSdMult * state.sdNeg);
         return sampleNormal(rng, state.muNeg + offset * state.sdNeg, spread);
       }
       return sampleNormal(rng, state.muPos, Math.max(1e-6, state.sdPos));
     }
 
     if (mode === "zero_inflated") {
-      const p0 = label === 1 ? preset.p0Pos || 0.1 : preset.p0Neg || 0.35;
-      if (rng() < p0) return preset.zeroValue || 0;
+      const p0 = clamp(label === 1 ? state.p0Pos : state.p0Neg, 0, 0.99);
+      if (rng() < p0) return state.zeroValue;
       return sampleNormal(rng, mu, sd);
     }
 
-    const z = sampleStandardized(mode, rng, preset, label);
+    const z = sampleStandardized(mode, rng, label);
     return mu + sd * z;
   }
 
@@ -1045,12 +1148,22 @@
       ids.sdNeg,
       ids.muPos,
       ids.sdPos,
+      ids.logSigma,
+      ids.dfNeg,
+      ids.dfPos,
+      ids.mixWeight,
+      ids.mixOffset,
+      ids.mixSdMult,
+      ids.p0Neg,
+      ids.p0Pos,
+      ids.zeroValue,
       ids.nPerClass,
       ids.outlierFrac,
       ids.seed,
     ];
 
     regenerateIds.forEach((el) => {
+      if (!el) return;
       el.addEventListener("input", () => {
         readControls();
         regenerateAndRender();
@@ -1107,10 +1220,8 @@
   }
 
   function init() {
-    readControls();
-    syncControlOutputs();
     initHandlers();
-    regenerateAndRender();
+    applyPreset(ids.preset.value);
   }
 
   init();
