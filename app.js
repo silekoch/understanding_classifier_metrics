@@ -102,8 +102,6 @@
     outlierFracValue: document.getElementById("outlierFracValue"),
     thresholdValue: document.getElementById("thresholdValue"),
     presetDesc: document.getElementById("presetDesc"),
-    negStatsValue: document.getElementById("negStatsValue"),
-    posStatsValue: document.getElementById("posStatsValue"),
     rocSvg: document.getElementById("rocSvg"),
     prSvg: document.getElementById("prSvg"),
     distSvg: document.getElementById("distSvg"),
@@ -465,13 +463,6 @@
     ids.presetDesc.textContent = preset.desc || "";
     updateConditionalParameterUI(preset);
 
-    if (state.data) {
-      ids.negStatsValue.textContent = `${fmt(state.data.negMean, 3)} / ${fmt(state.data.negSd, 3)}`;
-      ids.posStatsValue.textContent = `${fmt(state.data.posMean, 3)} / ${fmt(state.data.posSd, 3)}`;
-    } else {
-      ids.negStatsValue.textContent = "-";
-      ids.posStatsValue.textContent = "-";
-    }
   }
 
   function applyPresetValues(name) {

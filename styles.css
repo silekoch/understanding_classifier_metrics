@@ -127,24 +127,6 @@ hr {
   margin: 7px 0 10px;
 }
 
-.stats-mini {
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 8px;
-  margin: 8px 0 10px;
-  background: rgba(255, 251, 242, 0.65);
-}
-
-.stats-mini h3 {
-  margin: 0 0 6px;
-  font-size: 0.9rem;
-}
-
-.stats-mini p {
-  margin: 4px 0;
-  font-size: 0.84rem;
-  color: var(--muted);
-}
 
 .advanced {
   border: 1px solid var(--line);
