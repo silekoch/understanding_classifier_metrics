@@ -446,7 +446,7 @@
     ids.epsPosValue.textContent = fmtPct(state.epsPos, 1);
     ids.epsNegValue.textContent = fmtPct(state.epsNeg, 1);
     ids.confSharpnessValue.textContent = fmt(state.confSharpness, 1);
-    ids.nPerClassValue.textContent = String(state.nPerClass);
+    ids.nPerClassValue.textContent = String(2 * state.nPerClass);
     ids.samplePosFracValue.textContent = fmtPct(state.samplePosFrac, 1);
     ids.outlierFracValue.textContent = outlierEnabled ? fmt(state.outlierFrac, 2) : `${fmt(state.outlierFrac, 2)} (normal only)`;
     ids.outlierFrac.disabled = !outlierEnabled;
