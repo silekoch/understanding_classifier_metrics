@@ -26,10 +26,6 @@
     outlierFrac: 0,
     seed: 13,
     threshold: 1,
-    showTriangle: false,
-    showPower: false,
-    showHull: false,
-    showGaussian: false,
     rocClickBox: null,
     distView: null,
     draggingThreshold: false,
@@ -52,12 +48,7 @@
     seed: document.getElementById("seed"),
     threshold: document.getElementById("threshold"),
     resample: document.getElementById("resample"),
-    showTriangle: document.getElementById("showTriangle"),
-    showPower: document.getElementById("showPower"),
-    showHull: document.getElementById("showHull"),
-    showGaussian: document.getElementById("showGaussian"),
     advancedDetails: document.getElementById("advancedDetails"),
-    interpolationDetails: document.getElementById("interpolationDetails"),
     muNegLabel: document.getElementById("muNegLabel"),
     sdNegLabel: document.getElementById("sdNegLabel"),
     muPosLabel: document.getElementById("muPosLabel"),
@@ -314,7 +305,7 @@
     "threshold",
   ];
 
-  const URL_BOOL_KEYS = ["showTriangle", "showPower", "showHull", "showGaussian"];
+  const URL_BOOL_KEYS = [];
 
   function mulberry32(seed) {
     let t = seed >>> 0;
@@ -403,10 +394,6 @@
     state.seed = Number.isFinite(seedRaw) ? Math.max(1, seedRaw) : 1;
     const thresholdRaw = toNumber(ids.threshold);
     if (Number.isFinite(thresholdRaw)) state.threshold = thresholdRaw;
-    state.showTriangle = ids.showTriangle.checked;
-    state.showPower = ids.showPower.checked;
-    state.showHull = ids.showHull.checked;
-    state.showGaussian = ids.showGaussian.checked;
   }
 
   function setHidden(el, hidden) {
@@ -864,87 +851,6 @@
     return { tp, fp, tn, fn, tpr, fpr, precision, recall, specificity, f1, P, N };
   }
 
-  function computeTriangleAuc(op) {
-    const left = 0.5 * op.fpr * op.tpr;
-    const right = 0.5 * (1 - op.fpr) * (op.tpr + 1);
-    return left + right;
-  }
-
-  function computePowerInterpolation(op, nSamples = 240) {
-    const x0 = clamp(op.fpr, 1e-6, 1 - 1e-6);
-    const y0 = clamp(op.tpr, 1e-6, 1 - 1e-6);
-    const a = Math.log(y0) / Math.log(x0);
-
-    const points = [];
-    for (let i = 0; i < nSamples; i += 1) {
-      const x = i / (nSamples - 1);
-      const y = Math.pow(x, a);
-      points.push({ fpr: x, tpr: clamp(y, 0, 1) });
-    }
-
-    const auc = a > -1 ? 1 / (a + 1) : NaN;
-    return { exponent: a, points, auc };
-  }
-
-  function computeConcaveHull(points) {
-    const collapsed = [];
-    for (const p of points) {
-      const prev = collapsed[collapsed.length - 1];
-      if (prev && Math.abs(prev.fpr - p.fpr) < 1e-12) {
-        if (p.tpr >= prev.tpr) collapsed[collapsed.length - 1] = p;
-      } else {
-        collapsed.push(p);
-      }
-    }
-
-    const hull = [];
-    for (const p of collapsed) {
-      hull.push(p);
-      while (hull.length >= 3) {
-        const a = hull[hull.length - 3];
-        const b = hull[hull.length - 2];
-        const c = hull[hull.length - 1];
-        const s1 = (b.tpr - a.tpr) / Math.max(1e-12, b.fpr - a.fpr);
-        const s2 = (c.tpr - b.tpr) / Math.max(1e-12, c.fpr - b.fpr);
-        if (s2 > s1 + 1e-12) {
-          hull.splice(hull.length - 2, 1);
-        } else {
-          break;
-        }
-      }
-    }
-    return hull;
-  }
-
-  function computeGaussianRoc(n = 260) {
-    const muNeg = state.data.negMean;
-    const muPos = state.data.posMean;
-    const sdNeg = Math.max(1e-6, state.data.negSd);
-    const sdPos = Math.max(1e-6, state.data.posSd);
-    const points = [];
-    const sigmaPad = 4.5 * Math.max(sdNeg, sdPos);
-    const tMin = Math.min(muNeg, muPos) - sigmaPad;
-    const tMax = Math.max(muNeg, muPos) + sigmaPad;
-
-    for (let i = 0; i < n; i += 1) {
-      const u = i / (n - 1);
-      const t = tMax - u * (tMax - tMin);
-      const fpr = 1 - normalCdf(t, muNeg, sdNeg);
-      const tpr = 1 - normalCdf(t, muPos, sdPos);
-      points.push({ fpr: clamp(fpr, 0, 1), tpr: clamp(tpr, 0, 1) });
-    }
-
-    points[0] = { fpr: 0, tpr: 0 };
-    points[points.length - 1] = { fpr: 1, tpr: 1 };
-    const aucParam = normalCdf(
-      (muPos - muNeg) / Math.sqrt(sdPos * sdPos + sdNeg * sdNeg),
-      0,
-      1
-    );
-
-    return { points, aucParam };
-  }
-
   function computeEverything() {
     const rocPoints = computeRocPoints(state.data.all);
     const pr = computePrPoints(state.data.all);
@@ -952,23 +858,10 @@
     const aucRank = computeAucRank(state.data.all);
     const op = computeOperatingPoint(state.threshold, state.data.all);
     const apTrap = computeApTrapezoid(pr.points);
-    const triAuc = computeTriangleAuc(op);
-    const power = computePowerInterpolation(op);
-    const hullPoints = computeConcaveHull(rocPoints);
-    const hullAuc = computeAucTrapezoid(hullPoints);
-    const gauss = computeGaussianRoc();
 
     state.roc = {
       empirical: rocPoints,
       op,
-      triangle: [
-        { fpr: 0, tpr: 0 },
-        { fpr: op.fpr, tpr: op.tpr },
-        { fpr: 1, tpr: 1 },
-      ],
-      power,
-      hull: hullPoints,
-      gaussian: gauss.points,
     };
 
     state.pr = {
@@ -982,10 +875,6 @@
       aucRank,
       aucAbsDiff: Math.abs(aucTrap - aucRank),
       apTrap,
-      triAuc,
-      powerAuc: power.auc,
-      hullAuc,
-      gaussAuc: gauss.aucParam,
     };
   }
 
@@ -1266,22 +1155,6 @@
 
     addPath(svg, state.roc.empirical, box, "var(--emp)", layout.cfg.strokeMain);
 
-    if (state.showTriangle) {
-      addPath(svg, state.roc.triangle, box, "var(--tri)", layout.cfg.strokeAux, "5 5");
-    }
-
-    if (state.showPower) {
-      addPath(svg, state.roc.power.points, box, "var(--pow)", layout.cfg.strokeAux);
-    }
-
-    if (state.showHull) {
-      addPath(svg, state.roc.hull, box, "var(--hull)", layout.cfg.strokeAux, "10 4");
-    }
-
-    if (state.showGaussian) {
-      addPath(svg, state.roc.gaussian, box, "var(--gauss)", layout.cfg.strokeAux, "3 4");
-    }
-
     const op = state.roc.op;
     const cx = box.left + op.fpr * box.width;
     const cy = box.top + (1 - op.tpr) * box.height;
@@ -1309,10 +1182,6 @@
       { label: "Empirical ROC", color: "var(--emp)" },
       { label: "Diagonal baseline", color: "var(--diag)", dash: "6 6" },
     ];
-    if (state.showTriangle) legendItems.push({ label: "Triangle interpolation", color: "var(--tri)", dash: "5 5" });
-    if (state.showPower) legendItems.push({ label: "Power interpolation", color: "var(--pow)" });
-    if (state.showHull) legendItems.push({ label: "Concave hull interpolation", color: "var(--hull)", dash: "10 4" });
-    if (state.showGaussian) legendItems.push({ label: "Gaussian model ROC", color: "var(--gauss)", dash: "3 4" });
     drawLegend(svg, legendItems, box, layout.cfg, "inside-right");
   }
 
@@ -1775,7 +1644,6 @@
       params.set(key, state[key] ? "1" : "0");
     }
     params.set("advancedOpen", ids.advancedDetails.open ? "1" : "0");
-    params.set("interpolationOpen", ids.interpolationDetails.open ? "1" : "0");
 
     const next = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
     window.history.replaceState(null, "", next);
@@ -1823,10 +1691,6 @@
     if (params.has("advancedOpen")) {
       ids.advancedDetails.open = parseBoolParam(params.get("advancedOpen"));
     }
-    if (params.has("interpolationOpen")) {
-      ids.interpolationDetails.open = parseBoolParam(params.get("interpolationOpen"));
-    }
-
     return true;
   }
 
@@ -1835,7 +1699,6 @@
     const op = state.roc.op;
     const m = state.metrics;
     const pass = m.aucAbsDiff < 1e-10 ? "PASS" : "CHECK";
-    const gaussianReference = preset.mode !== "normal" || state.outlierFrac > 0;
 
     ids.metricsText.textContent = [
       `Preset                  ${state.preset}`,
@@ -1850,15 +1713,6 @@
       `AUC empirical (rank)    ${fmt(m.aucRank, 6)}`,
       `|difference|            ${fmt(m.aucAbsDiff, 12)}  ${pass}`,
       `AP empirical (trap)     ${fmt(m.apTrap, 6)}`,
-      "",
-      `AUC triangle            ${fmt(m.triAuc, 6)}`,
-      `AUC power interpolation ${fmt(m.powerAuc, 6)}`,
-      `AUC concave hull        ${fmt(m.hullAuc, 6)}`,
-      `AUC Gaussian model      ${fmt(m.gaussAuc, 6)}`,
-      "",
-      "Interpretation: triangle is simple but usually too coarse.",
-      "Concave hull is safer (data-driven). Gaussian model is smooth if the normal assumption is reasonable.",
-      gaussianReference ? "Note: Gaussian overlay/AUC is a fitted reference in this preset, not the exact generating model." : "",
     ].join("\n");
   }
 
@@ -1925,12 +1779,6 @@
       renderAll();
     });
 
-    [ids.showTriangle, ids.showPower, ids.showHull, ids.showGaussian].forEach((el) => {
-      el.addEventListener("change", () => {
-        readControls();
-        renderAll();
-      });
-    });
 
     ids.resample.addEventListener("click", () => {
       state.seed += 1;
@@ -1942,10 +1790,8 @@
       applyPreset(e.target.value);
     });
 
-    [ids.advancedDetails, ids.interpolationDetails].forEach((el) => {
-      el.addEventListener("toggle", () => {
-        scheduleUrlSync();
-      });
+    ids.advancedDetails.addEventListener("toggle", () => {
+      scheduleUrlSync();
     });
 
     ids.rocSvg.addEventListener("click", (evt) => {

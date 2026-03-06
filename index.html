@@ -212,16 +212,6 @@
             <p id="shapeNoExtra" class="hint">No extra shape parameters for this distribution family.</p>
           </details>
 
-          <details id="interpolationDetails" class="advanced">
-            <summary>Advanced: Interpolation Methods</summary>
-            <fieldset class="checks">
-              <legend>Optional ROC overlays</legend>
-              <label><input type="checkbox" id="showTriangle" /> Triangle interpolation</label>
-              <label><input type="checkbox" id="showPower" /> Power-curve interpolation (smooth through operating point)</label>
-              <label><input type="checkbox" id="showHull" /> Concave hull interpolation (data-driven)</label>
-              <label><input type="checkbox" id="showGaussian" /> Gaussian model ROC (parametric)</label>
-            </fieldset>
-          </details>
         </aside>
 
         <section class="panel plots">
@@ -261,8 +251,7 @@
           The key chain is: threshold on distributions -> confusion matrix counts -> rates (TPR/FPR/precision/recall)
           -> points on ROC and PR curves.
         </p>
-        <p>Interpolation overlays are optional in the advanced section so the default view stays focused on empirical behavior.</p>
-        <p>Simple examples that yield different curve shapes:</p>
+<p>Simple examples that yield different curve shapes:</p>
         <ul>
           <li>Large mean gap, similar variances: strong top-left belly and high AUC.</li>
           <li>Small mean gap: curve close to the diagonal baseline.</li>
