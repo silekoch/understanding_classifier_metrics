@@ -92,7 +92,7 @@
 
             <div id="shapeNormal" class="shape-panel">
               <label class="control">
-                <span>Positive outlier frac</span>
+                <span>Mislabeled positive fraction</span>
                 <input id="outlierFrac" type="range" min="0" max="0.5" step="0.01" value="0" />
                 <output id="outlierFracValue"></output>
               </label>
@@ -243,7 +243,7 @@
           <li>Large mean gap, similar variances: strong top-left belly and high AUC.</li>
           <li>Small mean gap: curve close to the diagonal baseline.</li>
           <li>Unequal variances: asymmetric curvature and slope changes.</li>
-          <li>Outliers in the positive class: visible kink/shoulder in empirical ROC.</li>
+          <li>Mislabeled positives: visible kink/shoulder in empirical ROC.</li>
         </ul>
       </section>
     </main>
