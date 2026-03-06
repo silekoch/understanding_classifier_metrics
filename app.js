@@ -48,6 +48,7 @@
     seed: document.getElementById("seed"),
     resample: document.getElementById("resample"),
     advancedDetails: document.getElementById("advancedDetails"),
+    locationScaleGrid: document.getElementById("locationScaleGrid"),
     muNegLabel: document.getElementById("muNegLabel"),
     sdNegLabel: document.getElementById("sdNegLabel"),
     muPosLabel: document.getElementById("muPosLabel"),
@@ -400,16 +401,12 @@
     const isNormal = mode === "normal";
     const isBeta = mode === "beta";
     const isBetaConf = mode === "beta_conf_mixture";
+    const hideLoc = isBeta || isBetaConf;
     ids.muNegLabel.textContent = isNormal ? "Negative mean" : "Negative location";
     ids.sdNegLabel.textContent = isNormal ? "Negative sd" : "Negative scale";
     ids.muPosLabel.textContent = isNormal ? "Positive mean" : "Positive location";
     ids.sdPosLabel.textContent = isNormal ? "Positive sd" : "Positive scale";
-    if (isBeta || isBetaConf) {
-      ids.muNegLabel.textContent = "Negative location (fixed in beta-family mode)";
-      ids.sdNegLabel.textContent = "Negative scale (fixed in beta-family mode)";
-      ids.muPosLabel.textContent = "Positive location (fixed in beta-family mode)";
-      ids.sdPosLabel.textContent = "Positive scale (fixed in beta-family mode)";
-    }
+    setHidden(ids.locationScaleGrid, hideLoc);
 
     setHidden(ids.shapeNormal, mode !== "normal");
     setHidden(ids.shapeLognormal, mode !== "lognormal");
@@ -450,10 +447,6 @@
     ids.samplePosFracValue.textContent = fmtPct(state.samplePosFrac, 1);
     ids.outlierFracValue.textContent = outlierEnabled ? fmt(state.outlierFrac, 2) : `${fmt(state.outlierFrac, 2)} (normal only)`;
     ids.outlierFrac.disabled = !outlierEnabled;
-    ids.muNeg.disabled = betaMode || betaConfMode;
-    ids.sdNeg.disabled = betaMode || betaConfMode;
-    ids.muPos.disabled = betaMode || betaConfMode;
-    ids.sdPos.disabled = betaMode || betaConfMode;
     ids.seed.value = String(state.seed);
     ids.presetDesc.textContent = preset.desc || "";
     updateConditionalParameterUI(preset);
