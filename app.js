@@ -46,7 +46,6 @@
     samplePosFrac: document.getElementById("samplePosFrac"),
     outlierFrac: document.getElementById("outlierFrac"),
     seed: document.getElementById("seed"),
-    threshold: document.getElementById("threshold"),
     resample: document.getElementById("resample"),
     advancedDetails: document.getElementById("advancedDetails"),
     muNegLabel: document.getElementById("muNegLabel"),
@@ -100,7 +99,6 @@
     nPerClassValue: document.getElementById("nPerClassValue"),
     samplePosFracValue: document.getElementById("samplePosFracValue"),
     outlierFracValue: document.getElementById("outlierFracValue"),
-    thresholdValue: document.getElementById("thresholdValue"),
     presetDesc: document.getElementById("presetDesc"),
     rocSvg: document.getElementById("rocSvg"),
     prSvg: document.getElementById("prSvg"),
@@ -390,8 +388,6 @@
     state.outlierFrac = toNumber(ids.outlierFrac);
     const seedRaw = Math.round(toNumber(ids.seed));
     state.seed = Number.isFinite(seedRaw) ? Math.max(1, seedRaw) : 1;
-    const thresholdRaw = toNumber(ids.threshold);
-    if (Number.isFinite(thresholdRaw)) state.threshold = thresholdRaw;
   }
 
   function setHidden(el, hidden) {
@@ -458,7 +454,6 @@
     ids.sdNeg.disabled = betaMode || betaConfMode;
     ids.muPos.disabled = betaMode || betaConfMode;
     ids.sdPos.disabled = betaMode || betaConfMode;
-    ids.thresholdValue.textContent = fmt(state.threshold, 3);
     ids.seed.value = String(state.seed);
     ids.presetDesc.textContent = preset.desc || "";
     updateConditionalParameterUI(preset);
@@ -1587,10 +1582,7 @@
   }
 
   function setThreshold(next) {
-    const minT = Number(ids.threshold.min);
-    const maxT = Number(ids.threshold.max);
-    state.threshold = clamp(next, minT, maxT);
-    ids.threshold.value = String(state.threshold);
+    state.threshold = clamp(next, state.thresholdMin, state.thresholdMax);
   }
 
   function thresholdFromDistPointer(evt) {
@@ -1611,15 +1603,12 @@
   function updateThresholdRange() {
     const data = state.data;
     const span = Math.max(1e-6, data.max - data.min);
-    const minT = data.min - 0.08 * span;
-    const maxT = data.max + 0.08 * span;
-    ids.threshold.min = String(minT);
-    ids.threshold.max = String(maxT);
-    ids.threshold.step = String(span / 1000);
+    state.thresholdMin = data.min - 0.08 * span;
+    state.thresholdMax = data.max + 0.08 * span;
+    state.thresholdStep = span / 1000;
 
-    if (state.threshold < minT || state.threshold > maxT) {
-      state.threshold = clamp(state.threshold, minT, maxT);
-      ids.threshold.value = String(state.threshold);
+    if (state.threshold < state.thresholdMin || state.threshold > state.thresholdMax) {
+      state.threshold = clamp(state.threshold, state.thresholdMin, state.thresholdMax);
     }
   }
 
@@ -1765,10 +1754,6 @@
       });
     });
 
-    ids.threshold.addEventListener("input", () => {
-      setThreshold(toNumber(ids.threshold));
-      renderAll();
-    });
 
 
     ids.resample.addEventListener("click", () => {
@@ -1837,7 +1822,7 @@
 
     ids.distSvg.addEventListener("keydown", (evt) => {
       if (!isThresholdTarget(evt.target)) return;
-      const step = Number(ids.threshold.step) || 0.001;
+      const step = state.thresholdStep || 0.001;
       const delta = evt.shiftKey ? step * 20 : step;
       if (evt.key === "ArrowLeft") {
         evt.preventDefault();
@@ -1847,10 +1832,10 @@
         setThreshold(state.threshold + delta);
       } else if (evt.key === "Home") {
         evt.preventDefault();
-        setThreshold(Number(ids.threshold.min));
+        setThreshold(state.thresholdMin);
       } else if (evt.key === "End") {
         evt.preventDefault();
-        setThreshold(Number(ids.threshold.max));
+        setThreshold(state.thresholdMax);
       } else {
         return;
       }
