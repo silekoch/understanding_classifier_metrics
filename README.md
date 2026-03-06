@@ -1,6 +1,7 @@
-# ROC Interpolation Playground
+# Classifier Evaluation Playground
 
-Interactive visualization of a threshold-only classifier on one synthetic variable.
+An interactive tool for building deep intuition about classifier evaluation metrics.
+Drag a threshold and watch the confusion matrix, ROC curve, and PR curve all react in real time.
 
 ## Run
 
@@ -14,18 +15,16 @@ Then visit `http://localhost:8000`.
 
 ## What you can explore
 
-- Two-class data sampled from normal distributions (with optional positive outliers)
-- Additional preset families: log-normal, Student-t heavy-tail, positive-mixture, zero-inflated, uniform, exponential
-- Probability-style score presets in `[0,1]` using Beta families (good separation, overlap, overconfident, midrange)
-- Evaluation sample imbalance control (positive class fraction) to see how empirical PR and confusion counts shift
-- A single threshold classifier: predict positive if `score >= threshold`
-- Progressive controls: global controls stay visible, and family-specific parameters appear in the Advanced section
-- ROC curve with live operating point
-- Triangle interpolation versus smoother alternatives
-- AUC cross-checks for correctness: empirical trapezoidal AUC and rank-statistic AUC (Mann-Whitney form)
-
-## Better alternatives to a triangle
-
-- Concave hull interpolation: non-parametric and data-driven
-- Gaussian model ROC: smooth parametric curve if normality assumption is plausible
-- Power interpolation: simple smooth curve through `(0,0)`, operating point, `(1,1)`
+- **Score distributions** — two-class data drawn from a variety of distribution families
+  (Gaussian, log-normal, Student-t, Beta, mixture, zero-inflated, and more)
+- **Threshold control** — drag the threshold directly on the distribution plot, or use the slider;
+  everything updates at 60fps
+- **Confusion matrix** — live TP/FP/TN/FN counts and rates, linked to the threshold position
+- **ROC curve** — empirical curve with live operating point; AUC via trapezoidal and rank-statistic
+  (Mann-Whitney) methods as a cross-check
+- **PR curve** — empirical precision-recall curve with live operating point and Average Precision
+- **Prevalence control** — adjust the positive class fraction in the evaluation sample to see how
+  PR shifts while ROC stays invariant
+- **Distribution presets** — quickly switch between distribution shapes and Beta-family probability
+  score presets to see how model output characteristics affect the curves
+- **URL sharing** — every state is encoded in the URL; copy and paste to share a specific configuration
