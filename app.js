@@ -34,6 +34,7 @@
     data: null,
     roc: null,
     pr: null,
+    metricCurves: null,
   };
 
   const ids = {
@@ -105,6 +106,7 @@
     distSvg: document.getElementById("distSvg"),
     confusionSvg: document.getElementById("confusionSvg"),
     metricsText: document.getElementById("metricsText"),
+    metricTrendSvg: document.getElementById("metricTrendSvg"),
   };
 
   const PRESETS = {
@@ -823,10 +825,42 @@
     const recall = tpr;
     const specificity = N > 0 ? tn / N : 0;
     const f1 = precision + recall > 0 ? (2 * precision * recall) / (precision + recall) : 0;
+    const accuracy = P + N > 0 ? (tp + tn) / (P + N) : 0;
     const mccDen = Math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn));
     const mcc = mccDen > 0 ? (tp * tn - fp * fn) / mccDen : 0;
 
-    return { tp, fp, tn, fn, tpr, fpr, precision, recall, specificity, f1, mcc, P, N };
+    return { tp, fp, tn, fn, tpr, fpr, precision, recall, specificity, f1, accuracy, mcc, P, N };
+  }
+
+  function computeMetricCurves(all, minThreshold, maxThreshold, sampleCount = 180) {
+    const curves = {
+      recall: [],
+      precision: [],
+      specificity: [],
+      f1: [],
+      mcc: [],
+      accuracy: [],
+    };
+    if (!all || !all.length) return curves;
+
+    const minT = Number.isFinite(minThreshold) ? minThreshold : Math.min(...all.map((d) => d.score));
+    const maxT = Number.isFinite(maxThreshold) ? maxThreshold : Math.max(...all.map((d) => d.score));
+    const span = Math.max(1e-9, maxT - minT);
+    const steps = Math.max(20, Math.round(sampleCount));
+
+    for (let i = 0; i <= steps; i += 1) {
+      const u = i / steps;
+      const threshold = minT + u * span;
+      const op = computeOperatingPoint(threshold, all);
+      curves.recall.push({ u, v: op.tpr });
+      curves.precision.push({ u, v: op.precision });
+      curves.specificity.push({ u, v: op.specificity });
+      curves.f1.push({ u, v: op.f1 });
+      curves.mcc.push({ u, v: op.mcc });
+      curves.accuracy.push({ u, v: op.accuracy });
+    }
+
+    return curves;
   }
 
   function computeEverything() {
@@ -1209,6 +1243,174 @@
       box,
       layout.cfg,
       "inside-left"
+    );
+  }
+
+  function drawMetricTrend() {
+    const svg = ids.metricTrendSvg;
+    if (!svg) return;
+    clear(svg);
+
+    const curves = state.metricCurves;
+    if (!curves) return;
+
+    const series = [
+      { label: "Recall (TPR)", points: curves.recall, color: "var(--pos)" },
+      { label: "Precision (PPV)", points: curves.precision, color: "#184f6e" },
+      { label: "Specificity (TNR)", points: curves.specificity, color: "var(--neg)" },
+      { label: "F1 Score", points: curves.f1, color: "#6b4aa5" },
+      { label: "MCC", points: curves.mcc, color: "#111111" },
+      { label: "Accuracy", points: curves.accuracy, color: "var(--diag)", dash: "5 4" },
+    ];
+
+    const allY = series.flatMap((s) => s.points.map((p) => p.v));
+    const hasNegative = allY.some((v) => v < 0);
+    const yMin = hasNegative ? -1 : 0;
+    const yMax = 1;
+    const ySpan = Math.max(1e-9, yMax - yMin);
+
+    const view = getSvgViewSize(svg, 760, 240);
+    const box = {
+      left: 66,
+      top: 18,
+      width: Math.max(140, view.width - 250),
+      height: Math.max(80, view.height - 62),
+    };
+
+    const axis = createSvgEl("g", {});
+    const xTicks = 6;
+    const yTicks = 5;
+
+    for (let i = 0; i <= xTicks; i += 1) {
+      const u = i / xTicks;
+      const x = box.left + u * box.width;
+      axis.appendChild(
+        createSvgEl("line", {
+          x1: x,
+          y1: box.top,
+          x2: x,
+          y2: box.top + box.height,
+          stroke: "rgba(0,0,0,0.08)",
+        })
+      );
+      const threshold = state.thresholdMin + u * (state.thresholdMax - state.thresholdMin);
+      axis.appendChild(
+        createSvgEl("text", {
+          x,
+          y: box.top + box.height + 18,
+          class: "tick",
+          "text-anchor": "middle",
+        })
+      ).textContent = fmt(threshold, 2);
+    }
+
+    for (let i = 0; i <= yTicks; i += 1) {
+      const u = i / yTicks;
+      const y = box.top + box.height - u * box.height;
+      axis.appendChild(
+        createSvgEl("line", {
+          x1: box.left,
+          y1: y,
+          x2: box.left + box.width,
+          y2: y,
+          stroke: "rgba(0,0,0,0.08)",
+        })
+      );
+      const value = yMin + u * (yMax - yMin);
+      axis.appendChild(
+        createSvgEl("text", {
+          x: box.left - 10,
+          y: y + 4,
+          class: "tick",
+          "text-anchor": "end",
+        })
+      ).textContent = fmt(value, 2);
+    }
+
+    if (hasNegative) {
+      const zeroU = (0 - yMin) / ySpan;
+      const zeroY = box.top + (1 - zeroU) * box.height;
+      axis.appendChild(
+        createSvgEl("line", {
+          x1: box.left,
+          y1: zeroY,
+          x2: box.left + box.width,
+          y2: zeroY,
+          stroke: "rgba(0,0,0,0.25)",
+          "stroke-dasharray": "4 4",
+        })
+      );
+    }
+
+    axis.appendChild(
+      createSvgEl("rect", {
+        x: box.left,
+        y: box.top,
+        width: box.width,
+        height: box.height,
+        fill: "none",
+        stroke: "rgba(0,0,0,0.25)",
+      })
+    );
+
+    axis.appendChild(
+      createSvgEl("text", {
+        x: box.left + box.width / 2,
+        y: box.top + box.height + 40,
+        class: "axis-label",
+        "text-anchor": "middle",
+      })
+    ).textContent = "Threshold";
+
+    const yLabel = createSvgEl("text", {
+      x: box.left - 52,
+      y: box.top + box.height / 2,
+      class: "axis-label",
+      "text-anchor": "middle",
+      transform: `rotate(-90 ${box.left - 52} ${box.top + box.height / 2})`,
+    });
+    yLabel.textContent = "Metric value";
+    axis.appendChild(yLabel);
+    svg.appendChild(axis);
+
+    for (const item of series) {
+      const unitPoints = item.points.map((p) => ({
+        x: p.u,
+        y: clamp((p.v - yMin) / ySpan, 0, 1),
+      }));
+      addPath(svg, unitPoints, box, item.color, 2.2, item.dash || null, "x", "y");
+    }
+
+    const uCurrent = clamp(
+      (state.threshold - state.thresholdMin) / Math.max(1e-9, state.thresholdMax - state.thresholdMin),
+      0,
+      1
+    );
+    const markerX = box.left + uCurrent * box.width;
+    svg.appendChild(
+      createSvgEl("line", {
+        x1: markerX,
+        y1: box.top,
+        x2: markerX,
+        y2: box.top + box.height,
+        stroke: "rgba(0,0,0,0.55)",
+        "stroke-width": 1.8,
+      })
+    );
+    svg.appendChild(
+      createSvgEl("text", {
+        x: markerX + 6,
+        y: box.top + 14,
+        class: "legend",
+      })
+    ).textContent = `t = ${fmt(state.threshold, 2)}`;
+
+    drawLegend(
+      svg,
+      series.map(({ label, color, dash }) => ({ label, color, dash })),
+      box,
+      { legendPad: 10, legendRow: 17, legendLine: 18 },
+      "outside-right"
     );
   }
 
@@ -1678,6 +1880,7 @@
     drawRoc();
     drawPr();
     renderMetrics();
+    drawMetricTrend();
     scheduleUrlSync();
   }
 
@@ -1685,6 +1888,7 @@
     readControls();
     generateData();
     updateThresholdRange();
+    state.metricCurves = computeMetricCurves(state.data.all, state.thresholdMin, state.thresholdMax);
     renderAll();
   }
 

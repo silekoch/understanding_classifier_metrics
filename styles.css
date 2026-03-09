@@ -225,6 +225,10 @@ svg {
   overflow-x: auto;
 }
 
+#metricTrendSvg {
+  margin-top: 10px;
+}
+
 .axis-label {
   fill: #564f42;
   font-size: 13px;
