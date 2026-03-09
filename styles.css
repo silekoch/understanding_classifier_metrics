@@ -210,18 +210,6 @@ svg {
   outline: none;
 }
 
-.derived-rates {
-  margin-top: 8px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: rgba(252, 250, 245, 0.9);
-  font-size: 0.84rem;
-  color: var(--muted);
-  font-family: "Menlo", "Consolas", monospace;
-  line-height: 1.5;
-}
-
 .metrics pre {
   margin: 0;
   padding: 10px;

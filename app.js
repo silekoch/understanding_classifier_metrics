@@ -33,7 +33,6 @@
     data: null,
     roc: null,
     pr: null,
-    metrics: null,
   };
 
   const ids = {
@@ -105,7 +104,6 @@
     prSvg: document.getElementById("prSvg"),
     distSvg: document.getElementById("distSvg"),
     confusionSvg: document.getElementById("confusionSvg"),
-    derivedRates: document.getElementById("derivedRates"),
     metricsText: document.getElementById("metricsText"),
   };
 
@@ -826,17 +824,16 @@
     const recall = tpr;
     const specificity = N > 0 ? tn / N : 0;
     const f1 = precision + recall > 0 ? (2 * precision * recall) / (precision + recall) : 0;
+    const mccDen = Math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn));
+    const mcc = mccDen > 0 ? (tp * tn - fp * fn) / mccDen : 0;
 
-    return { tp, fp, tn, fn, tpr, fpr, precision, recall, specificity, f1, P, N };
+    return { tp, fp, tn, fn, tpr, fpr, precision, recall, specificity, f1, mcc, P, N };
   }
 
   function computeEverything() {
     const rocPoints = computeRocPoints(state.data.all);
     const pr = computePrPoints(state.data.all);
-    const aucTrap = computeAucTrapezoid(rocPoints);
-    const aucRank = computeAucRank(state.data.all);
     const op = computeOperatingPoint(state.threshold, state.data.all);
-    const apTrap = computeApTrapezoid(pr.points);
 
     state.roc = {
       empirical: rocPoints,
@@ -847,13 +844,6 @@
       points: pr.points,
       prevalence: pr.prevalence,
       op: { recall: op.recall, precision: op.precision },
-    };
-
-    state.metrics = {
-      aucTrap,
-      aucRank,
-      aucAbsDiff: Math.abs(aucTrap - aucRank),
-      apTrap,
     };
   }
 
@@ -1550,10 +1540,6 @@
       })
     ).textContent = `Total samples: ${total}`;
 
-    ids.derivedRates.textContent = [
-      `TPR: ${fmt(op.tpr, 4)}   FPR: ${fmt(op.fpr, 4)}   Precision: ${fmt(op.precision, 4)}`,
-      `Recall: ${fmt(op.recall, 4)}   Specificity: ${fmt(op.specificity, 4)}   F1: ${fmt(op.f1, 4)}`,
-    ].join("\n");
   }
 
   function nearestFiniteThreshold(rocPoints, fprTarget, tprTarget) {
@@ -1668,25 +1654,20 @@
   }
 
   function renderMetrics() {
-    const preset = getActivePreset();
     const op = state.roc.op;
-    const m = state.metrics;
-    const pass = m.aucAbsDiff < 1e-10 ? "PASS" : "CHECK";
+    const rows = [
+      ["Recall (TPR)", op.tpr],
+      ["False Positive Rate (FPR)", op.fpr],
+      ["Precision (PPV)", op.precision],
+      ["Specificity (TNR)", op.specificity],
+      ["F1 Score", op.f1],
+      ["MCC (Matthews)", op.mcc],
+    ];
+    const labelWidth = Math.max(...rows.map(([label]) => label.length)) + 2;
 
-    ids.metricsText.textContent = [
-      `Preset                  ${state.preset}`,
-      `Threshold               ${fmt(state.threshold, 4)}`,
-      `Sample prevalence (P)   ${fmt(state.data.samplePrevalence, 4)}  (${state.data.nPos}/${state.data.nPos + state.data.nNeg})`,
-      `TPR, FPR                ${fmt(op.tpr, 4)}, ${fmt(op.fpr, 4)}`,
-      `Precision, Recall       ${fmt(op.precision, 4)}, ${fmt(op.recall, 4)}`,
-      `Specificity, F1         ${fmt(op.specificity, 4)}, ${fmt(op.f1, 4)}`,
-      `TP, FP, TN, FN          ${op.tp}, ${op.fp}, ${op.tn}, ${op.fn}`,
-      "",
-      `AUC empirical (trap)    ${fmt(m.aucTrap, 6)}`,
-      `AUC empirical (rank)    ${fmt(m.aucRank, 6)}`,
-      `|difference|            ${fmt(m.aucAbsDiff, 12)}  ${pass}`,
-      `AP empirical (trap)     ${fmt(m.apTrap, 6)}`,
-    ].join("\n");
+    ids.metricsText.textContent = rows
+      .map(([label, value]) => `${label.padEnd(labelWidth)}${fmt(value, 2)}`)
+      .join("\n");
   }
 
   function renderAll() {
