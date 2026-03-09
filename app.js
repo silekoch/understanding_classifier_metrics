@@ -247,7 +247,7 @@
       outlierFrac: 0,
       nPerClass: 700,
       samplePosFrac: 0.5,
-      desc: "Overconfident probabilities: many near 0/1, with some high-confidence mistakes.",
+      desc: "Probability-like scores in [0,1] with many near 0/1 and mostly correct confidence.",
     },
     probMidrange: {
       mode: "beta",
