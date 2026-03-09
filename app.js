@@ -29,6 +29,7 @@
     rocClickBox: null,
     prClickBox: null,
     metricTrendBox: null,
+    metricTrendHoverKey: null,
     distView: null,
     draggingThreshold: false,
     draggingMetricThreshold: false,
@@ -998,6 +999,7 @@
     });
     if (dash) path.setAttribute("stroke-dasharray", dash);
     svg.appendChild(path);
+    return path;
   }
 
   function getSvgViewSize(svg, fallbackW = 760, fallbackH = 420) {
@@ -1080,6 +1082,7 @@
             stroke: item.color,
             "stroke-width": item.width || 3,
             "stroke-dasharray": item.dash || "",
+            opacity: item.opacity == null ? 1 : item.opacity,
           })
         );
         svg.appendChild(
@@ -1088,6 +1091,7 @@
             y: y + 4,
             class: "legend",
             "text-anchor": "end",
+            opacity: item.opacity == null ? 1 : item.opacity,
           })
         ).textContent = item.label;
       } else if (anchor === "inside-left") {
@@ -1102,6 +1106,7 @@
             stroke: item.color,
             "stroke-width": item.width || 3,
             "stroke-dasharray": item.dash || "",
+            opacity: item.opacity == null ? 1 : item.opacity,
           })
         );
         svg.appendChild(
@@ -1109,6 +1114,7 @@
             x: x2 + 6,
             y: y + 4,
             class: "legend",
+            opacity: item.opacity == null ? 1 : item.opacity,
           })
         ).textContent = item.label;
       } else {
@@ -1123,6 +1129,7 @@
             stroke: item.color,
             "stroke-width": item.width || 3,
             "stroke-dasharray": item.dash || "",
+            opacity: item.opacity == null ? 1 : item.opacity,
           })
         );
         svg.appendChild(
@@ -1130,6 +1137,7 @@
             x: x2 + 6,
             y: y + 4,
             class: "legend",
+            opacity: item.opacity == null ? 1 : item.opacity,
           })
         ).textContent = item.label;
       }
@@ -1248,6 +1256,71 @@
     );
   }
 
+  function getMetricTrendYRange(curves) {
+    const allY = [
+      ...(curves.recall || []).map((p) => p.v),
+      ...(curves.precision || []).map((p) => p.v),
+      ...(curves.specificity || []).map((p) => p.v),
+      ...(curves.f1 || []).map((p) => p.v),
+      ...(curves.mcc || []).map((p) => p.v),
+      ...(curves.accuracy || []).map((p) => p.v),
+    ];
+    const hasNegative = allY.some((v) => v < 0);
+    const yMin = hasNegative ? -1 : 0;
+    const yMax = 1;
+    const ySpan = Math.max(1e-9, yMax - yMin);
+    return { yMin, yMax, ySpan };
+  }
+
+  function setMetricTrendHoverKey(nextKey) {
+    const key = nextKey || null;
+    if (state.metricTrendHoverKey === key) return;
+    state.metricTrendHoverKey = key;
+    drawMetricTrend();
+  }
+
+  function metricTrendHoverKeyFromPointer(evt) {
+    const box = state.metricTrendBox;
+    const curves = state.metricCurves;
+    if (!box || !curves) return null;
+    const point = eventToSvgCoordinates(evt, ids.metricTrendSvg, 760, 240);
+    if (
+      point.x < box.left ||
+      point.x > box.left + box.width ||
+      point.y < box.top ||
+      point.y > box.top + box.height
+    ) {
+      return null;
+    }
+
+    const { yMin, ySpan } = getMetricTrendYRange(curves);
+    const series = [
+      { key: "recall", points: curves.recall },
+      { key: "precision", points: curves.precision },
+      { key: "specificity", points: curves.specificity },
+      { key: "f1", points: curves.f1 },
+      { key: "mcc", points: curves.mcc },
+      { key: "accuracy", points: curves.accuracy },
+    ];
+    const u = clamp((point.x - box.left) / box.width, 0, 1);
+
+    let bestKey = null;
+    let bestDist = Infinity;
+    for (const item of series) {
+      if (!item.points || !item.points.length) continue;
+      const idx = clamp(Math.round(u * (item.points.length - 1)), 0, item.points.length - 1);
+      const yNorm = clamp((item.points[idx].v - yMin) / ySpan, 0, 1);
+      const y = box.top + (1 - yNorm) * box.height;
+      const dist = Math.abs(point.y - y);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestKey = item.key;
+      }
+    }
+
+    return bestDist <= 12 ? bestKey : null;
+  }
+
   function drawMetricTrend() {
     const svg = ids.metricTrendSvg;
     if (!svg) return;
@@ -1257,19 +1330,16 @@
     if (!curves) return;
 
     const series = [
-      { label: "Recall (TPR)", points: curves.recall, color: "#0D9488", width: 2.6 },
-      { label: "Precision (PPV)", points: curves.precision, color: "#2563EB", width: 2.4, dash: "10 5" },
-      { label: "Specificity (TNR)", points: curves.specificity, color: "#D97706", width: 2.4, dash: "2 5" },
-      { label: "F1 Score", points: curves.f1, color: "#7C3AED", width: 2.4, dash: "12 4 2 4" },
-      { label: "MCC", points: curves.mcc, color: "#111111", width: 3.0 },
-      { label: "Accuracy", points: curves.accuracy, color: "#7A7062", width: 1.8, dash: "5 4" },
+      { key: "recall", label: "Recall (TPR)", points: curves.recall, color: "#0D9488", width: 2.6 },
+      { key: "precision", label: "Precision (PPV)", points: curves.precision, color: "#2563EB", width: 2.4, dash: "10 5" },
+      { key: "specificity", label: "Specificity (TNR)", points: curves.specificity, color: "#D97706", width: 2.4, dash: "2 5" },
+      { key: "f1", label: "F1 Score", points: curves.f1, color: "#7C3AED", width: 2.4, dash: "12 4 2 4" },
+      { key: "mcc", label: "MCC", points: curves.mcc, color: "#111111", width: 3.0 },
+      { key: "accuracy", label: "Accuracy", points: curves.accuracy, color: "#7A7062", width: 1.8, dash: "5 4" },
     ];
-
-    const allY = series.flatMap((s) => s.points.map((p) => p.v));
-    const hasNegative = allY.some((v) => v < 0);
-    const yMin = hasNegative ? -1 : 0;
-    const yMax = 1;
-    const ySpan = Math.max(1e-9, yMax - yMin);
+    const { yMin, yMax, ySpan } = getMetricTrendYRange(curves);
+    const hasNegative = yMin < 0;
+    const hoveredKey = state.metricTrendHoverKey;
 
     const view = getSvgViewSize(svg, 760, 240);
     const box = {
@@ -1381,7 +1451,19 @@
         x: p.u,
         y: clamp((p.v - yMin) / ySpan, 0, 1),
       }));
-      addPath(svg, unitPoints, box, item.color, item.width || 2.2, item.dash || null, "x", "y");
+      const isHovered = hoveredKey === item.key;
+      const isDimmed = hoveredKey && !isHovered;
+      const path = addPath(
+        svg,
+        unitPoints,
+        box,
+        item.color,
+        (item.width || 2.2) + (isHovered ? 0.8 : 0),
+        item.dash || null,
+        "x",
+        "y"
+      );
+      path.setAttribute("opacity", isDimmed ? "0.2" : "1");
     }
 
     const uCurrent = clamp(
@@ -1440,7 +1522,13 @@
 
     drawLegend(
       svg,
-      series.map(({ label, color, dash, width }) => ({ label, color, dash, width })),
+      series.map(({ key, label, color, dash, width }) => ({
+        label,
+        color,
+        dash,
+        width: (width || 3) + (hoveredKey === key ? 0.8 : 0),
+        opacity: hoveredKey && hoveredKey !== key ? 0.25 : 1,
+      })),
       box,
       { legendPad: 10, legendRow: 17, legendLine: 18 },
       "outside-right"
@@ -2028,7 +2116,17 @@
     ids.metricTrendSvg.addEventListener("pointerdown", (evt) => {
       const box = state.metricTrendBox;
       if (!box) return;
+      const point = eventToSvgCoordinates(evt, ids.metricTrendSvg, 760, 240);
+      if (
+        point.x < box.left ||
+        point.x > box.left + box.width ||
+        point.y < box.top ||
+        point.y > box.top + box.height
+      ) {
+        return;
+      }
       evt.preventDefault();
+      state.metricTrendHoverKey = null;
       state.draggingMetricThreshold = true;
       ids.metricTrendSvg.setPointerCapture(evt.pointerId);
       setThreshold(thresholdFromMetricTrendPointer(evt));
@@ -2036,10 +2134,13 @@
     });
 
     ids.metricTrendSvg.addEventListener("pointermove", (evt) => {
-      if (!state.draggingMetricThreshold) return;
-      evt.preventDefault();
-      setThreshold(thresholdFromMetricTrendPointer(evt));
-      renderAll();
+      if (state.draggingMetricThreshold) {
+        evt.preventDefault();
+        setThreshold(thresholdFromMetricTrendPointer(evt));
+        renderAll();
+        return;
+      }
+      setMetricTrendHoverKey(metricTrendHoverKeyFromPointer(evt));
     });
 
     ids.metricTrendSvg.addEventListener("pointerup", (evt) => {
@@ -2056,6 +2157,11 @@
       if (ids.metricTrendSvg.hasPointerCapture(evt.pointerId)) {
         ids.metricTrendSvg.releasePointerCapture(evt.pointerId);
       }
+    });
+
+    ids.metricTrendSvg.addEventListener("pointerleave", () => {
+      if (state.draggingMetricThreshold) return;
+      setMetricTrendHoverKey(null);
     });
 
     ids.distSvg.addEventListener("pointerdown", (evt) => {
