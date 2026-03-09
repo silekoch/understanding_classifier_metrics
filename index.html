@@ -24,19 +24,19 @@
             <span>Preset</span>
             <select id="preset">
               <option value="overlap">Gaussian overlap (near diagonal)</option>
-              <option value="separated" selected>Good Separation (strong belly)</option>
+              <option value="separated" selected>Gaussian good separation (strong belly)</option>
               <option value="unequal">Gaussian unequal variance (asymmetric)</option>
+              <option value="mixture">Gaussian mixture (kink/shoulder)</option>
               <option value="lognormal">Log-normal classes (right-skewed)</option>
               <option value="heavytail">Student-t heavy tails</option>
-              <option value="mixture">Positive mixture (kink/shoulder)</option>
               <option value="zeroinflated">Zero-inflated scores (steps/ties)</option>
               <option value="uniform">Uniform classes (piecewise-linear feel)</option>
               <option value="exponential">Exponential classes (skewed)</option>
-              <option value="probGoodSep">Probability scores [0,1]: good separation</option>
-              <option value="probOverlap">Probability scores [0,1]: overlap</option>
-              <option value="probOverconfident">Probability scores [0,1]: overconfident</option>
-              <option value="probConfidentErrors">Probability scores [0,1]: confident errors mix</option>
-              <option value="probMidrange">Probability scores [0,1]: midrange</option>
+              <option value="probGoodSep">Probability scores (Beta): good separation</option>
+              <option value="probOverlap">Probability scores (Beta): overlap</option>
+              <option value="probOverconfident">Probability scores (Beta): overconfident</option>
+              <option value="probConfidentErrors">Probability scores (Beta): confident errors mix</option>
+              <option value="probMidrange">Probability scores (Beta): midrange</option>
             </select>
           </label>
           <p id="presetDesc" class="hint"></p>
