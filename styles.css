@@ -227,6 +227,7 @@ svg {
 
 #metricTrendSvg {
   margin-top: 10px;
+  touch-action: none;
 }
 
 .axis-label {
