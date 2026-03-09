@@ -66,8 +66,7 @@ body {
 }
 
 .controls h2,
-.plots h2,
-.notes h2 {
+.plots h2 {
   margin: 0 0 10px;
   font-size: 1.02rem;
 }
@@ -232,19 +231,6 @@ svg {
   font-size: 0.82rem;
   font-family: "Menlo", "Consolas", monospace;
   overflow-x: auto;
-}
-
-.notes {
-  margin-top: 14px;
-  padding: 12px;
-}
-
-.notes p {
-  margin: 8px 0;
-}
-
-.notes ul {
-  margin: 8px 0 2px 18px;
 }
 
 .axis-label {
