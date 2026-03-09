@@ -117,7 +117,7 @@
       outlierFrac: 0,
       nPerClass: 500,
       samplePosFrac: 0.5,
-      desc: "Expected shape: close to diagonal baseline (high overlap).",
+      desc: "Expected ROC shape: close to diagonal baseline (high overlap).\nExpected PR shape: near the prevalence baseline with limited lift.",
     },
     separated: {
       mode: "normal",
@@ -128,7 +128,7 @@
       outlierFrac: 0,
       nPerClass: 500,
       samplePosFrac: 0.5,
-      desc: "Expected shape: pronounced top-left belly (good separation).",
+      desc: "Expected ROC shape: pronounced top-left belly (good separation).\nExpected PR shape: high precision over a wide recall range.",
     },
     unequal: {
       mode: "normal",
@@ -139,7 +139,7 @@
       outlierFrac: 0,
       nPerClass: 600,
       samplePosFrac: 0.5,
-      desc: "Expected shape: asymmetric curvature from unequal variances.",
+      desc: "Expected ROC shape: asymmetric curvature from unequal variances.",
     },
     lognormal: {
       mode: "lognormal",
@@ -151,7 +151,7 @@
       nPerClass: 700,
       samplePosFrac: 0.5,
       logSigma: 0.7,
-      desc: "Expected shape: smooth but skew-driven bend (not symmetric like Gaussian).",
+      desc: "Expected ROC shape: smooth but skew-driven bend (not symmetric like Gaussian).",
     },
     heavytail: {
       mode: "student_t",
@@ -164,7 +164,7 @@
       samplePosFrac: 0.5,
       dfNeg: 3,
       dfPos: 3,
-      desc: "Expected shape: flatter shoulders from heavy tails/outliers.",
+      desc: "Expected ROC shape: flatter shoulders from heavy tails/outliers.",
     },
     mixture: {
       mode: "mixture_pos",
@@ -178,7 +178,7 @@
       mixWeight: 0.24,
       mixOffset: 0.15,
       mixSdMult: 1.1,
-      desc: "Expected shape: visible kink/shoulder from class heterogeneity.",
+      desc: "Expected ROC shape: visible kink/shoulder from class heterogeneity.",
     },
     zeroinflated: {
       mode: "zero_inflated",
@@ -192,7 +192,7 @@
       p0Neg: 0.42,
       p0Pos: 0.12,
       zeroValue: 0,
-      desc: "Expected shape: step-like ROC segments from many tied zero scores.",
+      desc: "Expected ROC shape: step-like segments from many tied zero scores.\nExpected PR shape: staircase-like segments from the same score ties.",
     },
     uniform: {
       mode: "uniform",
@@ -214,7 +214,7 @@
       outlierFrac: 0,
       nPerClass: 700,
       samplePosFrac: 0.5,
-      desc: "Expected shape: skewed ROC curvature from one-sided tails.",
+      desc: "Expected ROC shape: skewed curvature from one-sided tails.",
     },
     probGoodSep: {
       mode: "beta",

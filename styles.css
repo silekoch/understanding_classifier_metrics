@@ -126,6 +126,10 @@ hr {
   margin: 7px 0 10px;
 }
 
+#presetDesc {
+  white-space: pre-line;
+}
+
 
 .advanced {
   border: 1px solid var(--line);
