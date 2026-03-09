@@ -27,6 +27,7 @@
     seed: 13,
     threshold: 1,
     rocClickBox: null,
+    prClickBox: null,
     distView: null,
     draggingThreshold: false,
     urlSyncTimer: null,
@@ -1158,6 +1159,7 @@
 
     const layout = computeCurveLayout(svg, "two-up");
     const box = layout.box;
+    state.prClickBox = box;
     drawAxes(svg, box, 10, 10, "Recall", "Precision");
 
     const baselineY = box.top + (1 - state.pr.prevalence) * box.height;
@@ -1540,14 +1542,14 @@
 
   }
 
-  function nearestFiniteThreshold(rocPoints, fprTarget, tprTarget) {
+  function nearestFiniteThreshold(points, xTarget, yTarget, xKey = "fpr", yKey = "tpr") {
     let best = null;
     let bestDist = Infinity;
 
-    for (const p of rocPoints) {
+    for (const p of points) {
       if (!Number.isFinite(p.threshold)) continue;
-      const dx = p.fpr - fprTarget;
-      const dy = p.tpr - tprTarget;
+      const dx = p[xKey] - xTarget;
+      const dy = p[yKey] - yTarget;
       const d2 = dx * dx + dy * dy;
       if (d2 < bestDist) {
         bestDist = d2;
@@ -1754,6 +1756,24 @@
       const tpr = clamp(1 - (y - box.top) / box.height, 0, 1);
 
       const nearest = nearestFiniteThreshold(state.roc.empirical, fpr, tpr);
+      if (!nearest) return;
+
+      setThreshold(nearest.threshold);
+      renderAll();
+    });
+
+    ids.prSvg.addEventListener("click", (evt) => {
+      const box = state.prClickBox;
+      if (!box) return;
+
+      const point = eventToSvgCoordinates(evt, ids.prSvg, 760, 420);
+      const x = point.x;
+      const y = point.y;
+
+      const recall = clamp((x - box.left) / box.width, 0, 1);
+      const precision = clamp(1 - (y - box.top) / box.height, 0, 1);
+
+      const nearest = nearestFiniteThreshold(state.pr.points, recall, precision, "recall", "precision");
       if (!nearest) return;
 
       setThreshold(nearest.threshold);
