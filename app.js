@@ -59,7 +59,6 @@
     shapeZeroInflated: document.getElementById("shapeZeroInflated"),
     shapeBeta: document.getElementById("shapeBeta"),
     shapeBetaConf: document.getElementById("shapeBetaConf"),
-    shapeNoExtra: document.getElementById("shapeNoExtra"),
     muNegValue: document.getElementById("muNegValue"),
     sdNegValue: document.getElementById("sdNegValue"),
     muPosValue: document.getElementById("muPosValue"),
@@ -413,7 +412,6 @@
     setHidden(ids.shapeZeroInflated, mode !== "zero_inflated");
     setHidden(ids.shapeBeta, mode !== "beta");
     setHidden(ids.shapeBetaConf, mode !== "beta_conf_mixture");
-    setHidden(ids.shapeNoExtra, !(mode === "uniform" || mode === "exponential"));
   }
 
   function syncControlOutputs() {
