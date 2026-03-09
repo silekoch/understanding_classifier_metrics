@@ -1390,23 +1390,53 @@
       1
     );
     const markerX = box.left + uCurrent * box.width;
+    const handleY = box.top + box.height / 2;
     svg.appendChild(
       createSvgEl("line", {
         x1: markerX,
         y1: box.top,
         x2: markerX,
         y2: box.top + box.height,
-        stroke: "rgba(0,0,0,0.55)",
-        "stroke-width": 1.8,
+        stroke: "#000",
+        "stroke-width": 2,
+        "stroke-dasharray": "7 5",
+        "data-role": "threshold-line",
+        class: "threshold-grab",
       })
     );
+
+    svg.appendChild(
+      createSvgEl("circle", {
+        cx: markerX,
+        cy: handleY,
+        r: 12,
+        fill: "rgba(120,120,120,0.25)",
+        stroke: "#000000",
+        "stroke-width": 2,
+        "data-role": "threshold-handle",
+        class: "threshold-grab",
+      })
+    );
+
+    svg.appendChild(
+      createSvgEl("circle", {
+        cx: markerX,
+        cy: handleY,
+        r: 18,
+        fill: "transparent",
+        stroke: "none",
+        "data-role": "threshold-handle",
+        class: "threshold-grab",
+      })
+    );
+
     svg.appendChild(
       createSvgEl("text", {
-        x: markerX + 6,
-        y: box.top + 14,
+        x: markerX + 7,
+        y: box.top + 16,
         class: "legend",
       })
-    ).textContent = `t = ${fmt(state.threshold, 2)}`;
+    ).textContent = `threshold ${fmt(state.threshold, 3)}`;
 
     drawLegend(
       svg,
