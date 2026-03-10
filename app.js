@@ -6,18 +6,15 @@ import {
   computeRocPoints,
 } from "./core/metrics.js";
 import { generateData as generateSampleData } from "./core/data.js";
-import {
-  addPath,
-  clear,
-  createSvgEl,
-  drawLegend,
-  eventToSvgCoordinates,
-  getSvgViewSize,
-} from "./viz/svg.js";
+import { eventToSvgCoordinates } from "./viz/svg.js";
 import { drawRoc as drawRocView } from "./viz/roc.js";
 import { drawPr as drawPrView } from "./viz/pr.js";
 import { drawDist as drawDistView } from "./viz/dist.js";
 import { drawConfusionMatrix as drawConfusionMatrixView } from "./viz/matrix.js";
+import {
+  drawMetricTrend as drawMetricTrendView,
+  metricTrendHoverKeyFromPointer as metricTrendHoverKeyFromPointerView,
+} from "./viz/metric-trend.js";
 
 (function () {
   const state = {
@@ -351,22 +348,6 @@ import { drawConfusionMatrix as drawConfusionMatrixView } from "./viz/matrix.js"
     });
   }
 
-  function getMetricTrendYRange(curves) {
-    const allY = [
-      ...(curves.recall || []).map((p) => p.v),
-      ...(curves.precision || []).map((p) => p.v),
-      ...(curves.specificity || []).map((p) => p.v),
-      ...(curves.f1 || []).map((p) => p.v),
-      ...(curves.mcc || []).map((p) => p.v),
-      ...(curves.accuracy || []).map((p) => p.v),
-    ];
-    const hasNegative = allY.some((v) => v < 0);
-    const yMin = hasNegative ? -1 : 0;
-    const yMax = 1;
-    const ySpan = Math.max(1e-9, yMax - yMin);
-    return { yMin, yMax, ySpan };
-  }
-
   function setMetricTrendHoverKey(nextKey) {
     const key = nextKey || null;
     if (state.metricTrendHoverKey === key) return;
@@ -374,261 +355,16 @@ import { drawConfusionMatrix as drawConfusionMatrixView } from "./viz/matrix.js"
     drawMetricTrend();
   }
 
-  function metricTrendHoverKeyFromPointer(evt) {
-    const box = state.metricTrendBox;
-    const curves = state.metricCurves;
-    if (!box || !curves) return null;
-    const point = eventToSvgCoordinates(evt, ids.metricTrendSvg, 760, 240);
-    if (
-      point.x < box.left ||
-      point.x > box.left + box.width ||
-      point.y < box.top ||
-      point.y > box.top + box.height
-    ) {
-      return null;
-    }
-
-    const { yMin, ySpan } = getMetricTrendYRange(curves);
-    const series = [
-      { key: "recall", points: curves.recall },
-      { key: "precision", points: curves.precision },
-      { key: "specificity", points: curves.specificity },
-      { key: "f1", points: curves.f1 },
-      { key: "mcc", points: curves.mcc },
-      { key: "accuracy", points: curves.accuracy },
-    ];
-    const u = clamp((point.x - box.left) / box.width, 0, 1);
-
-    let bestKey = null;
-    let bestDist = Infinity;
-    for (const item of series) {
-      if (!item.points || !item.points.length) continue;
-      const idx = clamp(Math.round(u * (item.points.length - 1)), 0, item.points.length - 1);
-      const yNorm = clamp((item.points[idx].v - yMin) / ySpan, 0, 1);
-      const y = box.top + (1 - yNorm) * box.height;
-      const dist = Math.abs(point.y - y);
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestKey = item.key;
-      }
-    }
-
-    return bestDist <= 12 ? bestKey : null;
-  }
-
   function drawMetricTrend() {
-    const svg = ids.metricTrendSvg;
-    if (!svg) return;
-    clear(svg);
-
-    const curves = state.metricCurves;
-    if (!curves) return;
-
-    const series = [
-      { key: "recall", label: "Recall (TPR)", points: curves.recall, color: "#0D9488", width: 2.6 },
-      { key: "precision", label: "Precision (PPV)", points: curves.precision, color: "#2563EB", width: 2.4, dash: "10 5" },
-      { key: "specificity", label: "Specificity (TNR)", points: curves.specificity, color: "#D97706", width: 2.4, dash: "2 5" },
-      { key: "f1", label: "F1 Score", points: curves.f1, color: "#7C3AED", width: 2.4, dash: "12 4 2 4" },
-      { key: "mcc", label: "MCC", points: curves.mcc, color: "#111111", width: 3.0 },
-      { key: "accuracy", label: "Accuracy", points: curves.accuracy, color: "#7A7062", width: 1.8, dash: "5 4" },
-    ];
-    const { yMin, yMax, ySpan } = getMetricTrendYRange(curves);
-    const hasNegative = yMin < 0;
-    const hoveredKey = state.metricTrendHoverKey;
-
-    const view = getSvgViewSize(svg, 760, 240);
-    const box = {
-      left: 66,
-      top: 18,
-      width: Math.max(140, view.width - 250),
-      height: Math.max(80, view.height - 62),
-    };
-    state.metricTrendBox = box;
-
-    const axis = createSvgEl("g", {});
-    const xTicks = 6;
-    const yTicks = 5;
-
-    for (let i = 0; i <= xTicks; i += 1) {
-      const u = i / xTicks;
-      const x = box.left + u * box.width;
-      axis.appendChild(
-        createSvgEl("line", {
-          x1: x,
-          y1: box.top,
-          x2: x,
-          y2: box.top + box.height,
-          stroke: "rgba(0,0,0,0.08)",
-        })
-      );
-      const threshold = state.thresholdMin + u * (state.thresholdMax - state.thresholdMin);
-      axis.appendChild(
-        createSvgEl("text", {
-          x,
-          y: box.top + box.height + 18,
-          class: "tick",
-          "text-anchor": "middle",
-        })
-      ).textContent = fmt(threshold, 2);
-    }
-
-    for (let i = 0; i <= yTicks; i += 1) {
-      const u = i / yTicks;
-      const y = box.top + box.height - u * box.height;
-      axis.appendChild(
-        createSvgEl("line", {
-          x1: box.left,
-          y1: y,
-          x2: box.left + box.width,
-          y2: y,
-          stroke: "rgba(0,0,0,0.08)",
-        })
-      );
-      const value = yMin + u * (yMax - yMin);
-      axis.appendChild(
-        createSvgEl("text", {
-          x: box.left - 10,
-          y: y + 4,
-          class: "tick",
-          "text-anchor": "end",
-        })
-      ).textContent = fmt(value, 2);
-    }
-
-    if (hasNegative) {
-      const zeroU = (0 - yMin) / ySpan;
-      const zeroY = box.top + (1 - zeroU) * box.height;
-      axis.appendChild(
-        createSvgEl("line", {
-          x1: box.left,
-          y1: zeroY,
-          x2: box.left + box.width,
-          y2: zeroY,
-          stroke: "rgba(0,0,0,0.25)",
-          "stroke-dasharray": "4 4",
-        })
-      );
-    }
-
-    axis.appendChild(
-      createSvgEl("rect", {
-        x: box.left,
-        y: box.top,
-        width: box.width,
-        height: box.height,
-        fill: "none",
-        stroke: "rgba(0,0,0,0.25)",
-      })
-    );
-
-    axis.appendChild(
-      createSvgEl("text", {
-        x: box.left + box.width / 2,
-        y: box.top + box.height + 40,
-        class: "axis-label",
-        "text-anchor": "middle",
-      })
-    ).textContent = "Threshold";
-
-    const yLabel = createSvgEl("text", {
-      x: box.left - 52,
-      y: box.top + box.height / 2,
-      class: "axis-label",
-      "text-anchor": "middle",
-      transform: `rotate(-90 ${box.left - 52} ${box.top + box.height / 2})`,
+    state.metricTrendBox = drawMetricTrendView({
+      svg: ids.metricTrendSvg,
+      curves: state.metricCurves,
+      hoveredKey: state.metricTrendHoverKey,
+      threshold: state.threshold,
+      thresholdMin: state.thresholdMin,
+      thresholdMax: state.thresholdMax,
+      fmt,
     });
-    yLabel.textContent = "Metric value";
-    axis.appendChild(yLabel);
-    svg.appendChild(axis);
-
-    for (const item of series) {
-      const unitPoints = item.points.map((p) => ({
-        x: p.u,
-        y: clamp((p.v - yMin) / ySpan, 0, 1),
-      }));
-      const isHovered = hoveredKey === item.key;
-      const isDimmed = hoveredKey && !isHovered;
-      const path = addPath(
-        svg,
-        unitPoints,
-        box,
-        item.color,
-        (item.width || 2.2) + (isHovered ? 0.8 : 0),
-        item.dash || null,
-        "x",
-        "y"
-      );
-      path.setAttribute("opacity", isDimmed ? "0.2" : "1");
-    }
-
-    const uCurrent = clamp(
-      (state.threshold - state.thresholdMin) / Math.max(1e-9, state.thresholdMax - state.thresholdMin),
-      0,
-      1
-    );
-    const markerX = box.left + uCurrent * box.width;
-    const handleY = box.top + box.height / 2;
-    svg.appendChild(
-      createSvgEl("line", {
-        x1: markerX,
-        y1: box.top,
-        x2: markerX,
-        y2: box.top + box.height,
-        stroke: "#000",
-        "stroke-width": 2,
-        "stroke-dasharray": "7 5",
-        "data-role": "threshold-line",
-        class: "threshold-grab",
-      })
-    );
-
-    svg.appendChild(
-      createSvgEl("circle", {
-        cx: markerX,
-        cy: handleY,
-        r: 12,
-        fill: "rgba(120,120,120,0.25)",
-        stroke: "#000000",
-        "stroke-width": 2,
-        "data-role": "threshold-handle",
-        class: "threshold-grab",
-      })
-    );
-
-    svg.appendChild(
-      createSvgEl("circle", {
-        cx: markerX,
-        cy: handleY,
-        r: 18,
-        fill: "transparent",
-        stroke: "none",
-        "data-role": "threshold-handle",
-        class: "threshold-grab",
-      })
-    );
-
-    svg.appendChild(
-      createSvgEl("text", {
-        x: markerX + 7,
-        y: box.top + 16,
-        class: "legend",
-      })
-    ).textContent = `threshold ${fmt(state.threshold, 3)}`;
-
-    drawLegend(
-      svg,
-      series.map(({ key, label, color, dash, width }) => ({
-        key,
-        label,
-        color,
-        dash,
-        width: (width || 3) + (hoveredKey === key ? 0.8 : 0),
-        opacity: hoveredKey && hoveredKey !== key ? 0.25 : 1,
-      })),
-      box,
-      { legendPad: 10, legendRow: 17, legendLine: 18 },
-      "outside-right"
-    );
   }
 
   function drawDist() {
@@ -930,7 +666,14 @@ import { drawConfusionMatrix as drawConfusionMatrixView } from "./viz/matrix.js"
         setMetricTrendHoverKey(legendKey);
         return;
       }
-      setMetricTrendHoverKey(metricTrendHoverKeyFromPointer(evt));
+      setMetricTrendHoverKey(
+        metricTrendHoverKeyFromPointerView({
+          evt,
+          svg: ids.metricTrendSvg,
+          box: state.metricTrendBox,
+          curves: state.metricCurves,
+        })
+      );
     });
 
     ids.metricTrendSvg.addEventListener("pointerup", (evt) => {
