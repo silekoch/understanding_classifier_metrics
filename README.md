@@ -13,6 +13,26 @@ python3 -m http.server 8000
 
 Then visit `http://localhost:8000`.
 
+## Developer tooling
+
+Install local tooling dependencies:
+
+```bash
+npm install
+```
+
+Available commands:
+
+```bash
+npm run lint
+npm run lint:fix
+npm run format:check
+npm run format
+```
+
+Linting includes warning-level structural limits (`max-lines`, `max-lines-per-function`, and `complexity`) to guide
+incremental splitting without blocking work.
+
 ## What you can explore
 
 - **Score distributions** — two-class data drawn from a variety of distribution families
