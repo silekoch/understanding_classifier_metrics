@@ -1,9 +1,9 @@
 # Classifier Evaluation Playground
 
-An interactive tool for building deep intuition about classifier evaluation metrics.
+An interactive tool for building intuition about classifier evaluation metrics.
 Drag a threshold and watch the confusion matrix, ROC curve, and PR curve all react in real time.
 
-## Run
+## Run locally
 
 Open `index.html` directly in a browser, or serve this folder:
 
