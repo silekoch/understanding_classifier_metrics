@@ -9,14 +9,13 @@ import { generateData as generateSampleData } from "./core/data.js";
 import {
   addPath,
   clear,
-  computeCurveLayout,
   createSvgEl,
-  drawAxes,
   drawLegend,
   eventToSvgCoordinates,
   getSvgViewSize,
 } from "./viz/svg.js";
 import { drawRoc as drawRocView } from "./viz/roc.js";
+import { drawPr as drawPrView } from "./viz/pr.js";
 
 (function () {
   const state = {
@@ -342,62 +341,12 @@ import { drawRoc as drawRocView } from "./viz/roc.js";
   }
 
   function drawPr() {
-    const svg = ids.prSvg;
-    clear(svg);
-
-    const layout = computeCurveLayout(svg, "two-up");
-    const box = layout.box;
-    state.prClickBox = box;
-    drawAxes(svg, box, 10, 10, "Recall", "Precision");
-
-    const baselineY = box.top + (1 - state.pr.prevalence) * box.height;
-    svg.appendChild(
-      createSvgEl("line", {
-        x1: box.left,
-        y1: baselineY,
-        x2: box.left + box.width,
-        y2: baselineY,
-        stroke: "var(--diag)",
-        "stroke-width": layout.cfg.strokeAux,
-        "stroke-dasharray": "6 6",
-      })
-    );
-
-    addPath(svg, state.pr.points, box, "var(--emp)", layout.cfg.strokeMain, null, "recall", "precision");
-
-    const op = state.pr.op;
-    const cx = box.left + op.recall * box.width;
-    const cy = box.top + (1 - op.precision) * box.height;
-
-    svg.appendChild(
-      createSvgEl("circle", {
-        cx,
-        cy,
-        r: layout.cfg.pointRadius,
-        fill: "#ffffff",
-        stroke: "#000",
-        "stroke-width": layout.cfg.pointStroke,
-      })
-    );
-
-    svg.appendChild(
-      createSvgEl("text", {
-        x: cx + 10,
-        y: cy - 10,
-        class: "legend",
-      })
-    ).textContent = `threshold = ${fmt(state.threshold, 3)}`;
-
-    drawLegend(
-      svg,
-      [
-        { label: "Empirical PR", color: "var(--emp)" },
-        { label: `Random baseline (${fmt(state.pr.prevalence, 3)})`, color: "var(--diag)", dash: "6 6" },
-      ],
-      box,
-      layout.cfg,
-      "inside-left"
-    );
+    state.prClickBox = drawPrView({
+      svg: ids.prSvg,
+      pr: state.pr,
+      threshold: state.threshold,
+      fmt,
+    });
   }
 
   function getMetricTrendYRange(curves) {
