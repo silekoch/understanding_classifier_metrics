@@ -35,6 +35,8 @@ Available commands:
 ```bash
 npm run lint
 npm run lint:fix
+npm test
+npm run test:watch
 npm run format:check
 npm run format
 ```
