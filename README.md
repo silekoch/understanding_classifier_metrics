@@ -5,7 +5,16 @@ Drag a threshold and watch the confusion matrix, ROC curve, and PR curve all rea
 
 ## Run locally
 
-Open `index.html` directly in a browser, or serve this folder:
+Install dependencies and start the Vite dev server:
+
+```bash
+npm install
+npm run dev
+```
+
+Then open the URL printed by Vite (typically `http://localhost:5173`).
+
+Alternative (no build tool): serve this folder with Python:
 
 ```bash
 python3 -m http.server 8000
