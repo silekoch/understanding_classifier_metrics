@@ -20,9 +20,8 @@ Then visit `http://localhost:8000`.
 - **Threshold control** — drag the threshold directly on the distribution plot, or use the slider;
   everything updates at 60fps
 - **Confusion matrix** — live TP/FP/TN/FN counts and rates, linked to the threshold position
-- **ROC curve** — empirical curve with live operating point; AUC via trapezoidal and rank-statistic
-  (Mann-Whitney) methods as a cross-check
-- **PR curve** — empirical precision-recall curve with live operating point and Average Precision
+- **ROC curve** — empirical ROC curve with live operating point
+- **PR curve** — empirical precision-recall curve with live operating point and prevalence baseline
 - **Prevalence control** — adjust the positive class fraction in the evaluation sample to see how
   PR shifts while ROC stays invariant
 - **Distribution presets** — quickly switch between distribution shapes and Beta-family probability
