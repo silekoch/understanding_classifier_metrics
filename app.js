@@ -21,8 +21,7 @@ import { renderMetricsText } from "./ui/metrics-text.js";
 import { runStartupRender } from "./ui/startup.js";
 import { wireShapeControls } from "./ui/reactive-shape-controls.js";
 import { wireReactiveControls } from "./ui/reactive-controls.js";
-
-assertValidPresets(PRESETS);
+import { clearStatusBanner, showStatusBanner } from "./ui/status-banner.js";
 
 const state = createInitialState();
 const view = {
@@ -210,13 +209,31 @@ function initAppHandlers() {
 }
 
 function init() {
+  try {
+    assertValidPresets(PRESETS);
+  } catch (error) {
+    showStatusBanner({
+      el: ids.statusBanner,
+      level: "error",
+      message: error instanceof Error ? error.message : "Preset validation failed.",
+    });
+    throw error;
+  }
+
   initAppHandlers();
+  clearStatusBanner({ el: ids.statusBanner });
   restoreStateFromUrl({
     ids,
     presets: PRESETS,
     applyPresetValues: (name) => applyPresetValues({ ids, presets: PRESETS, name }),
     urlNumKeys: URL_NUM_KEYS,
     urlBoolKeys: URL_BOOL_KEYS,
+    onIssue: (message) =>
+      showStatusBanner({
+        el: ids.statusBanner,
+        level: "warning",
+        message,
+      }),
   });
   readControlValues();
   runStartupRender({

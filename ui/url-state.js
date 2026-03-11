@@ -1,8 +1,21 @@
-function parseBoolParam(value, fallback = false) {
-  if (value == null) {
-    return fallback;
+function parseBoolParam(value) {
+  if (value === "1" || value === "true") {
+    return true;
   }
-  return value === "1" || value === "true";
+  if (value === "0" || value === "false") {
+    return false;
+  }
+  return null;
+}
+
+function formatRestoreIssues(issues) {
+  if (!issues.length) {
+    return "";
+  }
+  if (issues.length === 1) {
+    return `URL parameter warning: ${issues[0]}`;
+  }
+  return `URL parameter warnings (${issues.length}): ${issues.join(" ")}`;
 }
 
 export function saveStateToUrl({ state, ids, urlNumKeys, urlBoolKeys }) {
@@ -32,11 +45,19 @@ export function scheduleUrlSync({ state, saveStateToUrl, delayMs = 120 }) {
   }, delayMs);
 }
 
-export function restoreStateFromUrl({ ids, presets, applyPresetValues, urlNumKeys, urlBoolKeys }) {
+export function restoreStateFromUrl({
+  ids,
+  presets,
+  applyPresetValues,
+  urlNumKeys,
+  urlBoolKeys,
+  onIssue = null,
+}) {
   const params = new URLSearchParams(window.location.search);
   if (!params.toString()) {
     return false;
   }
+  const issues = [];
 
   // Precedence contract: apply preset first, then apply explicit URL control params,
   // so a shared link can tweak individual controls on top of a base preset.
@@ -44,6 +65,9 @@ export function restoreStateFromUrl({ ids, presets, applyPresetValues, urlNumKey
   if (preset && presets[preset]) {
     applyPresetValues(preset);
   } else {
+    if (preset) {
+      issues.push(`Unknown preset "${preset}" was ignored.`);
+    }
     applyPresetValues(ids.preset.value);
   }
 
@@ -58,6 +82,8 @@ export function restoreStateFromUrl({ ids, presets, applyPresetValues, urlNumKey
     const num = Number(raw);
     if (Number.isFinite(num)) {
       ids[key].value = String(num);
+    } else {
+      issues.push(`Invalid numeric value "${raw}" for "${key}" was ignored.`);
     }
   }
 
@@ -69,11 +95,26 @@ export function restoreStateFromUrl({ ids, presets, applyPresetValues, urlNumKey
     if (raw == null) {
       continue;
     }
-    ids[key].checked = parseBoolParam(raw, ids[key].checked);
+    const parsed = parseBoolParam(raw);
+    if (parsed == null) {
+      issues.push(`Invalid boolean value "${raw}" for "${key}" was ignored.`);
+      continue;
+    }
+    ids[key].checked = parsed;
   }
 
   if (params.has("advancedOpen")) {
-    ids.advancedDetails.open = parseBoolParam(params.get("advancedOpen"));
+    const raw = params.get("advancedOpen");
+    const parsed = parseBoolParam(raw);
+    if (parsed == null) {
+      issues.push(`Invalid boolean value "${raw}" for "advancedOpen" was ignored.`);
+    } else {
+      ids.advancedDetails.open = parsed;
+    }
+  }
+
+  if (issues.length && typeof onIssue === "function") {
+    onIssue(formatRestoreIssues(issues));
   }
   return true;
 }

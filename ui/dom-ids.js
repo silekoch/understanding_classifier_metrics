@@ -62,6 +62,7 @@ const ID_KEYS = [
   "samplePosFracValue",
   "outlierFracValue",
   "presetDesc",
+  "statusBanner",
   "rocSvg",
   "prSvg",
   "distSvg",
