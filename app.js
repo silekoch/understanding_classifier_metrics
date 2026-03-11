@@ -46,7 +46,7 @@ const readControls = () => readControlsImpl({ ids, state });
 
 store.subscribe("threshold", (nextThreshold) => {
   state.threshold = nextThreshold;
-  renderAll();
+  renderThresholdViews();
 });
 
 store.subscribe("metricTrendHoverKey", (nextHoverKey) => {
@@ -123,9 +123,8 @@ function drawMetricTrend() {
   });
 }
 
-function renderAll() {
+function renderThresholdViews() {
   computeEverything();
-  syncControlOutputsUi({ ids, state, presets: PRESETS, fmt, fmtPct });
   state.distView = drawDistView({
     svg: ids.distSvg,
     data: state.data,
@@ -156,6 +155,11 @@ function renderAll() {
   });
   drawMetricTrend();
   scheduleUrlSync();
+}
+
+function renderAll() {
+  syncControlOutputsUi({ ids, state, presets: PRESETS, fmt, fmtPct });
+  renderThresholdViews();
 }
 
 function regenerateAndRender() {
