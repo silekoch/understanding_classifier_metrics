@@ -1,4 +1,39 @@
-import { PRESET_CONTROL_KEYS } from "./control-specs.js";
+import { CONTROL_SPECS, PRESET_CONTROL_KEYS } from "./control-specs.js";
+
+const OUTPUT_ID_OVERRIDES = {
+  zeroValue: "zeroValueOut",
+};
+const PERCENT_OUTPUT_KEYS = new Set(["epsPos", "epsNeg", "samplePosFrac"]);
+
+function getOutputId(key) {
+  return OUTPUT_ID_OVERRIDES[key] || `${key}Value`;
+}
+
+function decimalsFromStep(step) {
+  const stepText = String(step);
+  const dot = stepText.indexOf(".");
+  if (dot < 0) {
+    return 0;
+  }
+  return stepText.length - dot - 1;
+}
+
+function formatControlOutput({ key, spec, value, outlierEnabled, fmt, fmtPct }) {
+  if (key === "nPerClass") {
+    return String(2 * value);
+  }
+  if (key === "outlierFrac") {
+    const base = fmt(value, 2);
+    return outlierEnabled ? base : `${base} (normal only)`;
+  }
+  if (PERCENT_OUTPUT_KEYS.has(key)) {
+    return fmtPct(value, 1);
+  }
+  if (spec.integer) {
+    return String(value);
+  }
+  return fmt(value, decimalsFromStep(spec.step));
+}
 
 function setHidden(el, hidden) {
   if (!el) {
@@ -32,31 +67,21 @@ export function syncControlOutputs({ ids, state, presets, fmt, fmtPct }) {
   const preset = presets[state.preset] || presets.separated;
   const outlierEnabled = preset.mode === "normal";
 
-  ids.muNegValue.textContent = fmt(state.muNeg, 2);
-  ids.sdNegValue.textContent = fmt(state.sdNeg, 2);
-  ids.muPosValue.textContent = fmt(state.muPos, 2);
-  ids.sdPosValue.textContent = fmt(state.sdPos, 2);
-  ids.logSigmaValue.textContent = fmt(state.logSigma, 2);
-  ids.dfNegValue.textContent = String(state.dfNeg);
-  ids.dfPosValue.textContent = String(state.dfPos);
-  ids.mixWeightValue.textContent = fmt(state.mixWeight, 2);
-  ids.mixOffsetValue.textContent = fmt(state.mixOffset, 2);
-  ids.mixSdMultValue.textContent = fmt(state.mixSdMult, 2);
-  ids.p0NegValue.textContent = fmt(state.p0Neg, 2);
-  ids.p0PosValue.textContent = fmt(state.p0Pos, 2);
-  ids.zeroValueOut.textContent = fmt(state.zeroValue, 2);
-  ids.alphaNegValue.textContent = fmt(state.alphaNeg, 2);
-  ids.betaNegValue.textContent = fmt(state.betaNeg, 2);
-  ids.alphaPosValue.textContent = fmt(state.alphaPos, 2);
-  ids.betaPosValue.textContent = fmt(state.betaPos, 2);
-  ids.epsPosValue.textContent = fmtPct(state.epsPos, 1);
-  ids.epsNegValue.textContent = fmtPct(state.epsNeg, 1);
-  ids.confSharpnessValue.textContent = fmt(state.confSharpness, 1);
-  ids.nPerClassValue.textContent = String(2 * state.nPerClass);
-  ids.samplePosFracValue.textContent = fmtPct(state.samplePosFrac, 1);
-  ids.outlierFracValue.textContent = outlierEnabled
-    ? fmt(state.outlierFrac, 2)
-    : `${fmt(state.outlierFrac, 2)} (normal only)`;
+  for (const [key, spec] of Object.entries(CONTROL_SPECS)) {
+    const outputEl = ids[getOutputId(key)];
+    if (!outputEl) {
+      continue;
+    }
+    outputEl.textContent = formatControlOutput({
+      key,
+      spec,
+      value: state[key],
+      outlierEnabled,
+      fmt,
+      fmtPct,
+    });
+  }
+
   ids.outlierFrac.disabled = !outlierEnabled;
   ids.seed.value = String(state.seed);
   ids.presetDesc.textContent = preset.desc || "";
