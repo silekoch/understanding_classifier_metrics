@@ -7,14 +7,15 @@ import {
   computeThresholdBounds as computeThresholdBoundsCore,
 } from "./core/derived-state.js";
 import { generateData as generateSampleData } from "./core/data.js";
-import { drawRoc as drawRocView } from "./viz/roc.js";
-import { drawPr as drawPrView } from "./viz/pr.js";
-import { drawDist as drawDistView } from "./viz/dist.js";
-import { drawConfusionMatrix as drawConfusionMatrixView } from "./viz/matrix.js";
 import {
-  drawMetricTrend as drawMetricTrendView,
-  metricTrendHoverKeyFromPointer as metricTrendHoverKeyFromPointerView,
-} from "./viz/metric-trend.js";
+  drawConfusionMatrix as drawConfusionMatrixUi,
+  drawDist as drawDistUi,
+  drawMetricTrend as drawMetricTrendUi,
+  drawPr as drawPrUi,
+  drawRoc as drawRocUi,
+  metricTrendHoverKeyFromPointer as metricTrendHoverKeyFromPointerUi,
+  renderMetrics as renderMetricsUi,
+} from "./ui/view-renderers.js";
 import { initHandlers as initControlHandlers } from "./ui/controls.js";
 import {
   restoreStateFromUrl as restoreStateFromUrlImpl,
@@ -26,7 +27,6 @@ import {
   syncControlOutputs as syncControlOutputsImpl,
 } from "./ui/preset-controls.js";
 import { getIds } from "./ui/dom-ids.js";
-import { renderMetricsText as renderMetricsTextView } from "./ui/metrics-text.js";
 import { readControls as readControlsImpl } from "./ui/control-values.js";
 import { URL_BOOL_KEYS, URL_NUM_KEYS } from "./ui/url-state-keys.js";
 
@@ -76,53 +76,6 @@ import { URL_BOOL_KEYS, URL_NUM_KEYS } from "./ui/url-state-keys.js";
     state.pr = pr;
   }
 
-  function drawRoc() {
-    state.rocClickBox = drawRocView({
-      svg: ids.rocSvg,
-      roc: state.roc,
-      threshold: state.threshold,
-      fmt,
-    });
-  }
-
-  function drawPr() {
-    state.prClickBox = drawPrView({
-      svg: ids.prSvg,
-      pr: state.pr,
-      threshold: state.threshold,
-      fmt,
-    });
-  }
-
-  function drawMetricTrend() {
-    state.metricTrendBox = drawMetricTrendView({
-      svg: ids.metricTrendSvg,
-      curves: state.metricCurves,
-      hoveredKey: state.metricTrendHoverKey,
-      threshold: state.threshold,
-      thresholdMin: state.thresholdMin,
-      thresholdMax: state.thresholdMax,
-      fmt,
-    });
-  }
-
-  function drawDist() {
-    state.distView = drawDistView({
-      svg: ids.distSvg,
-      data: state.data,
-      threshold: state.threshold,
-      fmt,
-    });
-  }
-
-  function drawConfusionMatrix() {
-    drawConfusionMatrixView({
-      svg: ids.confusionSvg,
-      op: state.roc.op,
-      fmtPct,
-    });
-  }
-
   function updateThresholdRange() {
     const bounds = computeThresholdBoundsCore({
       data: state.data,
@@ -161,23 +114,15 @@ import { URL_BOOL_KEYS, URL_NUM_KEYS } from "./ui/url-state-keys.js";
     });
   }
 
-  function renderMetrics() {
-    renderMetricsTextView({
-      metricsTextEl: ids.metricsText,
-      op: state.roc.op,
-      fmt,
-    });
-  }
-
   function renderAll() {
     computeEverything();
     syncControlOutputs();
-    drawDist();
-    drawConfusionMatrix();
-    drawRoc();
-    drawPr();
-    renderMetrics();
-    drawMetricTrend();
+    drawDistUi({ ids, state, fmt });
+    drawConfusionMatrixUi({ ids, state, fmtPct });
+    drawRocUi({ ids, state, fmt });
+    drawPrUi({ ids, state, fmt });
+    renderMetricsUi({ ids, state, fmt });
+    drawMetricTrendUi({ ids, state, fmt });
     scheduleUrlSync();
   }
 
@@ -198,8 +143,8 @@ import { URL_BOOL_KEYS, URL_NUM_KEYS } from "./ui/url-state-keys.js";
       applyPreset,
       scheduleUrlSync,
       renderAll,
-      drawMetricTrend,
-      metricTrendHoverKeyFromPointer: metricTrendHoverKeyFromPointerView,
+      drawMetricTrend: () => drawMetricTrendUi({ ids, state, fmt }),
+      metricTrendHoverKeyFromPointer: metricTrendHoverKeyFromPointerUi,
     });
   }
 
