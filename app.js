@@ -2,7 +2,7 @@ import { PRESETS } from "./presets.js";
 import { createInitialState } from "./core/state.js";
 import { createStateStore } from "./core/state-store.js";
 import { fmt, fmtPct } from "./core/format.js";
-import { computeMetricCurves } from "./core/metrics.js";
+import { computeMetricCurves, computeOperatingPoint } from "./core/metrics.js";
 import {
   computeCurveState as computeCurveStateCore,
   computeThresholdBounds as computeThresholdBoundsCore,
@@ -93,6 +93,15 @@ function computeEverything() {
   state.computed.pr = pr;
 }
 
+function updateOperatingPoint() {
+  if (!state.computed.data || !state.computed.roc || !state.computed.pr) {
+    return;
+  }
+  const op = computeOperatingPoint(state.controls.threshold, state.computed.data.all);
+  state.computed.roc.op = op;
+  state.computed.pr.op = { recall: op.recall, precision: op.precision };
+}
+
 function updateThresholdRange() {
   const bounds = computeThresholdBoundsCore({
     data: state.computed.data,
@@ -135,7 +144,7 @@ function drawMetricTrend() {
 }
 
 function renderThresholdViews() {
-  computeEverything();
+  updateOperatingPoint();
   state.view.distView = drawDistView({
     svg: ids.distSvg,
     data: state.computed.data,
@@ -176,6 +185,7 @@ function renderAll() {
 function regenerateAndRender() {
   state.computed.data = generateSampleData(state.controls, getActivePreset());
   updateThresholdRange();
+  computeEverything();
   state.computed.metricCurves = computeMetricCurves(
     state.computed.data.all,
     state.computed.thresholdMin,
