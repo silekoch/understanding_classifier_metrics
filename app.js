@@ -1,10 +1,9 @@
 import { PRESETS } from "./presets.js";
+import { computeMetricCurves } from "./core/metrics.js";
 import {
-  computeMetricCurves,
-  computeOperatingPoint,
-  computePrPoints,
-  computeRocPoints,
-} from "./core/metrics.js";
+  computeCurveState as computeCurveStateCore,
+  computeThresholdBounds as computeThresholdBoundsCore,
+} from "./core/derived-state.js";
 import { generateData as generateSampleData } from "./core/data.js";
 import { drawRoc as drawRocView } from "./viz/roc.js";
 import { drawPr as drawPrView } from "./viz/pr.js";
@@ -102,10 +101,6 @@ import { readControls as readControlsImpl } from "./ui/control-values.js";
 
   const URL_BOOL_KEYS = [];
 
-  function clamp(x, a, b) {
-    return Math.max(a, Math.min(b, x));
-  }
-
   function fmt(num, digits = 4) {
     if (!Number.isFinite(num)) return "NaN";
     return num.toFixed(digits);
@@ -148,20 +143,12 @@ import { readControls as readControlsImpl } from "./ui/control-values.js";
   }
 
   function computeEverything() {
-    const rocPoints = computeRocPoints(state.data.all);
-    const pr = computePrPoints(state.data.all);
-    const op = computeOperatingPoint(state.threshold, state.data.all);
-
-    state.roc = {
-      empirical: rocPoints,
-      op,
-    };
-
-    state.pr = {
-      points: pr.points,
-      prevalence: pr.prevalence,
-      op: { recall: op.recall, precision: op.precision },
-    };
+    const { roc, pr } = computeCurveStateCore({
+      samples: state.data.all,
+      threshold: state.threshold,
+    });
+    state.roc = roc;
+    state.pr = pr;
   }
 
   function drawRoc() {
@@ -212,15 +199,14 @@ import { readControls as readControlsImpl } from "./ui/control-values.js";
   }
 
   function updateThresholdRange() {
-    const data = state.data;
-    const span = Math.max(1e-6, data.max - data.min);
-    state.thresholdMin = data.min - 0.08 * span;
-    state.thresholdMax = data.max + 0.08 * span;
-    state.thresholdStep = span / 1000;
-
-    if (state.threshold < state.thresholdMin || state.threshold > state.thresholdMax) {
-      state.threshold = clamp(state.threshold, state.thresholdMin, state.thresholdMax);
-    }
+    const bounds = computeThresholdBoundsCore({
+      data: state.data,
+      threshold: state.threshold,
+    });
+    state.thresholdMin = bounds.thresholdMin;
+    state.thresholdMax = bounds.thresholdMax;
+    state.thresholdStep = bounds.thresholdStep;
+    state.threshold = bounds.threshold;
   }
 
   function saveStateToUrl() {
