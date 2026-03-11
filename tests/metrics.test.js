@@ -1,12 +1,23 @@
 import { describe, expect, it } from "vitest";
 import {
   computeAucRank,
-  computeAucTrapezoid,
   computeMetricCurves,
   computeOperatingPoint,
   computePrPoints,
   computeRocPoints,
 } from "../core/metrics.js";
+
+function computeAucTrapezoidReference(points) {
+  let auc = 0;
+  for (let i = 1; i < points.length; i += 1) {
+    const x0 = points[i - 1].fpr;
+    const x1 = points[i].fpr;
+    const y0 = points[i - 1].tpr;
+    const y1 = points[i].tpr;
+    auc += (x1 - x0) * (y0 + y1) * 0.5;
+  }
+  return auc;
+}
 
 function makeRng(seed) {
   let x = seed >>> 0;
@@ -73,7 +84,7 @@ describe("core metrics invariants", () => {
   it("matches trapezoid AUC and rank AUC", () => {
     for (const all of DATASETS) {
       const roc = computeRocPoints(all);
-      const aucTrap = computeAucTrapezoid(roc);
+      const aucTrap = computeAucTrapezoidReference(roc);
       const aucRank = computeAucRank(all);
       expect(Math.abs(aucTrap - aucRank)).toBeLessThan(1e-10);
     }

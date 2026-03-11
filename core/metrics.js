@@ -125,19 +125,6 @@ export function computeApTrapezoid(prPoints) {
   return clamp(ap, 0, 1);
 }
 
-export function computeAucTrapezoid(points) {
-  // Reference implementation kept for test cross-checking of computeAucRank.
-  let auc = 0;
-  for (let i = 1; i < points.length; i += 1) {
-    const x0 = points[i - 1].fpr;
-    const x1 = points[i].fpr;
-    const y0 = points[i - 1].tpr;
-    const y1 = points[i].tpr;
-    auc += (x1 - x0) * (y0 + y1) * 0.5;
-  }
-  return auc;
-}
-
 export function computeAucRank(all) {
   const sorted = all.slice().sort((a, b) => a.score - b.score);
   const P = sorted.reduce((acc, d) => acc + (d.label === 1 ? 1 : 0), 0);
