@@ -1,27 +1,21 @@
-import { SHAPE_CONTROL_KEYS, sanitizeControlValue } from "../core/control-specs.js";
+import { SHAPE_CONTROL_KEYS } from "../core/control-specs.js";
+import { buildApplyByKey, subscribeRegenerateKeys } from "./reactive-control-wiring.js";
 
-function subscribeShapeControl({ store, key, state, ids, regenerateAndRender }) {
-  store.subscribe(key, (nextValue) => {
-    state.controls[key] = nextValue;
-    ids[key].value = String(nextValue);
-    if (state.ui.suppressReactiveRegenerate) {
-      return;
-    }
-    regenerateAndRender();
-  });
-}
-
+// Shape controls are grouped to keep mode-specific parameter wiring separate
+// from global control behavior managed in wireReactiveControls.
 export function wireShapeControls({ store, state, ids, regenerateAndRender }) {
-  for (const key of SHAPE_CONTROL_KEYS) {
-    subscribeShapeControl({ store, key, state, ids, regenerateAndRender });
-  }
+  subscribeRegenerateKeys({
+    store,
+    keys: SHAPE_CONTROL_KEYS,
+    state,
+    ids,
+    regenerateAndRender,
+  });
 
-  const applyByKey = {};
-  for (const key of SHAPE_CONTROL_KEYS) {
-    applyByKey[key] = (rawValue) => {
-      store.set(key, sanitizeControlValue(key, rawValue));
-    };
-  }
+  const applyByKey = buildApplyByKey({
+    store,
+    keys: SHAPE_CONTROL_KEYS,
+  });
 
   return {
     applyByKey,

@@ -4,18 +4,10 @@ import {
   sanitizeControlValue,
 } from "../core/control-specs.js";
 import { clamp } from "../core/math.js";
+import { buildApplyByKey, subscribeRegenerateKeys } from "./reactive-control-wiring.js";
 
-function subscribeRegenerateControl({ store, key, state, ids, regenerateAndRender }) {
-  store.subscribe(key, (nextValue) => {
-    state.controls[key] = nextValue;
-    ids[key].value = String(nextValue);
-    if (state.ui.suppressReactiveRegenerate) {
-      return;
-    }
-    regenerateAndRender();
-  });
-}
-
+// Non-shape controls own global control behaviors (preset, threshold, hover)
+// and reuse shared wiring for per-key numeric controls.
 export function wireReactiveControls({
   store,
   state,
@@ -58,16 +50,18 @@ export function wireReactiveControls({
     drawMetricTrend();
   });
 
-  for (const key of NON_SHAPE_REACTIVE_NUMERIC_CONTROL_KEYS) {
-    subscribeRegenerateControl({ store, key, state, ids, regenerateAndRender });
-  }
+  subscribeRegenerateKeys({
+    store,
+    keys: NON_SHAPE_REACTIVE_NUMERIC_CONTROL_KEYS,
+    state,
+    ids,
+    regenerateAndRender,
+  });
 
-  const applyByKey = {};
-  for (const key of NON_SHAPE_REACTIVE_NUMERIC_CONTROL_KEYS) {
-    applyByKey[key] = (rawValue) => {
-      store.set(key, sanitizeControlValue(key, rawValue));
-    };
-  }
+  const applyByKey = buildApplyByKey({
+    store,
+    keys: NON_SHAPE_REACTIVE_NUMERIC_CONTROL_KEYS,
+  });
 
   function applyThreshold(nextThreshold) {
     const clampedThreshold = clamp(nextThreshold, state.computed.thresholdMin, state.computed.thresholdMax);

@@ -6,11 +6,9 @@ import {
   attachRocClickHandler,
 } from "./chart-interactions.js";
 
-export function initHandlers({ ids, state, actions, applyByKey, deps }) {
+export function initHandlers({ ids, state, view, actions, applyByKey, deps }) {
   const { applyPreset, applyThreshold, applySeed, applyMetricTrendHoverKey } = actions;
   const { scheduleUrlSync, metricTrendHoverKeyFromPointer } = deps;
-  const setThreshold = applyThreshold;
-  const setMetricTrendHoverKey = applyMetricTrendHoverKey;
 
   bindReactiveNumericControls({ ids, applyByKey });
 
@@ -26,14 +24,15 @@ export function initHandlers({ ids, state, actions, applyByKey, deps }) {
     scheduleUrlSync();
   });
 
-  attachRocClickHandler({ ids, state, setThreshold });
-  attachPrClickHandler({ ids, state, setThreshold });
+  attachRocClickHandler({ ids, state, view, setThreshold: applyThreshold });
+  attachPrClickHandler({ ids, state, view, setThreshold: applyThreshold });
   attachMetricTrendHandlers({
     ids,
     state,
-    setThreshold,
-    setMetricTrendHoverKey,
+    view,
+    setThreshold: applyThreshold,
+    setMetricTrendHoverKey: applyMetricTrendHoverKey,
     metricTrendHoverKeyFromPointer,
   });
-  attachDistThresholdHandlers({ ids, state, setThreshold });
+  attachDistThresholdHandlers({ ids, state, view, setThreshold: applyThreshold });
 }

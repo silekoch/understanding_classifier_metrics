@@ -27,11 +27,5 @@ export function createInitialState() {
       suppressReactiveRegenerate: false,
       urlSyncTimer: null,
     },
-    view: {
-      rocClickBox: null,
-      prClickBox: null,
-      metricTrendBox: null,
-      distView: null,
-    },
   };
 }

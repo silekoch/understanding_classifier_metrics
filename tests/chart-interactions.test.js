@@ -40,14 +40,16 @@ describe("chart interaction helpers", () => {
   });
 
   it("falls back to current threshold when dist view is unavailable", () => {
-    const state = { controls: { threshold: 0.42 }, view: { distView: null } };
+    const state = { controls: { threshold: 0.42 } };
+    const view = { distView: null };
     const ids = { distSvg: {} };
-    expect(thresholdFromDistPointer({ evt: {}, state, ids })).toBe(0.42);
+    expect(thresholdFromDistPointer({ evt: {}, state, ids, view })).toBe(0.42);
   });
 
   it("falls back to current threshold when metric trend box is unavailable", () => {
-    const state = { controls: { threshold: 0.42 }, view: { metricTrendBox: null } };
+    const state = { controls: { threshold: 0.42 } };
+    const view = { metricTrendBox: null };
     const ids = { metricTrendSvg: {} };
-    expect(thresholdFromMetricTrendPointer({ evt: {}, state, ids })).toBe(0.42);
+    expect(thresholdFromMetricTrendPointer({ evt: {}, state, ids, view })).toBe(0.42);
   });
 });

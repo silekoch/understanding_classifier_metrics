@@ -21,15 +21,15 @@ export function nearestFiniteThreshold(points, xTarget, yTarget, xKey = "fpr", y
   return best;
 }
 
-export function thresholdFromDistPointer({ evt, state, ids }) {
-  const view = state.view.distView;
-  if (!view) {
+export function thresholdFromDistPointer({ evt, state, ids, view }) {
+  const distView = view.distView;
+  if (!distView) {
     return state.controls.threshold;
   }
   const point = eventToSvgCoordinates(evt, ids.distSvg, 760, 320);
   const x = point.x;
-  const u = clamp((x - view.box.left) / view.box.width, 0, 1);
-  return view.minX + u * (view.maxX - view.minX);
+  const u = clamp((x - distView.box.left) / distView.box.width, 0, 1);
+  return distView.minX + u * (distView.maxX - distView.minX);
 }
 
 function isPointInBox(point, box) {
@@ -41,17 +41,17 @@ function isPointInBox(point, box) {
   );
 }
 
-function isWithinDistPlot({ evt, state, ids }) {
-  const view = state.view.distView;
-  if (!view) {
+function isWithinDistPlot({ evt, ids, view }) {
+  const distView = view.distView;
+  if (!distView) {
     return false;
   }
   const point = eventToSvgCoordinates(evt, ids.distSvg, 760, 320);
-  return isPointInBox(point, view.box);
+  return isPointInBox(point, distView.box);
 }
 
-export function thresholdFromMetricTrendPointer({ evt, state, ids }) {
-  const box = state.view.metricTrendBox;
+export function thresholdFromMetricTrendPointer({ evt, state, ids, view }) {
+  const box = view.metricTrendBox;
   if (!box) {
     return state.controls.threshold;
   }
@@ -68,9 +68,9 @@ export function isThresholdTarget(el) {
   return role === "threshold-handle" || role === "threshold-line";
 }
 
-export function attachRocClickHandler({ ids, state, setThreshold }) {
+export function attachRocClickHandler({ ids, state, view, setThreshold }) {
   ids.rocSvg.addEventListener("click", (evt) => {
-    const box = state.view.rocClickBox;
+    const box = view.rocClickBox;
     if (!box) {
       return;
     }
@@ -91,9 +91,9 @@ export function attachRocClickHandler({ ids, state, setThreshold }) {
   });
 }
 
-export function attachPrClickHandler({ ids, state, setThreshold }) {
+export function attachPrClickHandler({ ids, state, view, setThreshold }) {
   ids.prSvg.addEventListener("click", (evt) => {
-    const box = state.view.prClickBox;
+    const box = view.prClickBox;
     if (!box) {
       return;
     }
@@ -123,12 +123,13 @@ export function attachPrClickHandler({ ids, state, setThreshold }) {
 export function attachMetricTrendHandlers({
   ids,
   state,
+  view,
   setThreshold,
   setMetricTrendHoverKey,
   metricTrendHoverKeyFromPointer,
 }) {
   ids.metricTrendSvg.addEventListener("pointerdown", (evt) => {
-    const box = state.view.metricTrendBox;
+    const box = view.metricTrendBox;
     if (!box) {
       return;
     }
@@ -145,13 +146,13 @@ export function attachMetricTrendHandlers({
     setMetricTrendHoverKey(null);
     state.ui.draggingMetricThreshold = true;
     ids.metricTrendSvg.setPointerCapture(evt.pointerId);
-    setThreshold(thresholdFromMetricTrendPointer({ evt, state, ids }));
+    setThreshold(thresholdFromMetricTrendPointer({ evt, state, ids, view }));
   });
 
   ids.metricTrendSvg.addEventListener("pointermove", (evt) => {
     if (state.ui.draggingMetricThreshold) {
       evt.preventDefault();
-      setThreshold(thresholdFromMetricTrendPointer({ evt, state, ids }));
+      setThreshold(thresholdFromMetricTrendPointer({ evt, state, ids, view }));
       return;
     }
     const legendKey =
@@ -166,7 +167,7 @@ export function attachMetricTrendHandlers({
       metricTrendHoverKeyFromPointer({
         evt,
         svg: ids.metricTrendSvg,
-        box: state.view.metricTrendBox,
+        box: view.metricTrendBox,
         curves: state.computed.metricCurves,
       })
     );
@@ -200,12 +201,12 @@ export function attachMetricTrendHandlers({
   });
 }
 
-export function attachDistThresholdHandlers({ ids, state, setThreshold }) {
+export function attachDistThresholdHandlers({ ids, state, view, setThreshold }) {
   ids.distSvg.addEventListener("click", (evt) => {
-    if (!isWithinDistPlot({ evt, state, ids })) {
+    if (!isWithinDistPlot({ evt, ids, view })) {
       return;
     }
-    setThreshold(thresholdFromDistPointer({ evt, state, ids }));
+    setThreshold(thresholdFromDistPointer({ evt, state, ids, view }));
   });
 
   ids.distSvg.addEventListener("pointerdown", (evt) => {
@@ -215,7 +216,7 @@ export function attachDistThresholdHandlers({ ids, state, setThreshold }) {
     evt.preventDefault();
     state.ui.draggingThreshold = true;
     ids.distSvg.setPointerCapture(evt.pointerId);
-    setThreshold(thresholdFromDistPointer({ evt, state, ids }));
+    setThreshold(thresholdFromDistPointer({ evt, state, ids, view }));
   });
 
   ids.distSvg.addEventListener("pointermove", (evt) => {
@@ -223,7 +224,7 @@ export function attachDistThresholdHandlers({ ids, state, setThreshold }) {
       return;
     }
     evt.preventDefault();
-    setThreshold(thresholdFromDistPointer({ evt, state, ids }));
+    setThreshold(thresholdFromDistPointer({ evt, state, ids, view }));
   });
 
   ids.distSvg.addEventListener("pointerup", (evt) => {
