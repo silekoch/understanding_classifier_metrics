@@ -3,6 +3,7 @@ import {
   PRESET_CONTROL_KEYS,
   sanitizeControlValue,
 } from "../core/control-specs.js";
+import { clamp } from "../core/math.js";
 
 function subscribeRegenerateControl({ store, key, state, ids, regenerateAndRender }) {
   store.subscribe(key, (nextValue) => {
@@ -21,7 +22,6 @@ export function wireReactiveControls({
   regenerateAndRender,
   renderThresholdViews,
   drawMetricTrend,
-  clamp,
 }) {
   store.subscribe("threshold", (nextThreshold) => {
     state.threshold = nextThreshold;
