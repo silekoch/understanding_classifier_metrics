@@ -1,3 +1,5 @@
+import { sanitizeControlValue } from "./control-specs.js";
+
 function subscribeShapeControl({ store, key, state, ids, regenerateAndRender }) {
   store.subscribe(key, (nextValue) => {
     state[key] = nextValue;
@@ -6,7 +8,7 @@ function subscribeShapeControl({ store, key, state, ids, regenerateAndRender }) 
   });
 }
 
-export function wireShapeControls({ store, state, ids, regenerateAndRender, clamp }) {
+export function wireShapeControls({ store, state, ids, regenerateAndRender }) {
   subscribeShapeControl({ store, key: "p0Neg", state, ids, regenerateAndRender });
   subscribeShapeControl({ store, key: "p0Pos", state, ids, regenerateAndRender });
   subscribeShapeControl({ store, key: "zeroValue", state, ids, regenerateAndRender });
@@ -18,65 +20,20 @@ export function wireShapeControls({ store, state, ids, regenerateAndRender, clam
   subscribeShapeControl({ store, key: "epsNeg", state, ids, regenerateAndRender });
   subscribeShapeControl({ store, key: "confSharpness", state, ids, regenerateAndRender });
 
-  function applyP0Neg(nextP0NegRaw) {
-    const raw = Number(nextP0NegRaw);
-    const nextP0Neg = Number.isFinite(raw) ? clamp(raw, 0, 0.95) : 0.42;
-    store.set("p0Neg", nextP0Neg);
-  }
+  const applyShapeControl = (key) => (rawValue) => {
+    store.set(key, sanitizeControlValue(key, rawValue));
+  };
 
-  function applyP0Pos(nextP0PosRaw) {
-    const raw = Number(nextP0PosRaw);
-    const nextP0Pos = Number.isFinite(raw) ? clamp(raw, 0, 0.95) : 0.12;
-    store.set("p0Pos", nextP0Pos);
-  }
-
-  function applyZeroValue(nextZeroValueRaw) {
-    const raw = Number(nextZeroValueRaw);
-    const nextZeroValue = Number.isFinite(raw) ? clamp(raw, -3, 3) : 0;
-    store.set("zeroValue", nextZeroValue);
-  }
-
-  function applyAlphaNeg(nextAlphaNegRaw) {
-    const raw = Number(nextAlphaNegRaw);
-    const nextAlphaNeg = Number.isFinite(raw) ? clamp(raw, 0.2, 20) : 2;
-    store.set("alphaNeg", nextAlphaNeg);
-  }
-
-  function applyBetaNeg(nextBetaNegRaw) {
-    const raw = Number(nextBetaNegRaw);
-    const nextBetaNeg = Number.isFinite(raw) ? clamp(raw, 0.2, 20) : 8;
-    store.set("betaNeg", nextBetaNeg);
-  }
-
-  function applyAlphaPos(nextAlphaPosRaw) {
-    const raw = Number(nextAlphaPosRaw);
-    const nextAlphaPos = Number.isFinite(raw) ? clamp(raw, 0.2, 20) : 8;
-    store.set("alphaPos", nextAlphaPos);
-  }
-
-  function applyBetaPos(nextBetaPosRaw) {
-    const raw = Number(nextBetaPosRaw);
-    const nextBetaPos = Number.isFinite(raw) ? clamp(raw, 0.2, 20) : 2;
-    store.set("betaPos", nextBetaPos);
-  }
-
-  function applyEpsPos(nextEpsPosRaw) {
-    const raw = Number(nextEpsPosRaw);
-    const nextEpsPos = Number.isFinite(raw) ? clamp(raw, 0, 0.45) : 0.12;
-    store.set("epsPos", nextEpsPos);
-  }
-
-  function applyEpsNeg(nextEpsNegRaw) {
-    const raw = Number(nextEpsNegRaw);
-    const nextEpsNeg = Number.isFinite(raw) ? clamp(raw, 0, 0.45) : 0.08;
-    store.set("epsNeg", nextEpsNeg);
-  }
-
-  function applyConfSharpness(nextConfSharpnessRaw) {
-    const raw = Number(nextConfSharpnessRaw);
-    const nextConfSharpness = Number.isFinite(raw) ? clamp(raw, 2, 40) : 14;
-    store.set("confSharpness", nextConfSharpness);
-  }
+  const applyP0Neg = applyShapeControl("p0Neg");
+  const applyP0Pos = applyShapeControl("p0Pos");
+  const applyZeroValue = applyShapeControl("zeroValue");
+  const applyAlphaNeg = applyShapeControl("alphaNeg");
+  const applyBetaNeg = applyShapeControl("betaNeg");
+  const applyAlphaPos = applyShapeControl("alphaPos");
+  const applyBetaPos = applyShapeControl("betaPos");
+  const applyEpsPos = applyShapeControl("epsPos");
+  const applyEpsNeg = applyShapeControl("epsNeg");
+  const applyConfSharpness = applyShapeControl("confSharpness");
 
   function syncShapeControlsToStore() {
     store.set("p0Neg", state.p0Neg, { silent: true });

@@ -32,7 +32,7 @@ import { URL_BOOL_KEYS, URL_NUM_KEYS } from "./ui/url-state-keys.js";
 import { renderMetricsText as renderMetricsTextView } from "./ui/metrics-text.js";
 import { runStartupRender } from "./ui/startup.js";
 import { wireShapeControls } from "./ui/reactive-shape-controls.js";
-import { PRESET_CONTROL_KEYS } from "./ui/control-specs.js";
+import { PRESET_CONTROL_KEYS, sanitizeControlValue } from "./ui/control-specs.js";
 
 const state = createInitialState();
 const ids = getIds(document);
@@ -89,7 +89,6 @@ const {
   state,
   ids,
   regenerateAndRender,
-  clamp,
 });
 
 store.subscribe("threshold", (nextThreshold) => {
@@ -205,89 +204,24 @@ function applyThreshold(nextThreshold) {
   store.set("threshold", clampedThreshold);
 }
 
-function applySeed(nextSeedRaw) {
-  const rounded = Math.round(Number(nextSeedRaw));
-  const nextSeed = Number.isFinite(rounded) ? Math.max(1, rounded) : 1;
-  store.set("seed", nextSeed);
-}
+const applyNumericControl = (key) => (rawValue) => {
+  store.set(key, sanitizeControlValue(key, rawValue));
+};
 
-function applyMuNeg(nextMuNegRaw) {
-  const raw = Number(nextMuNegRaw);
-  const nextMuNeg = Number.isFinite(raw) ? clamp(raw, -4, 4) : 0;
-  store.set("muNeg", nextMuNeg);
-}
-
-function applySdNeg(nextSdNegRaw) {
-  const raw = Number(nextSdNegRaw);
-  const nextSdNeg = Number.isFinite(raw) ? clamp(raw, 0.2, 3) : 1;
-  store.set("sdNeg", nextSdNeg);
-}
-
-function applyMuPos(nextMuPosRaw) {
-  const raw = Number(nextMuPosRaw);
-  const nextMuPos = Number.isFinite(raw) ? clamp(raw, -4, 6) : 2;
-  store.set("muPos", nextMuPos);
-}
-
-function applySdPos(nextSdPosRaw) {
-  const raw = Number(nextSdPosRaw);
-  const nextSdPos = Number.isFinite(raw) ? clamp(raw, 0.2, 3) : 1;
-  store.set("sdPos", nextSdPos);
-}
-
-function applyLogSigma(nextLogSigmaRaw) {
-  const raw = Number(nextLogSigmaRaw);
-  const nextLogSigma = Number.isFinite(raw) ? clamp(raw, 0.2, 1.6) : 0.7;
-  store.set("logSigma", nextLogSigma);
-}
-
-function applyDfNeg(nextDfNegRaw) {
-  const rounded = Math.round(Number(nextDfNegRaw));
-  const nextDfNeg = Number.isFinite(rounded) ? clamp(rounded, 3, 30) : 3;
-  store.set("dfNeg", nextDfNeg);
-}
-
-function applyDfPos(nextDfPosRaw) {
-  const rounded = Math.round(Number(nextDfPosRaw));
-  const nextDfPos = Number.isFinite(rounded) ? clamp(rounded, 3, 30) : 3;
-  store.set("dfPos", nextDfPos);
-}
-
-function applyMixWeight(nextMixWeightRaw) {
-  const raw = Number(nextMixWeightRaw);
-  const nextMixWeight = Number.isFinite(raw) ? clamp(raw, 0, 0.8) : 0.24;
-  store.set("mixWeight", nextMixWeight);
-}
-
-function applyMixOffset(nextMixOffsetRaw) {
-  const raw = Number(nextMixOffsetRaw);
-  const nextMixOffset = Number.isFinite(raw) ? clamp(raw, -1, 2) : 0.15;
-  store.set("mixOffset", nextMixOffset);
-}
-
-function applyMixSdMult(nextMixSdMultRaw) {
-  const raw = Number(nextMixSdMultRaw);
-  const nextMixSdMult = Number.isFinite(raw) ? clamp(raw, 0.2, 2.5) : 1.1;
-  store.set("mixSdMult", nextMixSdMult);
-}
-
-function applyNPerClass(nextNPerClassRaw) {
-  const rounded = Math.round(Number(nextNPerClassRaw));
-  const nextNPerClass = Number.isFinite(rounded) ? Math.max(50, rounded) : 50;
-  store.set("nPerClass", nextNPerClass);
-}
-
-function applySamplePosFrac(nextSamplePosFracRaw) {
-  const raw = Number(nextSamplePosFracRaw);
-  const nextSamplePosFrac = Number.isFinite(raw) ? clamp(raw, 0.02, 0.98) : 0.5;
-  store.set("samplePosFrac", nextSamplePosFrac);
-}
-
-function applyOutlierFrac(nextOutlierFracRaw) {
-  const raw = Number(nextOutlierFracRaw);
-  const nextOutlierFrac = Number.isFinite(raw) ? clamp(raw, 0, 0.5) : 0;
-  store.set("outlierFrac", nextOutlierFrac);
-}
+const applySeed = applyNumericControl("seed");
+const applyMuNeg = applyNumericControl("muNeg");
+const applySdNeg = applyNumericControl("sdNeg");
+const applyMuPos = applyNumericControl("muPos");
+const applySdPos = applyNumericControl("sdPos");
+const applyLogSigma = applyNumericControl("logSigma");
+const applyDfNeg = applyNumericControl("dfNeg");
+const applyDfPos = applyNumericControl("dfPos");
+const applyMixWeight = applyNumericControl("mixWeight");
+const applyMixOffset = applyNumericControl("mixOffset");
+const applyMixSdMult = applyNumericControl("mixSdMult");
+const applyNPerClass = applyNumericControl("nPerClass");
+const applySamplePosFrac = applyNumericControl("samplePosFrac");
+const applyOutlierFrac = applyNumericControl("outlierFrac");
 
 function applyMetricTrendHoverKey(nextHoverKey) {
   const key = nextHoverKey || null;
