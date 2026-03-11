@@ -1,5 +1,6 @@
 import { PRESETS } from "./presets.js";
 import { createInitialState } from "./core/state.js";
+import { createStateStore } from "./core/state-store.js";
 import { fmt, fmtPct } from "./core/format.js";
 import { computeMetricCurves } from "./core/metrics.js";
 import {
@@ -32,8 +33,23 @@ import { renderMetricsText as renderMetricsTextView } from "./ui/metrics-text.js
 
 const state = createInitialState();
 const ids = getIds(document);
+const store = createStateStore({ threshold: state.threshold });
+
+function clamp(x, a, b) {
+  return Math.max(a, Math.min(b, x));
+}
 
 const readControls = () => readControlsImpl({ ids, state });
+
+store.subscribe("threshold", (nextThreshold) => {
+  state.threshold = nextThreshold;
+  renderAll();
+});
+
+function applyThreshold(nextThreshold) {
+  const clampedThreshold = clamp(nextThreshold, state.thresholdMin, state.thresholdMax);
+  store.set("threshold", clampedThreshold);
+}
 
 function applyPreset(name) {
   applyPresetValuesUi({ ids, presets: PRESETS, name });
@@ -133,6 +149,7 @@ function regenerateAndRender() {
   readControls();
   state.data = generateSampleData(state, getActivePreset());
   updateThresholdRange();
+  store.set("threshold", state.threshold, { silent: true });
   state.metricCurves = computeMetricCurves(state.data.all, state.thresholdMin, state.thresholdMax);
   renderAll();
 }
@@ -146,6 +163,7 @@ function initHandlers() {
     applyPreset,
     scheduleUrlSync,
     renderAll,
+    applyThreshold,
     drawMetricTrend,
     metricTrendHoverKeyFromPointer: metricTrendHoverKeyFromPointerView,
   });

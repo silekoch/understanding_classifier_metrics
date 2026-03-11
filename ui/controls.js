@@ -116,7 +116,6 @@ function attachRocClickHandler({ ids, state, setThreshold, renderAll }) {
     }
 
     setThreshold(nearest.threshold);
-    renderAll();
   });
 }
 
@@ -140,7 +139,6 @@ function attachPrClickHandler({ ids, state, setThreshold, renderAll }) {
     }
 
     setThreshold(nearest.threshold);
-    renderAll();
   });
 }
 
@@ -148,7 +146,6 @@ function attachMetricTrendHandlers({
   ids,
   state,
   setThreshold,
-  renderAll,
   setMetricTrendHoverKey,
   metricTrendHoverKeyFromPointer,
 }) {
@@ -171,14 +168,12 @@ function attachMetricTrendHandlers({
     state.draggingMetricThreshold = true;
     ids.metricTrendSvg.setPointerCapture(evt.pointerId);
     setThreshold(thresholdFromMetricTrendPointer({ evt, state, ids }));
-    renderAll();
   });
 
   ids.metricTrendSvg.addEventListener("pointermove", (evt) => {
     if (state.draggingMetricThreshold) {
       evt.preventDefault();
       setThreshold(thresholdFromMetricTrendPointer({ evt, state, ids }));
-      renderAll();
       return;
     }
     const legendKey =
@@ -236,7 +231,6 @@ function attachDistThresholdHandlers({ ids, state, setThreshold, renderAll }) {
     state.draggingThreshold = true;
     ids.distSvg.setPointerCapture(evt.pointerId);
     setThreshold(thresholdFromDistPointer({ evt, state, ids }));
-    renderAll();
   });
 
   ids.distSvg.addEventListener("pointermove", (evt) => {
@@ -245,7 +239,6 @@ function attachDistThresholdHandlers({ ids, state, setThreshold, renderAll }) {
     }
     evt.preventDefault();
     setThreshold(thresholdFromDistPointer({ evt, state, ids }));
-    renderAll();
   });
 
   ids.distSvg.addEventListener("pointerup", (evt) => {
@@ -274,22 +267,23 @@ function attachDistThresholdHandlers({ ids, state, setThreshold, renderAll }) {
     }
     const step = state.thresholdStep || 0.001;
     const delta = evt.shiftKey ? step * 20 : step;
+    let nextThreshold = null;
     if (evt.key === "ArrowLeft") {
       evt.preventDefault();
-      setThreshold(state.threshold - delta);
+      nextThreshold = state.threshold - delta;
     } else if (evt.key === "ArrowRight") {
       evt.preventDefault();
-      setThreshold(state.threshold + delta);
+      nextThreshold = state.threshold + delta;
     } else if (evt.key === "Home") {
       evt.preventDefault();
-      setThreshold(state.thresholdMin);
+      nextThreshold = state.thresholdMin;
     } else if (evt.key === "End") {
       evt.preventDefault();
-      setThreshold(state.thresholdMax);
+      nextThreshold = state.thresholdMax;
     } else {
       return;
     }
-    renderAll();
+    setThreshold(nextThreshold);
   });
 }
 
@@ -301,12 +295,16 @@ export function initHandlers({
   applyPreset,
   scheduleUrlSync,
   renderAll,
+  applyThreshold,
   drawMetricTrend,
   metricTrendHoverKeyFromPointer,
 }) {
-  const setThreshold = (next) => {
-    state.threshold = clamp(next, state.thresholdMin, state.thresholdMax);
-  };
+  const setThreshold =
+    applyThreshold ||
+    ((next) => {
+      state.threshold = clamp(next, state.thresholdMin, state.thresholdMax);
+      renderAll();
+    });
 
   const setMetricTrendHoverKey = (nextKey) => {
     const key = nextKey || null;
@@ -339,7 +337,6 @@ export function initHandlers({
     ids,
     state,
     setThreshold,
-    renderAll,
     setMetricTrendHoverKey,
     metricTrendHoverKeyFromPointer,
   });
