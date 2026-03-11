@@ -123,6 +123,27 @@ export function addPath(svg, points, box, stroke, width, dash, xKey = "fpr", yKe
   return path;
 }
 
+export function clampPointLabelPosition({
+  box,
+  x,
+  y,
+  dx = 10,
+  dy = -10,
+  labelWidth = 112,
+  padX = 6,
+  padTop = 14,
+  padBottom = 6,
+}) {
+  const minX = box.left + padX;
+  const maxX = Math.max(minX, box.left + box.width - labelWidth);
+  const minY = box.top + padTop;
+  const maxY = Math.max(minY, box.top + box.height - padBottom);
+  return {
+    x: Math.max(minX, Math.min(x + dx, maxX)),
+    y: Math.max(minY, Math.min(y + dy, maxY)),
+  };
+}
+
 export function getSvgViewSize(svg, fallbackW = 760, fallbackH = 420) {
   const vb = svg && svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
   if (vb && vb.width > 0 && vb.height > 0) {

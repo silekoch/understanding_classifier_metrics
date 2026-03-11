@@ -1,4 +1,12 @@
-import { addPath, clear, computeCurveLayout, createSvgEl, drawAxes, drawLegend } from "./svg.js";
+import {
+  addPath,
+  clampPointLabelPosition,
+  clear,
+  computeCurveLayout,
+  createSvgEl,
+  drawAxes,
+  drawLegend,
+} from "./svg.js";
 
 export function drawRoc({ svg, roc, threshold, fmt }) {
   clear(svg);
@@ -24,6 +32,7 @@ export function drawRoc({ svg, roc, threshold, fmt }) {
   const op = roc.op;
   const cx = box.left + op.fpr * box.width;
   const cy = box.top + (1 - op.tpr) * box.height;
+  const labelPos = clampPointLabelPosition({ box, x: cx, y: cy });
 
   svg.appendChild(
     createSvgEl("circle", {
@@ -38,8 +47,8 @@ export function drawRoc({ svg, roc, threshold, fmt }) {
 
   svg.appendChild(
     createSvgEl("text", {
-      x: cx + 10,
-      y: cy - 10,
+      x: labelPos.x,
+      y: labelPos.y,
       class: "legend",
     })
   ).textContent = `threshold = ${fmt(threshold, 3)}`;

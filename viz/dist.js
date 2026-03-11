@@ -1,6 +1,7 @@
 import { clear, createSvgEl } from "./svg.js";
 import { clamp } from "../core/math.js";
 import { computePaddedScoreRange } from "../core/score-range.js";
+import { drawThresholdMarker } from "./threshold-marker.js";
 
 const CLASS_FILL_OPACITY = 0.4;
 
@@ -114,67 +115,6 @@ function drawHistogramBars({ svg, box, bins, hNeg, hPos, yMax }) {
   }
 }
 
-function drawThresholdHandle({ svg, box, minX, maxX, threshold, fmt }) {
-  const boundedThreshold = clamp(threshold, minX, maxX);
-  const tx = box.left + ((boundedThreshold - minX) / (maxX - minX)) * box.width;
-  const handleY = box.top + box.height / 2;
-
-  svg.appendChild(
-    createSvgEl("line", {
-      x1: tx,
-      y1: box.top,
-      x2: tx,
-      y2: box.top + box.height,
-      stroke: "#000",
-      "stroke-width": 2,
-      "stroke-dasharray": "7 5",
-      "data-role": "threshold-line",
-      class: "threshold-grab",
-    })
-  );
-
-  svg.appendChild(
-    createSvgEl("circle", {
-      cx: tx,
-      cy: handleY,
-      r: 12,
-      fill: "rgba(120,120,120,0.25)",
-      stroke: "#000000",
-      "stroke-width": 2,
-      "data-role": "threshold-handle",
-      class: "threshold-grab",
-      tabindex: 0,
-      role: "slider",
-      "aria-label": "Threshold handle",
-      "aria-valuemin": fmt(minX, 3),
-      "aria-valuemax": fmt(maxX, 3),
-      "aria-valuenow": fmt(threshold, 3),
-    })
-  );
-
-  svg.appendChild(
-    createSvgEl("circle", {
-      cx: tx,
-      cy: handleY,
-      r: 18,
-      fill: "transparent",
-      stroke: "none",
-      "data-role": "threshold-handle",
-      class: "threshold-grab",
-    })
-  );
-
-  appendText(
-    svg,
-    {
-      x: tx + 7,
-      y: box.top + 16,
-      class: "legend",
-    },
-    `threshold ${fmt(threshold, 3)}`
-  );
-}
-
 function drawLegend({ svg, box }) {
   appendText(
     svg,
@@ -233,7 +173,7 @@ export function drawDist({ svg, data, threshold, fmt }) {
 
   drawAxes({ svg, box, minX, maxX, yMax: yMaxWithHeadroom, fmt });
   drawHistogramBars({ svg, box, bins, hNeg, hPos, yMax: yMaxWithHeadroom });
-  drawThresholdHandle({ svg, box, minX, maxX, threshold, fmt });
+  drawThresholdMarker({ svg, box, minX, maxX, threshold, fmt, withAccessibility: true });
   drawLegend({ svg, box });
 
   return { box, minX, maxX };

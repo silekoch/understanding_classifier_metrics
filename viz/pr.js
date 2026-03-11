@@ -1,4 +1,12 @@
-import { addPath, clear, computeCurveLayout, createSvgEl, drawAxes, drawLegend } from "./svg.js";
+import {
+  addPath,
+  clampPointLabelPosition,
+  clear,
+  computeCurveLayout,
+  createSvgEl,
+  drawAxes,
+  drawLegend,
+} from "./svg.js";
 
 export function drawPr({ svg, pr, threshold, fmt }) {
   clear(svg);
@@ -25,6 +33,7 @@ export function drawPr({ svg, pr, threshold, fmt }) {
   const op = pr.op;
   const cx = box.left + op.recall * box.width;
   const cy = box.top + (1 - op.precision) * box.height;
+  const labelPos = clampPointLabelPosition({ box, x: cx, y: cy });
 
   svg.appendChild(
     createSvgEl("circle", {
@@ -39,8 +48,8 @@ export function drawPr({ svg, pr, threshold, fmt }) {
 
   svg.appendChild(
     createSvgEl("text", {
-      x: cx + 10,
-      y: cy - 10,
+      x: labelPos.x,
+      y: labelPos.y,
       class: "legend",
     })
   ).textContent = `threshold = ${fmt(threshold, 3)}`;

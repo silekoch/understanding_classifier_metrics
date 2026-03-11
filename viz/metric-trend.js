@@ -1,5 +1,6 @@
 import { addPath, clear, createSvgEl, drawLegend, eventToSvgCoordinates, getSvgViewSize } from "./svg.js";
 import { clamp } from "../core/math.js";
+import { drawThresholdMarker } from "./threshold-marker.js";
 
 const METRIC_SERIES = [
   { key: "recall", label: "Recall (TPR)", color: "#0D9488", width: 2.6 },
@@ -174,59 +175,6 @@ function drawMetricSeries({ svg, series, box, yMin, ySpan, hoveredKey }) {
   }
 }
 
-function drawThresholdMarker({ svg, box, threshold, thresholdMin, thresholdMax, fmt }) {
-  const uCurrent = clamp((threshold - thresholdMin) / Math.max(1e-9, thresholdMax - thresholdMin), 0, 1);
-  const markerX = box.left + uCurrent * box.width;
-  const handleY = box.top + box.height / 2;
-
-  svg.appendChild(
-    createSvgEl("line", {
-      x1: markerX,
-      y1: box.top,
-      x2: markerX,
-      y2: box.top + box.height,
-      stroke: "#000",
-      "stroke-width": 2,
-      "stroke-dasharray": "7 5",
-      "data-role": "threshold-line",
-      class: "threshold-grab",
-    })
-  );
-
-  svg.appendChild(
-    createSvgEl("circle", {
-      cx: markerX,
-      cy: handleY,
-      r: 12,
-      fill: "rgba(120,120,120,0.25)",
-      stroke: "#000000",
-      "stroke-width": 2,
-      "data-role": "threshold-handle",
-      class: "threshold-grab",
-    })
-  );
-
-  svg.appendChild(
-    createSvgEl("circle", {
-      cx: markerX,
-      cy: handleY,
-      r: 18,
-      fill: "transparent",
-      stroke: "none",
-      "data-role": "threshold-handle",
-      class: "threshold-grab",
-    })
-  );
-
-  svg.appendChild(
-    createSvgEl("text", {
-      x: markerX + 7,
-      y: box.top + 16,
-      class: "legend",
-    })
-  ).textContent = `threshold ${fmt(threshold, 3)}`;
-}
-
 function metricLegendItems(series, hoveredKey) {
   return series.map(({ key, label, color, dash, width }) => ({
     key,
@@ -300,7 +248,14 @@ export function drawMetricTrend({ svg, curves, hoveredKey, threshold, thresholdM
     hasNegative,
   });
   drawMetricSeries({ svg, series, box, yMin, ySpan, hoveredKey });
-  drawThresholdMarker({ svg, box, threshold, thresholdMin, thresholdMax, fmt });
+  drawThresholdMarker({
+    svg,
+    box,
+    minX: thresholdMin,
+    maxX: thresholdMax,
+    threshold,
+    fmt,
+  });
   drawLegend(
     svg,
     metricLegendItems(series, hoveredKey),
