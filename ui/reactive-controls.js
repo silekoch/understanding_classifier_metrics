@@ -35,7 +35,10 @@ export function wireReactiveControls({
     if (preset) {
       for (const key of PRESET_CONTROL_KEYS) {
         if (Object.prototype.hasOwnProperty.call(preset, key)) {
-          state.controls[key] = preset[key];
+          const nextValue = sanitizeControlValue(key, preset[key]);
+          store.set(key, nextValue, { silent: true });
+          state.controls[key] = store.get(key);
+          ids[key].value = String(state.controls[key]);
         }
       }
     }
@@ -71,20 +74,10 @@ export function wireReactiveControls({
     store.set("preset", name);
   }
 
-  function syncNonShapeControlsToStore() {
-    store.set("preset", state.controls.preset, { silent: true });
-    for (const key of NON_SHAPE_REACTIVE_NUMERIC_CONTROL_KEYS) {
-      store.set(key, state.controls[key], { silent: true });
-    }
-    store.set("threshold", state.controls.threshold, { silent: true });
-    store.set("metricTrendHoverKey", state.ui.metricTrendHoverKey, { silent: true });
-  }
-
   return {
     applyByKey,
     applyThreshold,
     applyMetricTrendHoverKey,
     applyPreset,
-    syncNonShapeControlsToStore,
   };
 }

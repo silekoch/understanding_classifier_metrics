@@ -20,14 +20,7 @@ export function wireShapeControls({ store, state, ids, regenerateAndRender }) {
     };
   }
 
-  function syncShapeControlsToStore() {
-    for (const key of SHAPE_CONTROL_KEYS) {
-      store.set(key, state.controls[key], { silent: true });
-    }
-  }
-
   return {
     applyByKey,
-    syncShapeControlsToStore,
   };
 }

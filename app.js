@@ -41,9 +41,18 @@ const store = createStateStore({
   metricTrendHoverKey: state.ui.metricTrendHoverKey,
 });
 
-const readControls = () => readControlsImpl({ ids, state });
+function syncControlsFromStore() {
+  for (const key of Object.keys(state.controls)) {
+    state.controls[key] = store.get(key);
+  }
+}
 
-const { applyByKey: shapeApplyByKey, syncShapeControlsToStore } = wireShapeControls({
+const readControls = () => {
+  readControlsImpl({ ids, store });
+  syncControlsFromStore();
+};
+
+const { applyByKey: shapeApplyByKey } = wireShapeControls({
   store,
   state,
   ids,
@@ -55,7 +64,6 @@ const {
   applyThreshold,
   applyMetricTrendHoverKey,
   applyPreset,
-  syncNonShapeControlsToStore,
 } = wireReactiveControls({
   store,
   state,
@@ -93,7 +101,8 @@ function updateThresholdRange() {
   state.computed.thresholdMin = bounds.thresholdMin;
   state.computed.thresholdMax = bounds.thresholdMax;
   state.computed.thresholdStep = bounds.thresholdStep;
-  state.controls.threshold = bounds.threshold;
+  store.set("threshold", bounds.threshold, { silent: true });
+  state.controls.threshold = store.get("threshold");
 }
 
 function saveStateToUrl() {
@@ -167,8 +176,6 @@ function renderAll() {
 function regenerateAndRender() {
   state.computed.data = generateSampleData(state.controls, getActivePreset());
   updateThresholdRange();
-  syncNonShapeControlsToStore();
-  syncShapeControlsToStore();
   state.computed.metricCurves = computeMetricCurves(
     state.computed.data.all,
     state.computed.thresholdMin,
@@ -207,14 +214,7 @@ function init() {
   readControls();
   runStartupRender({
     restored,
-    setPresetFromControls: () => {
-      const nextPreset = ids.preset.value;
-      if (Object.is(store.get("preset"), nextPreset)) {
-        return false;
-      }
-      store.set("preset", nextPreset);
-      return true;
-    },
+    setPresetFromControls: () => store.set("preset", ids.preset.value),
     regenerateAndRender,
   });
 }
