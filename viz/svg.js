@@ -177,90 +177,84 @@ export function computeCurveLayout(svg, mode = "single") {
   return { view, box, cfg };
 }
 
+function setLegendKey(el, key) {
+  if (!key) return;
+  el.setAttribute("data-legend-key", key);
+}
+
+function legendOpacity(item) {
+  return item.opacity == null ? 1 : item.opacity;
+}
+
+function createLegendLine({ x1, x2, y, item }) {
+  const el = createSvgEl("line", {
+    x1,
+    y1: y,
+    x2,
+    y2: y,
+    stroke: item.color,
+    "stroke-width": item.width || 3,
+    "stroke-dasharray": item.dash || "",
+    opacity: legendOpacity(item),
+  });
+  setLegendKey(el, item.key);
+  return el;
+}
+
+function createLegendText({ x, y, item, textAnchor }) {
+  const attrs = {
+    x,
+    y: y + 4,
+    class: "legend",
+    opacity: legendOpacity(item),
+  };
+  if (textAnchor) attrs["text-anchor"] = textAnchor;
+  const el = createSvgEl("text", attrs);
+  setLegendKey(el, item.key);
+  el.textContent = item.label;
+  return el;
+}
+
+function drawLegendItemInsideRight(svg, { box, pad, lineLen, item, y }) {
+  const x2 = box.left + box.width - pad;
+  const x1 = x2 - lineLen;
+  svg.appendChild(createLegendLine({ x1, x2, y, item }));
+  svg.appendChild(createLegendText({ x: x1 - 6, y, item, textAnchor: "end" }));
+}
+
+function drawLegendItemInsideLeft(svg, { box, pad, lineLen, item, y }) {
+  const x1 = box.left + pad;
+  const x2 = x1 + lineLen;
+  svg.appendChild(createLegendLine({ x1, x2, y, item }));
+  svg.appendChild(createLegendText({ x: x2 + 6, y, item }));
+}
+
+function drawLegendItemOutsideRight(svg, { box, lineLen, item, y }) {
+  const x1 = box.left + box.width + 12;
+  const x2 = x1 + lineLen;
+  svg.appendChild(createLegendLine({ x1, x2, y, item }));
+  svg.appendChild(createLegendText({ x: x2 + 6, y, item }));
+}
+
 export function drawLegend(svg, items, box, cfg, anchor = "outside-right") {
   const row = cfg.legendRow || 18;
   const lineLen = cfg.legendLine || 20;
   const pad = cfg.legendPad || 10;
   const startY = box.top + box.height - pad - (items.length - 1) * row;
 
-  items.forEach((item, idx) => {
-    const y = startY + idx * row;
-    if (anchor === "inside-right") {
-      const x2 = box.left + box.width - pad;
-      const x1 = x2 - lineLen;
-      const lineEl = createSvgEl("line", {
-        x1,
-        y1: y,
-        x2,
-        y2: y,
-        stroke: item.color,
-        "stroke-width": item.width || 3,
-        "stroke-dasharray": item.dash || "",
-        opacity: item.opacity == null ? 1 : item.opacity,
-      });
-      if (item.key) lineEl.setAttribute("data-legend-key", item.key);
-      svg.appendChild(lineEl);
+  const drawItem = anchor === "inside-right"
+    ? drawLegendItemInsideRight
+    : anchor === "inside-left"
+      ? drawLegendItemInsideLeft
+      : drawLegendItemOutsideRight;
 
-      const textEl = createSvgEl("text", {
-        x: x1 - 6,
-        y: y + 4,
-        class: "legend",
-        "text-anchor": "end",
-        opacity: item.opacity == null ? 1 : item.opacity,
-      });
-      if (item.key) textEl.setAttribute("data-legend-key", item.key);
-      textEl.textContent = item.label;
-      svg.appendChild(textEl);
-    } else if (anchor === "inside-left") {
-      const x1 = box.left + pad;
-      const x2 = x1 + lineLen;
-      const lineEl = createSvgEl("line", {
-        x1,
-        y1: y,
-        x2,
-        y2: y,
-        stroke: item.color,
-        "stroke-width": item.width || 3,
-        "stroke-dasharray": item.dash || "",
-        opacity: item.opacity == null ? 1 : item.opacity,
-      });
-      if (item.key) lineEl.setAttribute("data-legend-key", item.key);
-      svg.appendChild(lineEl);
-
-      const textEl = createSvgEl("text", {
-        x: x2 + 6,
-        y: y + 4,
-        class: "legend",
-        opacity: item.opacity == null ? 1 : item.opacity,
-      });
-      if (item.key) textEl.setAttribute("data-legend-key", item.key);
-      textEl.textContent = item.label;
-      svg.appendChild(textEl);
-    } else {
-      const x1 = box.left + box.width + 12;
-      const x2 = x1 + lineLen;
-      const lineEl = createSvgEl("line", {
-        x1,
-        y1: y,
-        x2,
-        y2: y,
-        stroke: item.color,
-        "stroke-width": item.width || 3,
-        "stroke-dasharray": item.dash || "",
-        opacity: item.opacity == null ? 1 : item.opacity,
-      });
-      if (item.key) lineEl.setAttribute("data-legend-key", item.key);
-      svg.appendChild(lineEl);
-
-      const textEl = createSvgEl("text", {
-        x: x2 + 6,
-        y: y + 4,
-        class: "legend",
-        opacity: item.opacity == null ? 1 : item.opacity,
-      });
-      if (item.key) textEl.setAttribute("data-legend-key", item.key);
-      textEl.textContent = item.label;
-      svg.appendChild(textEl);
-    }
-  });
+  for (let idx = 0; idx < items.length; idx += 1) {
+    drawItem(svg, {
+      box,
+      pad,
+      lineLen,
+      item: items[idx],
+      y: startY + idx * row,
+    });
+  }
 }
