@@ -1,6 +1,4 @@
-function clamp(x, a, b) {
-  return Math.max(a, Math.min(b, x));
-}
+import { clamp } from "./math.js";
 
 function divideOr(num, den, fallback = 0) {
   return den > 0 ? num / den : fallback;

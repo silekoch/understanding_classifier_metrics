@@ -1,8 +1,5 @@
 import { eventToSvgCoordinates } from "../viz/svg.js";
-
-function clamp(x, a, b) {
-  return Math.max(a, Math.min(b, x));
-}
+import { clamp } from "../core/math.js";
 
 export function nearestFiniteThreshold(points, xTarget, yTarget, xKey = "fpr", yKey = "tpr") {
   let best = null;

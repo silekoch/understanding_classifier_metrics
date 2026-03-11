@@ -1,8 +1,5 @@
 import { addPath, clear, createSvgEl, drawLegend, eventToSvgCoordinates, getSvgViewSize } from "./svg.js";
-
-function clamp(x, a, b) {
-  return Math.max(a, Math.min(b, x));
-}
+import { clamp } from "../core/math.js";
 
 const METRIC_SERIES = [
   { key: "recall", label: "Recall (TPR)", color: "#0D9488", width: 2.6 },

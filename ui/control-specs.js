@@ -1,11 +1,9 @@
+import { clamp } from "../core/math.js";
+
 function pickKeysByFlag(flag) {
   return Object.entries(CONTROL_SPECS)
     .filter(([, spec]) => spec[flag])
     .map(([key]) => key);
-}
-
-function clamp(x, min, max) {
-  return Math.max(min, Math.min(max, x));
 }
 
 export const CONTROL_SPECS = {

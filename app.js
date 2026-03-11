@@ -1,6 +1,7 @@
 import { PRESETS } from "./presets.js";
 import { createInitialState } from "./core/state.js";
 import { createStateStore } from "./core/state-store.js";
+import { clamp } from "./core/math.js";
 import { fmt, fmtPct } from "./core/format.js";
 import { computeMetricCurves } from "./core/metrics.js";
 import {
@@ -37,10 +38,6 @@ import { wireReactiveControls } from "./ui/reactive-controls.js";
 const state = createInitialState();
 const ids = getIds(document);
 const store = createStateStore(state);
-
-function clamp(x, a, b) {
-  return Math.max(a, Math.min(b, x));
-}
 
 const readControls = () => readControlsImpl({ ids, state });
 

@@ -1,8 +1,5 @@
 import { computeOperatingPoint, computePrPoints, computeRocPoints } from "./metrics.js";
-
-function clamp(x, a, b) {
-  return Math.max(a, Math.min(b, x));
-}
+import { clamp } from "./math.js";
 
 export function computeCurveState({ samples, threshold }) {
   const rocPoints = computeRocPoints(samples);

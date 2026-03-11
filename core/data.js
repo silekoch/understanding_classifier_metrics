@@ -1,6 +1,4 @@
-function clamp(x, a, b) {
-  return Math.max(a, Math.min(b, x));
-}
+import { clamp } from "./math.js";
 
 function mulberry32(seed) {
   let t = seed >>> 0;

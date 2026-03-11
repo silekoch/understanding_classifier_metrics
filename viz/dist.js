@@ -1,8 +1,5 @@
 import { clear, createSvgEl } from "./svg.js";
-
-function clamp(x, a, b) {
-  return Math.max(a, Math.min(b, x));
-}
+import { clamp } from "../core/math.js";
 
 function histogram(values, bins, min, max) {
   const out = new Array(bins).fill(0);
