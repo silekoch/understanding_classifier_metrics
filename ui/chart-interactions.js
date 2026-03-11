@@ -4,7 +4,7 @@ function clamp(x, a, b) {
   return Math.max(a, Math.min(b, x));
 }
 
-function nearestFiniteThreshold(points, xTarget, yTarget, xKey = "fpr", yKey = "tpr") {
+export function nearestFiniteThreshold(points, xTarget, yTarget, xKey = "fpr", yKey = "tpr") {
   let best = null;
   let bestDist = Infinity;
 
@@ -24,7 +24,7 @@ function nearestFiniteThreshold(points, xTarget, yTarget, xKey = "fpr", yKey = "
   return best;
 }
 
-function thresholdFromDistPointer({ evt, state, ids }) {
+export function thresholdFromDistPointer({ evt, state, ids }) {
   const view = state.distView;
   if (!view) {
     return state.threshold;
@@ -35,7 +35,7 @@ function thresholdFromDistPointer({ evt, state, ids }) {
   return view.minX + u * (view.maxX - view.minX);
 }
 
-function thresholdFromMetricTrendPointer({ evt, state, ids }) {
+export function thresholdFromMetricTrendPointer({ evt, state, ids }) {
   const box = state.metricTrendBox;
   if (!box) {
     return state.threshold;
@@ -45,7 +45,7 @@ function thresholdFromMetricTrendPointer({ evt, state, ids }) {
   return state.thresholdMin + u * (state.thresholdMax - state.thresholdMin);
 }
 
-function isThresholdTarget(el) {
+export function isThresholdTarget(el) {
   if (!el || typeof el.getAttribute !== "function") {
     return false;
   }
