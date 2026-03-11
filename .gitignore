@@ -4,3 +4,5 @@ npm-debug.log*
 dist/
 .vite/
 .eslintcache
+playwright-report/
+test-results/

@@ -38,6 +38,8 @@ npm run lint:strict
 npm run lint:fix
 npm test
 npm run test:watch
+npm run test:e2e:install
+npm run test:e2e
 npm run format:check
 npm run format
 npm run build
@@ -46,6 +48,15 @@ npm run check
 
 Linting includes warning-level structural limits (`max-lines`, `max-lines-per-function`, and `complexity`) to guide
 incremental splitting without blocking work, while correctness rules are enforced as errors.
+
+### Browser smoke test
+
+Playwright smoke test verifies that all chart panels render on a cold startup (regression guard for empty-panel issues):
+
+```bash
+npm run test:e2e:install
+npm run test:e2e
+```
 
 ### Git hooks (local quality gates)
 
