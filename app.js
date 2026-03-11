@@ -180,10 +180,8 @@ function initHandlers() {
     regenerateAndRender,
     applyPreset,
     scheduleUrlSync,
-    renderAll,
     applyThreshold,
     applyMetricTrendHoverKey,
-    drawMetricTrend,
     metricTrendHoverKeyFromPointer: metricTrendHoverKeyFromPointerView,
   });
 }

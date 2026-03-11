@@ -294,29 +294,12 @@ export function initHandlers({
   regenerateAndRender,
   applyPreset,
   scheduleUrlSync,
-  renderAll,
   applyThreshold,
   applyMetricTrendHoverKey,
-  drawMetricTrend,
   metricTrendHoverKeyFromPointer,
 }) {
-  const setThreshold =
-    applyThreshold ||
-    ((next) => {
-      state.threshold = clamp(next, state.thresholdMin, state.thresholdMax);
-      renderAll();
-    });
-
-  const setMetricTrendHoverKey =
-    applyMetricTrendHoverKey ||
-    ((nextKey) => {
-      const key = nextKey || null;
-      if (state.metricTrendHoverKey === key) {
-        return;
-      }
-      state.metricTrendHoverKey = key;
-      drawMetricTrend();
-    });
+  const setThreshold = applyThreshold;
+  const setMetricTrendHoverKey = applyMetricTrendHoverKey;
 
   attachRegenerateListeners({ ids, readControls, regenerateAndRender });
 
