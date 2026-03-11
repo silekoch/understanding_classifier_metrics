@@ -1,4 +1,4 @@
-import { CONTROL_SPECS } from "../ui/control-specs.js";
+import { CONTROL_SPECS } from "./control-specs.js";
 
 const CONTROL_DEFAULTS = Object.fromEntries(
   Object.entries(CONTROL_SPECS).map(([key, spec]) => [key, spec.default])

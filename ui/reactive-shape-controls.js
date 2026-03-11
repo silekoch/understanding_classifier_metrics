@@ -1,4 +1,4 @@
-import { SHAPE_CONTROL_KEYS, sanitizeControlValue } from "./control-specs.js";
+import { SHAPE_CONTROL_KEYS, sanitizeControlValue } from "../core/control-specs.js";
 
 function subscribeShapeControl({ store, key, state, ids, regenerateAndRender }) {
   store.subscribe(key, (nextValue) => {

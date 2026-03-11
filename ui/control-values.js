@@ -1,4 +1,4 @@
-import { REACTIVE_NUMERIC_CONTROL_KEYS, sanitizeControlValue } from "./control-specs.js";
+import { REACTIVE_NUMERIC_CONTROL_KEYS, sanitizeControlValue } from "../core/control-specs.js";
 
 export function readControls({ ids, state }) {
   state.preset = ids.preset.value;

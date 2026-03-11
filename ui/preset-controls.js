@@ -1,4 +1,4 @@
-import { CONTROL_SPECS, PRESET_CONTROL_KEYS } from "./control-specs.js";
+import { CONTROL_SPECS, PRESET_CONTROL_KEYS } from "../core/control-specs.js";
 
 const OUTPUT_ID_OVERRIDES = {
   zeroValue: "zeroValueOut",

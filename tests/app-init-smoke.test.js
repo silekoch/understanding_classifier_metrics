@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CONTROL_SPECS } from "../ui/control-specs.js";
+import { CONTROL_SPECS } from "../core/control-specs.js";
 
 function makeIds() {
   const ids = {

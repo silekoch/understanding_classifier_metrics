@@ -2,7 +2,7 @@ import {
   NON_SHAPE_REACTIVE_NUMERIC_CONTROL_KEYS,
   PRESET_CONTROL_KEYS,
   sanitizeControlValue,
-} from "./control-specs.js";
+} from "../core/control-specs.js";
 
 function subscribeRegenerateControl({ store, key, state, ids, regenerateAndRender }) {
   store.subscribe(key, (nextValue) => {

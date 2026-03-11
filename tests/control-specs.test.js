@@ -7,7 +7,7 @@ import {
   REACTIVE_NUMERIC_CONTROL_KEYS,
   SHAPE_CONTROL_KEYS,
   sanitizeControlValue,
-} from "../ui/control-specs.js";
+} from "../core/control-specs.js";
 import { createInitialState } from "../core/state.js";
 
 const INDEX_HTML = readFileSync(new URL("../index.html", import.meta.url), "utf8");

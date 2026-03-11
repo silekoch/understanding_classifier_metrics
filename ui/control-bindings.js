@@ -1,4 +1,4 @@
-import { REACTIVE_NUMERIC_CONTROL_KEYS } from "./control-specs.js";
+import { REACTIVE_NUMERIC_CONTROL_KEYS } from "../core/control-specs.js";
 
 function bindInputAndChange(el, handler) {
   if (!el) {
