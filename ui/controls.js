@@ -68,18 +68,7 @@ function bindNumericInputAndChange(el, onValue) {
 }
 
 function attachRegenerateListeners({ ids, readControls, regenerateAndRender }) {
-  const regenerateIds = [
-    ids.p0Neg,
-    ids.p0Pos,
-    ids.zeroValue,
-    ids.alphaNeg,
-    ids.betaNeg,
-    ids.alphaPos,
-    ids.betaPos,
-    ids.epsPos,
-    ids.epsNeg,
-    ids.confSharpness,
-  ];
+  const regenerateIds = [ids.epsPos, ids.epsNeg, ids.confSharpness];
 
   const handleRegenerate = () => {
     readControls();
@@ -300,6 +289,13 @@ export function initHandlers({
   applyMixWeight,
   applyMixOffset,
   applyMixSdMult,
+  applyP0Neg,
+  applyP0Pos,
+  applyZeroValue,
+  applyAlphaNeg,
+  applyBetaNeg,
+  applyAlphaPos,
+  applyBetaPos,
   applyNPerClass,
   applySamplePosFrac,
   applyOutlierFrac,
@@ -321,6 +317,13 @@ export function initHandlers({
   bindNumericInputAndChange(ids.mixWeight, applyMixWeight);
   bindNumericInputAndChange(ids.mixOffset, applyMixOffset);
   bindNumericInputAndChange(ids.mixSdMult, applyMixSdMult);
+  bindNumericInputAndChange(ids.p0Neg, applyP0Neg);
+  bindNumericInputAndChange(ids.p0Pos, applyP0Pos);
+  bindNumericInputAndChange(ids.zeroValue, applyZeroValue);
+  bindNumericInputAndChange(ids.alphaNeg, applyAlphaNeg);
+  bindNumericInputAndChange(ids.betaNeg, applyBetaNeg);
+  bindNumericInputAndChange(ids.alphaPos, applyAlphaPos);
+  bindNumericInputAndChange(ids.betaPos, applyBetaPos);
   bindNumericInputAndChange(ids.nPerClass, applyNPerClass);
   bindNumericInputAndChange(ids.samplePosFrac, applySamplePosFrac);
   bindNumericInputAndChange(ids.outlierFrac, applyOutlierFrac);
