@@ -1,3 +1,5 @@
+import { PRESET_CONTROL_KEYS } from "./control-specs.js";
+
 function setHidden(el, hidden) {
   if (!el) {
     return;
@@ -64,36 +66,11 @@ export function syncControlOutputs({ ids, state, presets, fmt, fmtPct }) {
 
 export function applyPresetValues({ ids, presets, name }) {
   const p = presets[name];
-  const keys = [
-    "muNeg",
-    "sdNeg",
-    "muPos",
-    "sdPos",
-    "logSigma",
-    "dfNeg",
-    "dfPos",
-    "mixWeight",
-    "mixOffset",
-    "mixSdMult",
-    "p0Neg",
-    "p0Pos",
-    "zeroValue",
-    "alphaNeg",
-    "betaNeg",
-    "alphaPos",
-    "betaPos",
-    "epsPos",
-    "epsNeg",
-    "confSharpness",
-    "outlierFrac",
-    "nPerClass",
-    "samplePosFrac",
-  ];
   if (!p) {
     return;
   }
   ids.preset.value = name;
-  for (const key of keys) {
+  for (const key of PRESET_CONTROL_KEYS) {
     if (Object.prototype.hasOwnProperty.call(p, key) && ids[key]) {
       ids[key].value = String(p[key]);
     }

@@ -1,4 +1,5 @@
 import { eventToSvgCoordinates } from "../viz/svg.js";
+import { REACTIVE_NUMERIC_CONTROL_KEYS } from "./control-specs.js";
 
 function clamp(x, a, b) {
   return Math.max(a, Math.min(b, x));
@@ -65,6 +66,20 @@ function bindNumericInputAndChange(el, onValue) {
   bindInputAndChange(el, () => {
     onValue(Number(el.value));
   });
+}
+
+export function bindReactiveNumericControls({ ids, applyByKey }) {
+  for (const key of REACTIVE_NUMERIC_CONTROL_KEYS) {
+    const el = ids[key];
+    if (!el) {
+      throw new Error(`Missing reactive control element: ${key}`);
+    }
+    const apply = applyByKey[key];
+    if (typeof apply !== "function") {
+      throw new Error(`Missing reactive control handler: ${key}`);
+    }
+    bindNumericInputAndChange(el, apply);
+  }
 }
 
 function attachRocClickHandler({ ids, state, setThreshold }) {
@@ -294,30 +309,35 @@ export function initHandlers({
   const setThreshold = applyThreshold;
   const setMetricTrendHoverKey = applyMetricTrendHoverKey;
 
-  bindNumericInputAndChange(ids.muNeg, applyMuNeg);
-  bindNumericInputAndChange(ids.sdNeg, applySdNeg);
-  bindNumericInputAndChange(ids.muPos, applyMuPos);
-  bindNumericInputAndChange(ids.sdPos, applySdPos);
-  bindNumericInputAndChange(ids.logSigma, applyLogSigma);
-  bindNumericInputAndChange(ids.dfNeg, applyDfNeg);
-  bindNumericInputAndChange(ids.dfPos, applyDfPos);
-  bindNumericInputAndChange(ids.mixWeight, applyMixWeight);
-  bindNumericInputAndChange(ids.mixOffset, applyMixOffset);
-  bindNumericInputAndChange(ids.mixSdMult, applyMixSdMult);
-  bindNumericInputAndChange(ids.p0Neg, applyP0Neg);
-  bindNumericInputAndChange(ids.p0Pos, applyP0Pos);
-  bindNumericInputAndChange(ids.zeroValue, applyZeroValue);
-  bindNumericInputAndChange(ids.alphaNeg, applyAlphaNeg);
-  bindNumericInputAndChange(ids.betaNeg, applyBetaNeg);
-  bindNumericInputAndChange(ids.alphaPos, applyAlphaPos);
-  bindNumericInputAndChange(ids.betaPos, applyBetaPos);
-  bindNumericInputAndChange(ids.epsPos, applyEpsPos);
-  bindNumericInputAndChange(ids.epsNeg, applyEpsNeg);
-  bindNumericInputAndChange(ids.confSharpness, applyConfSharpness);
-  bindNumericInputAndChange(ids.nPerClass, applyNPerClass);
-  bindNumericInputAndChange(ids.samplePosFrac, applySamplePosFrac);
-  bindNumericInputAndChange(ids.outlierFrac, applyOutlierFrac);
-  bindNumericInputAndChange(ids.seed, applySeed);
+  bindReactiveNumericControls({
+    ids,
+    applyByKey: {
+      muNeg: applyMuNeg,
+      sdNeg: applySdNeg,
+      muPos: applyMuPos,
+      sdPos: applySdPos,
+      logSigma: applyLogSigma,
+      dfNeg: applyDfNeg,
+      dfPos: applyDfPos,
+      mixWeight: applyMixWeight,
+      mixOffset: applyMixOffset,
+      mixSdMult: applyMixSdMult,
+      p0Neg: applyP0Neg,
+      p0Pos: applyP0Pos,
+      zeroValue: applyZeroValue,
+      alphaNeg: applyAlphaNeg,
+      betaNeg: applyBetaNeg,
+      alphaPos: applyAlphaPos,
+      betaPos: applyBetaPos,
+      epsPos: applyEpsPos,
+      epsNeg: applyEpsNeg,
+      confSharpness: applyConfSharpness,
+      nPerClass: applyNPerClass,
+      samplePosFrac: applySamplePosFrac,
+      outlierFrac: applyOutlierFrac,
+      seed: applySeed,
+    },
+  });
 
   ids.resample.addEventListener("click", () => {
     applySeed(state.seed + 1);

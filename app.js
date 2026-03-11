@@ -32,6 +32,7 @@ import { URL_BOOL_KEYS, URL_NUM_KEYS } from "./ui/url-state-keys.js";
 import { renderMetricsText as renderMetricsTextView } from "./ui/metrics-text.js";
 import { runStartupRender } from "./ui/startup.js";
 import { wireShapeControls } from "./ui/reactive-shape-controls.js";
+import { PRESET_CONTROL_KEYS } from "./ui/control-specs.js";
 
 const state = createInitialState();
 const ids = getIds(document);
@@ -69,32 +70,6 @@ function clamp(x, a, b) {
   return Math.max(a, Math.min(b, x));
 }
 
-const PRESET_STATE_KEYS = [
-  "muNeg",
-  "sdNeg",
-  "muPos",
-  "sdPos",
-  "logSigma",
-  "dfNeg",
-  "dfPos",
-  "mixWeight",
-  "mixOffset",
-  "mixSdMult",
-  "p0Neg",
-  "p0Pos",
-  "zeroValue",
-  "alphaNeg",
-  "betaNeg",
-  "alphaPos",
-  "betaPos",
-  "epsPos",
-  "epsNeg",
-  "confSharpness",
-  "outlierFrac",
-  "nPerClass",
-  "samplePosFrac",
-];
-
 const readControls = () => readControlsImpl({ ids, state });
 
 const {
@@ -127,7 +102,7 @@ store.subscribe("preset", (nextPreset) => {
   applyPresetValuesUi({ ids, presets: PRESETS, name: nextPreset });
   const preset = PRESETS[nextPreset];
   if (preset) {
-    for (const key of PRESET_STATE_KEYS) {
+    for (const key of PRESET_CONTROL_KEYS) {
       if (Object.prototype.hasOwnProperty.call(preset, key)) {
         state[key] = preset[key];
       }
