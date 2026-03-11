@@ -9,6 +9,9 @@ function subscribeRegenerateControl({ store, key, state, ids, regenerateAndRende
   store.subscribe(key, (nextValue) => {
     state.controls[key] = nextValue;
     ids[key].value = String(nextValue);
+    if (state.ui.suppressReactiveRegenerate) {
+      return;
+    }
     regenerateAndRender();
   });
 }
@@ -33,13 +36,18 @@ export function wireReactiveControls({
     applyPresetValues({ ids, presets, name: nextPreset });
     const preset = presets[nextPreset];
     if (preset) {
-      for (const key of PRESET_CONTROL_KEYS) {
-        if (Object.prototype.hasOwnProperty.call(preset, key)) {
-          const nextValue = sanitizeControlValue(key, preset[key]);
-          store.set(key, nextValue, { silent: true });
-          state.controls[key] = store.get(key);
-          ids[key].value = String(state.controls[key]);
-        }
+      state.ui.suppressReactiveRegenerate = true;
+      try {
+        store.batch(() => {
+          for (const key of PRESET_CONTROL_KEYS) {
+            if (Object.prototype.hasOwnProperty.call(preset, key)) {
+              const nextValue = sanitizeControlValue(key, preset[key]);
+              store.set(key, nextValue);
+            }
+          }
+        });
+      } finally {
+        state.ui.suppressReactiveRegenerate = false;
       }
     }
     regenerateAndRender();

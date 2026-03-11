@@ -214,7 +214,7 @@ function initHandlers() {
 
 function init() {
   initHandlers();
-  const restored = restoreStateFromUrlImpl({
+  restoreStateFromUrlImpl({
     ids,
     presets: PRESETS,
     applyPresetValues: (name) => applyPresetValuesUi({ ids, presets: PRESETS, name }),
@@ -223,8 +223,6 @@ function init() {
   });
   readControls();
   runStartupRender({
-    restored,
-    setPresetFromControls: () => store.set("preset", ids.preset.value),
     regenerateAndRender,
   });
 }

@@ -24,6 +24,7 @@ export function createInitialState() {
       metricTrendHoverKey: null,
       draggingThreshold: false,
       draggingMetricThreshold: false,
+      suppressReactiveRegenerate: false,
       urlSyncTimer: null,
     },
     view: {
