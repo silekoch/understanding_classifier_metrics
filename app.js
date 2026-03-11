@@ -7,15 +7,14 @@ import {
   computeThresholdBounds as computeThresholdBoundsCore,
 } from "./core/derived-state.js";
 import { generateData as generateSampleData } from "./core/data.js";
+import { drawRoc as drawRocView } from "./viz/roc.js";
+import { drawPr as drawPrView } from "./viz/pr.js";
+import { drawDist as drawDistView } from "./viz/dist.js";
+import { drawConfusionMatrix as drawConfusionMatrixView } from "./viz/matrix.js";
 import {
-  drawConfusionMatrix as drawConfusionMatrixUi,
-  drawDist as drawDistUi,
-  drawMetricTrend as drawMetricTrendUi,
-  drawPr as drawPrUi,
-  drawRoc as drawRocUi,
-  metricTrendHoverKeyFromPointer as metricTrendHoverKeyFromPointerUi,
-  renderMetrics as renderMetricsUi,
-} from "./ui/view-renderers.js";
+  drawMetricTrend as drawMetricTrendView,
+  metricTrendHoverKeyFromPointer as metricTrendHoverKeyFromPointerView,
+} from "./viz/metric-trend.js";
 import { initHandlers as initControlHandlers } from "./ui/controls.js";
 import {
   restoreStateFromUrl as restoreStateFromUrlImpl,
@@ -29,31 +28,13 @@ import {
 import { getIds } from "./ui/dom-ids.js";
 import { readControls as readControlsImpl } from "./ui/control-values.js";
 import { URL_BOOL_KEYS, URL_NUM_KEYS } from "./ui/url-state-keys.js";
+import { renderMetricsText as renderMetricsTextView } from "./ui/metrics-text.js";
 
 const state = createInitialState();
 const ids = getIds(document);
 
-function readControls() {
-  readControlsImpl({ ids, state });
-}
-
-function syncControlOutputs() {
-  syncControlOutputsImpl({
-    ids,
-    state,
-    presets: PRESETS,
-    fmt,
-    fmtPct,
-  });
-}
-
-function applyPresetValues(name) {
-  applyPresetValuesImpl({
-    ids,
-    presets: PRESETS,
-    name,
-  });
-}
+const readControls = () => readControlsImpl({ ids, state });
+const applyPresetValues = (name) => applyPresetValuesImpl({ ids, presets: PRESETS, name });
 
 function applyPreset(name) {
   applyPresetValues(name);
@@ -102,25 +83,50 @@ function scheduleUrlSync() {
   });
 }
 
-function restoreStateFromUrl() {
-  return restoreStateFromUrlImpl({
-    ids,
-    presets: PRESETS,
-    applyPresetValues,
-    urlNumKeys: URL_NUM_KEYS,
-    urlBoolKeys: URL_BOOL_KEYS,
+function drawMetricTrend() {
+  state.metricTrendBox = drawMetricTrendView({
+    svg: ids.metricTrendSvg,
+    curves: state.metricCurves,
+    hoveredKey: state.metricTrendHoverKey,
+    threshold: state.threshold,
+    thresholdMin: state.thresholdMin,
+    thresholdMax: state.thresholdMax,
+    fmt,
   });
 }
 
 function renderAll() {
   computeEverything();
-  syncControlOutputs();
-  drawDistUi({ ids, state, fmt });
-  drawConfusionMatrixUi({ ids, state, fmtPct });
-  drawRocUi({ ids, state, fmt });
-  drawPrUi({ ids, state, fmt });
-  renderMetricsUi({ ids, state, fmt });
-  drawMetricTrendUi({ ids, state, fmt });
+  syncControlOutputsImpl({ ids, state, presets: PRESETS, fmt, fmtPct });
+  state.distView = drawDistView({
+    svg: ids.distSvg,
+    data: state.data,
+    threshold: state.threshold,
+    fmt,
+  });
+  drawConfusionMatrixView({
+    svg: ids.confusionSvg,
+    op: state.roc.op,
+    fmtPct,
+  });
+  state.rocClickBox = drawRocView({
+    svg: ids.rocSvg,
+    roc: state.roc,
+    threshold: state.threshold,
+    fmt,
+  });
+  state.prClickBox = drawPrView({
+    svg: ids.prSvg,
+    pr: state.pr,
+    threshold: state.threshold,
+    fmt,
+  });
+  renderMetricsTextView({
+    metricsTextEl: ids.metricsText,
+    op: state.roc.op,
+    fmt,
+  });
+  drawMetricTrend();
   scheduleUrlSync();
 }
 
@@ -138,17 +144,24 @@ function initHandlers() {
     state,
     readControls,
     regenerateAndRender,
-    applyPreset,
-    scheduleUrlSync,
-    renderAll,
-    drawMetricTrend: () => drawMetricTrendUi({ ids, state, fmt }),
-    metricTrendHoverKeyFromPointer: metricTrendHoverKeyFromPointerUi,
-  });
+      applyPreset,
+      scheduleUrlSync,
+      renderAll,
+      drawMetricTrend,
+      metricTrendHoverKeyFromPointer: metricTrendHoverKeyFromPointerView,
+    });
 }
 
 function init() {
   initHandlers();
-  if (restoreStateFromUrl()) {
+  const restored = restoreStateFromUrlImpl({
+    ids,
+    presets: PRESETS,
+    applyPresetValues,
+    urlNumKeys: URL_NUM_KEYS,
+    urlBoolKeys: URL_BOOL_KEYS,
+  });
+  if (restored) {
     readControls();
     regenerateAndRender();
   } else {
