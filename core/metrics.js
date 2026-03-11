@@ -2,6 +2,30 @@ function clamp(x, a, b) {
   return Math.max(a, Math.min(b, x));
 }
 
+function divideOr(num, den, fallback = 0) {
+  return den > 0 ? num / den : fallback;
+}
+
+function computeConfusionCounts(threshold, all) {
+  let tp = 0;
+  let fp = 0;
+  let tn = 0;
+  let fn = 0;
+
+  for (const d of all) {
+    const predPos = d.score >= threshold;
+    if (predPos) {
+      if (d.label === 1) tp += 1;
+      else fp += 1;
+      continue;
+    }
+    if (d.label === 0) tn += 1;
+    else fn += 1;
+  }
+
+  return { tp, fp, tn, fn };
+}
+
 export function computeRocPoints(all) {
   const sorted = all.slice().sort((a, b) => b.score - a.score);
   const P = sorted.reduce((acc, d) => acc + (d.label === 1 ? 1 : 0), 0);
@@ -118,30 +142,19 @@ export function computeAucRank(all) {
 }
 
 export function computeOperatingPoint(threshold, all) {
-  let tp = 0;
-  let fp = 0;
-  let tn = 0;
-  let fn = 0;
-
-  for (const d of all) {
-    const predPos = d.score >= threshold;
-    if (predPos && d.label === 1) tp += 1;
-    else if (predPos && d.label === 0) fp += 1;
-    else if (!predPos && d.label === 0) tn += 1;
-    else fn += 1;
-  }
+  const { tp, fp, tn, fn } = computeConfusionCounts(threshold, all);
 
   const P = tp + fn;
   const N = tn + fp;
-  const tpr = P > 0 ? tp / P : 0;
-  const fpr = N > 0 ? fp / N : 0;
-  const precision = tp + fp > 0 ? tp / (tp + fp) : 0;
+  const tpr = divideOr(tp, P);
+  const fpr = divideOr(fp, N);
+  const precision = divideOr(tp, tp + fp);
   const recall = tpr;
-  const specificity = N > 0 ? tn / N : 0;
-  const f1 = precision + recall > 0 ? (2 * precision * recall) / (precision + recall) : 0;
-  const accuracy = P + N > 0 ? (tp + tn) / (P + N) : 0;
+  const specificity = divideOr(tn, N);
+  const f1 = divideOr(2 * precision * recall, precision + recall);
+  const accuracy = divideOr(tp + tn, P + N);
   const mccDen = Math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn));
-  const mcc = mccDen > 0 ? (tp * tn - fp * fn) / mccDen : 0;
+  const mcc = divideOr(tp * tn - fp * fn, mccDen);
 
   return { tp, fp, tn, fn, tpr, fpr, precision, recall, specificity, f1, accuracy, mcc, P, N };
 }

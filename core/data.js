@@ -92,56 +92,66 @@ function sampleStandardized(mode, rng, label, params) {
   return sampleNormal(rng, 0, 1);
 }
 
+function sampleScoreNormalMode({ rng, label, params, mu, sd }) {
+  if (label === 1 && params.outlierFrac > 0 && rng() < params.outlierFrac) {
+    return sampleNormal(rng, params.muNeg, Math.max(1e-6, params.sdNeg * 1.15));
+  }
+  return sampleNormal(rng, mu, sd);
+}
+
+function sampleScoreMixturePosMode({ rng, label, params }) {
+  if (label === 0) return sampleNormal(rng, params.muNeg, Math.max(1e-6, params.sdNeg));
+  const w = clamp(params.mixWeight, 0, 0.98);
+  if (rng() < w) {
+    const offset = params.mixOffset;
+    const spread = Math.max(1e-6, params.mixSdMult * params.sdNeg);
+    return sampleNormal(rng, params.muNeg + offset * params.sdNeg, spread);
+  }
+  return sampleNormal(rng, params.muPos, Math.max(1e-6, params.sdPos));
+}
+
+function sampleScoreZeroInflatedMode({ rng, label, params, mu, sd }) {
+  const p0 = clamp(label === 1 ? params.p0Pos : params.p0Neg, 0, 0.99);
+  if (rng() < p0) return params.zeroValue;
+  return sampleNormal(rng, mu, sd);
+}
+
+function sampleScoreBetaMode({ rng, label, params }) {
+  const alpha = label === 1 ? params.alphaPos : params.alphaNeg;
+  const beta = label === 1 ? params.betaPos : params.betaNeg;
+  return sampleBeta(rng, alpha, beta);
+}
+
+function sampleScoreBetaConfMixtureMode({ rng, label, params }) {
+  const kappa = Math.max(2, params.confSharpness);
+  const hi = betaByMeanAndKappa(0.96, kappa);
+  const lo = betaByMeanAndKappa(0.04, kappa);
+
+  if (label === 1) {
+    const eps = clamp(params.epsPos, 0, 0.49);
+    if (rng() < eps) return sampleBeta(rng, lo.alpha, lo.beta);
+    return sampleBeta(rng, hi.alpha, hi.beta);
+  }
+
+  const eps = clamp(params.epsNeg, 0, 0.49);
+  if (rng() < eps) return sampleBeta(rng, hi.alpha, hi.beta);
+  return sampleBeta(rng, lo.alpha, lo.beta);
+}
+
+const MODE_SAMPLERS = {
+  normal: sampleScoreNormalMode,
+  mixture_pos: sampleScoreMixturePosMode,
+  zero_inflated: sampleScoreZeroInflatedMode,
+  beta: sampleScoreBetaMode,
+  beta_conf_mixture: sampleScoreBetaConfMixtureMode,
+};
+
 function sampleScoreByPreset(rng, label, preset, params) {
   const mode = preset.mode || "normal";
   const mu = label === 1 ? params.muPos : params.muNeg;
   const sd = Math.max(1e-6, label === 1 ? params.sdPos : params.sdNeg);
-
-  if (mode === "normal") {
-    if (label === 1 && params.outlierFrac > 0 && rng() < params.outlierFrac) {
-      return sampleNormal(rng, params.muNeg, Math.max(1e-6, params.sdNeg * 1.15));
-    }
-    return sampleNormal(rng, mu, sd);
-  }
-
-  if (mode === "mixture_pos") {
-    if (label === 0) return sampleNormal(rng, params.muNeg, Math.max(1e-6, params.sdNeg));
-    const w = clamp(params.mixWeight, 0, 0.98);
-    if (rng() < w) {
-      const offset = params.mixOffset;
-      const spread = Math.max(1e-6, params.mixSdMult * params.sdNeg);
-      return sampleNormal(rng, params.muNeg + offset * params.sdNeg, spread);
-    }
-    return sampleNormal(rng, params.muPos, Math.max(1e-6, params.sdPos));
-  }
-
-  if (mode === "zero_inflated") {
-    const p0 = clamp(label === 1 ? params.p0Pos : params.p0Neg, 0, 0.99);
-    if (rng() < p0) return params.zeroValue;
-    return sampleNormal(rng, mu, sd);
-  }
-
-  if (mode === "beta") {
-    const alpha = label === 1 ? params.alphaPos : params.alphaNeg;
-    const beta = label === 1 ? params.betaPos : params.betaNeg;
-    return sampleBeta(rng, alpha, beta);
-  }
-
-  if (mode === "beta_conf_mixture") {
-    const kappa = Math.max(2, params.confSharpness);
-    const hi = betaByMeanAndKappa(0.96, kappa);
-    const lo = betaByMeanAndKappa(0.04, kappa);
-
-    if (label === 1) {
-      const eps = clamp(params.epsPos, 0, 0.49);
-      if (rng() < eps) return sampleBeta(rng, lo.alpha, lo.beta);
-      return sampleBeta(rng, hi.alpha, hi.beta);
-    }
-
-    const eps = clamp(params.epsNeg, 0, 0.49);
-    if (rng() < eps) return sampleBeta(rng, hi.alpha, hi.beta);
-    return sampleBeta(rng, lo.alpha, lo.beta);
-  }
+  const modeSampler = MODE_SAMPLERS[mode];
+  if (modeSampler) return modeSampler({ rng, label, params, mu, sd });
 
   const z = sampleStandardized(mode, rng, label, params);
   return mu + sd * z;
