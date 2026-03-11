@@ -1,5 +1,6 @@
 import { PRESETS } from "./presets.js";
 import { createInitialState } from "./core/state.js";
+import { fmt, fmtPct } from "./core/format.js";
 import { computeMetricCurves } from "./core/metrics.js";
 import {
   computeCurveState as computeCurveStateCore,
@@ -27,50 +28,12 @@ import {
 import { getIds } from "./ui/dom-ids.js";
 import { renderMetricsText as renderMetricsTextView } from "./ui/metrics-text.js";
 import { readControls as readControlsImpl } from "./ui/control-values.js";
+import { URL_BOOL_KEYS, URL_NUM_KEYS } from "./ui/url-state-keys.js";
 
 (function () {
   const state = createInitialState();
 
   const ids = getIds(document);
-
-  const URL_NUM_KEYS = [
-    "muNeg",
-    "sdNeg",
-    "muPos",
-    "sdPos",
-    "logSigma",
-    "dfNeg",
-    "dfPos",
-    "mixWeight",
-    "mixOffset",
-    "mixSdMult",
-    "p0Neg",
-    "p0Pos",
-    "zeroValue",
-    "alphaNeg",
-    "betaNeg",
-    "alphaPos",
-    "betaPos",
-    "epsPos",
-    "epsNeg",
-    "confSharpness",
-    "nPerClass",
-    "samplePosFrac",
-    "outlierFrac",
-    "seed",
-    "threshold",
-  ];
-
-  const URL_BOOL_KEYS = [];
-
-  function fmt(num, digits = 4) {
-    if (!Number.isFinite(num)) return "NaN";
-    return num.toFixed(digits);
-  }
-
-  function fmtPct(value, digits = 1) {
-    return `${fmt(value * 100, digits)}%`;
-  }
 
   function readControls() {
     readControlsImpl({ ids, state });
