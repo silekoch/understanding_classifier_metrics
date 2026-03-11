@@ -33,7 +33,10 @@ import { renderMetricsText as renderMetricsTextView } from "./ui/metrics-text.js
 
 const state = createInitialState();
 const ids = getIds(document);
-const store = createStateStore({ threshold: state.threshold });
+const store = createStateStore({
+  threshold: state.threshold,
+  metricTrendHoverKey: state.metricTrendHoverKey,
+});
 
 function clamp(x, a, b) {
   return Math.max(a, Math.min(b, x));
@@ -46,9 +49,19 @@ store.subscribe("threshold", (nextThreshold) => {
   renderAll();
 });
 
+store.subscribe("metricTrendHoverKey", (nextHoverKey) => {
+  state.metricTrendHoverKey = nextHoverKey;
+  drawMetricTrend();
+});
+
 function applyThreshold(nextThreshold) {
   const clampedThreshold = clamp(nextThreshold, state.thresholdMin, state.thresholdMax);
   store.set("threshold", clampedThreshold);
+}
+
+function applyMetricTrendHoverKey(nextHoverKey) {
+  const key = nextHoverKey || null;
+  store.set("metricTrendHoverKey", key);
 }
 
 function applyPreset(name) {
@@ -150,6 +163,7 @@ function regenerateAndRender() {
   state.data = generateSampleData(state, getActivePreset());
   updateThresholdRange();
   store.set("threshold", state.threshold, { silent: true });
+  store.set("metricTrendHoverKey", state.metricTrendHoverKey, { silent: true });
   state.metricCurves = computeMetricCurves(state.data.all, state.thresholdMin, state.thresholdMax);
   renderAll();
 }
@@ -164,6 +178,7 @@ function initHandlers() {
     scheduleUrlSync,
     renderAll,
     applyThreshold,
+    applyMetricTrendHoverKey,
     drawMetricTrend,
     metricTrendHoverKeyFromPointer: metricTrendHoverKeyFromPointerView,
   });

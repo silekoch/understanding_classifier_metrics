@@ -96,7 +96,7 @@ function attachRegenerateListeners({ ids, readControls, regenerateAndRender }) {
   });
 }
 
-function attachRocClickHandler({ ids, state, setThreshold, renderAll }) {
+function attachRocClickHandler({ ids, state, setThreshold }) {
   ids.rocSvg.addEventListener("click", (evt) => {
     const box = state.rocClickBox;
     if (!box) {
@@ -119,7 +119,7 @@ function attachRocClickHandler({ ids, state, setThreshold, renderAll }) {
   });
 }
 
-function attachPrClickHandler({ ids, state, setThreshold, renderAll }) {
+function attachPrClickHandler({ ids, state, setThreshold }) {
   ids.prSvg.addEventListener("click", (evt) => {
     const box = state.prClickBox;
     if (!box) {
@@ -164,7 +164,7 @@ function attachMetricTrendHandlers({
       return;
     }
     evt.preventDefault();
-    state.metricTrendHoverKey = null;
+    setMetricTrendHoverKey(null);
     state.draggingMetricThreshold = true;
     ids.metricTrendSvg.setPointerCapture(evt.pointerId);
     setThreshold(thresholdFromMetricTrendPointer({ evt, state, ids }));
@@ -222,7 +222,7 @@ function attachMetricTrendHandlers({
   });
 }
 
-function attachDistThresholdHandlers({ ids, state, setThreshold, renderAll }) {
+function attachDistThresholdHandlers({ ids, state, setThreshold }) {
   ids.distSvg.addEventListener("pointerdown", (evt) => {
     if (!isThresholdTarget(evt.target)) {
       return;
@@ -296,6 +296,7 @@ export function initHandlers({
   scheduleUrlSync,
   renderAll,
   applyThreshold,
+  applyMetricTrendHoverKey,
   drawMetricTrend,
   metricTrendHoverKeyFromPointer,
 }) {
@@ -306,14 +307,16 @@ export function initHandlers({
       renderAll();
     });
 
-  const setMetricTrendHoverKey = (nextKey) => {
-    const key = nextKey || null;
-    if (state.metricTrendHoverKey === key) {
-      return;
-    }
-    state.metricTrendHoverKey = key;
-    drawMetricTrend();
-  };
+  const setMetricTrendHoverKey =
+    applyMetricTrendHoverKey ||
+    ((nextKey) => {
+      const key = nextKey || null;
+      if (state.metricTrendHoverKey === key) {
+        return;
+      }
+      state.metricTrendHoverKey = key;
+      drawMetricTrend();
+    });
 
   attachRegenerateListeners({ ids, readControls, regenerateAndRender });
 
@@ -331,8 +334,8 @@ export function initHandlers({
     scheduleUrlSync();
   });
 
-  attachRocClickHandler({ ids, state, setThreshold, renderAll });
-  attachPrClickHandler({ ids, state, setThreshold, renderAll });
+  attachRocClickHandler({ ids, state, setThreshold });
+  attachPrClickHandler({ ids, state, setThreshold });
   attachMetricTrendHandlers({
     ids,
     state,
@@ -340,5 +343,5 @@ export function initHandlers({
     setMetricTrendHoverKey,
     metricTrendHoverKeyFromPointer,
   });
-  attachDistThresholdHandlers({ ids, state, setThreshold, renderAll });
+  attachDistThresholdHandlers({ ids, state, setThreshold });
 }
