@@ -7,7 +7,7 @@ export function createSvgEl(name, attrs) {
 }
 
 export function clear(svg) {
-  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  while (svg.firstChild) {svg.removeChild(svg.firstChild);}
 }
 
 export function drawAxes(svg, box, xTicks, yTicks, xLabel, yLabel) {
@@ -91,7 +91,7 @@ export function drawAxes(svg, box, xTicks, yTicks, xLabel, yLabel) {
 }
 
 export function linePathFromUnitPoints(points, box, xKey, yKey) {
-  if (!points.length) return "";
+  if (!points.length) {return "";}
   const first = points[0];
   let d = `M ${box.left + first[xKey] * box.width} ${box.top + (1 - first[yKey]) * box.height}`;
   for (let i = 1; i < points.length; i += 1) {
@@ -112,7 +112,7 @@ export function addPath(svg, points, box, stroke, width, dash, xKey = "fpr", yKe
     "stroke-linejoin": "round",
     "stroke-linecap": "round",
   });
-  if (dash) path.setAttribute("stroke-dasharray", dash);
+  if (dash) {path.setAttribute("stroke-dasharray", dash);}
   svg.appendChild(path);
   return path;
 }
@@ -178,7 +178,7 @@ export function computeCurveLayout(svg, mode = "single") {
 }
 
 function setLegendKey(el, key) {
-  if (!key) return;
+  if (!key) {return;}
   el.setAttribute("data-legend-key", key);
 }
 
@@ -208,7 +208,7 @@ function createLegendText({ x, y, item, textAnchor }) {
     class: "legend",
     opacity: legendOpacity(item),
   };
-  if (textAnchor) attrs["text-anchor"] = textAnchor;
+  if (textAnchor) {attrs["text-anchor"] = textAnchor;}
   const el = createSvgEl("text", attrs);
   setLegendKey(el, item.key);
   el.textContent = item.label;

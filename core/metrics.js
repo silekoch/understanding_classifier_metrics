@@ -15,12 +15,12 @@ function computeConfusionCounts(threshold, all) {
   for (const d of all) {
     const predPos = d.score >= threshold;
     if (predPos) {
-      if (d.label === 1) tp += 1;
-      else fp += 1;
+      if (d.label === 1) {tp += 1;}
+      else {fp += 1;}
       continue;
     }
-    if (d.label === 0) tn += 1;
-    else fn += 1;
+    if (d.label === 0) {tn += 1;}
+    else {fn += 1;}
   }
 
   return { tp, fp, tn, fn };
@@ -40,8 +40,8 @@ export function computeRocPoints(all) {
     const s = sorted[i].score;
     let j = i;
     while (j < sorted.length && sorted[j].score === s) {
-      if (sorted[j].label === 1) tp += 1;
-      else fp += 1;
+      if (sorted[j].label === 1) {tp += 1;}
+      else {fp += 1;}
       j += 1;
     }
     points.push({ threshold: s, tpr: tp / P, fpr: fp / N });
@@ -70,8 +70,8 @@ export function computePrPoints(all) {
     const s = sorted[i].score;
     let j = i;
     while (j < sorted.length && sorted[j].score === s) {
-      if (sorted[j].label === 1) tp += 1;
-      else fp += 1;
+      if (sorted[j].label === 1) {tp += 1;}
+      else {fp += 1;}
       j += 1;
     }
 
@@ -131,7 +131,7 @@ export function computeAucRank(all) {
     const groupCount = j - i + 1;
     const avgRank = (rank + rank + groupCount - 1) / 2;
     for (let k = i; k <= j; k += 1) {
-      if (sorted[k].label === 1) sumPosRanks += avgRank;
+      if (sorted[k].label === 1) {sumPosRanks += avgRank;}
     }
 
     rank += groupCount;
@@ -168,7 +168,7 @@ export function computeMetricCurves(all, minThreshold, maxThreshold, sampleCount
     mcc: [],
     accuracy: [],
   };
-  if (!all || !all.length) return curves;
+  if (!all || !all.length) {return curves;}
 
   const minT = Number.isFinite(minThreshold) ? minThreshold : Math.min(...all.map((d) => d.score));
   const maxT = Number.isFinite(maxThreshold) ? maxThreshold : Math.max(...all.map((d) => d.score));

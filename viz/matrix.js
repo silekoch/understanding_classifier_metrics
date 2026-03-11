@@ -91,7 +91,7 @@ function drawCellSquare(svg, { x, y, cell }) {
 }
 
 function drawCellInnerBox(svg, { x, y, cell, rate }) {
-  if (rate <= 0) return;
+  if (rate <= 0) {return;}
   const scale = Math.sqrt(rate);
   const innerW = Math.max(6, grid.cellW * scale);
   const innerH = Math.max(6, grid.cellH * scale);

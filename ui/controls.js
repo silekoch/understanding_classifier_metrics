@@ -9,7 +9,7 @@ function nearestFiniteThreshold(points, xTarget, yTarget, xKey = "fpr", yKey = "
   let bestDist = Infinity;
 
   for (const p of points) {
-    if (!Number.isFinite(p.threshold)) continue;
+    if (!Number.isFinite(p.threshold)) {continue;}
     const dx = p[xKey] - xTarget;
     const dy = p[yKey] - yTarget;
     const d2 = dx * dx + dy * dy;
@@ -24,7 +24,7 @@ function nearestFiniteThreshold(points, xTarget, yTarget, xKey = "fpr", yKey = "
 
 function thresholdFromDistPointer({ evt, state, ids }) {
   const view = state.distView;
-  if (!view) return state.threshold;
+  if (!view) {return state.threshold;}
   const point = eventToSvgCoordinates(evt, ids.distSvg, 760, 320);
   const x = point.x;
   const u = clamp((x - view.box.left) / view.box.width, 0, 1);
@@ -33,14 +33,14 @@ function thresholdFromDistPointer({ evt, state, ids }) {
 
 function thresholdFromMetricTrendPointer({ evt, state, ids }) {
   const box = state.metricTrendBox;
-  if (!box) return state.threshold;
+  if (!box) {return state.threshold;}
   const point = eventToSvgCoordinates(evt, ids.metricTrendSvg, 760, 240);
   const u = clamp((point.x - box.left) / box.width, 0, 1);
   return state.thresholdMin + u * (state.thresholdMax - state.thresholdMin);
 }
 
 function isThresholdTarget(el) {
-  if (!el || typeof el.getAttribute !== "function") return false;
+  if (!el || typeof el.getAttribute !== "function") {return false;}
   const role = el.getAttribute("data-role");
   return role === "threshold-handle" || role === "threshold-line";
 }
@@ -74,7 +74,7 @@ function attachRegenerateListeners({ ids, readControls, regenerateAndRender }) {
   ];
 
   regenerateIds.forEach((el) => {
-    if (!el) return;
+    if (!el) {return;}
     el.addEventListener("input", () => {
       readControls();
       regenerateAndRender();
@@ -89,7 +89,7 @@ function attachRegenerateListeners({ ids, readControls, regenerateAndRender }) {
 function attachRocClickHandler({ ids, state, setThreshold, renderAll }) {
   ids.rocSvg.addEventListener("click", (evt) => {
     const box = state.rocClickBox;
-    if (!box) return;
+    if (!box) {return;}
 
     const point = eventToSvgCoordinates(evt, ids.rocSvg, 760, 420);
     const x = point.x;
@@ -99,7 +99,7 @@ function attachRocClickHandler({ ids, state, setThreshold, renderAll }) {
     const tpr = clamp(1 - (y - box.top) / box.height, 0, 1);
 
     const nearest = nearestFiniteThreshold(state.roc.empirical, fpr, tpr);
-    if (!nearest) return;
+    if (!nearest) {return;}
 
     setThreshold(nearest.threshold);
     renderAll();
@@ -109,7 +109,7 @@ function attachRocClickHandler({ ids, state, setThreshold, renderAll }) {
 function attachPrClickHandler({ ids, state, setThreshold, renderAll }) {
   ids.prSvg.addEventListener("click", (evt) => {
     const box = state.prClickBox;
-    if (!box) return;
+    if (!box) {return;}
 
     const point = eventToSvgCoordinates(evt, ids.prSvg, 760, 420);
     const x = point.x;
@@ -119,7 +119,7 @@ function attachPrClickHandler({ ids, state, setThreshold, renderAll }) {
     const precision = clamp(1 - (y - box.top) / box.height, 0, 1);
 
     const nearest = nearestFiniteThreshold(state.pr.points, recall, precision, "recall", "precision");
-    if (!nearest) return;
+    if (!nearest) {return;}
 
     setThreshold(nearest.threshold);
     renderAll();
@@ -136,7 +136,7 @@ function attachMetricTrendHandlers({
 }) {
   ids.metricTrendSvg.addEventListener("pointerdown", (evt) => {
     const box = state.metricTrendBox;
-    if (!box) return;
+    if (!box) {return;}
     const point = eventToSvgCoordinates(evt, ids.metricTrendSvg, 760, 240);
     if (
       point.x < box.left ||
@@ -179,7 +179,7 @@ function attachMetricTrendHandlers({
   });
 
   ids.metricTrendSvg.addEventListener("pointerup", (evt) => {
-    if (!state.draggingMetricThreshold) return;
+    if (!state.draggingMetricThreshold) {return;}
     state.draggingMetricThreshold = false;
     if (ids.metricTrendSvg.hasPointerCapture(evt.pointerId)) {
       ids.metricTrendSvg.releasePointerCapture(evt.pointerId);
@@ -187,7 +187,7 @@ function attachMetricTrendHandlers({
   });
 
   ids.metricTrendSvg.addEventListener("pointercancel", (evt) => {
-    if (!state.draggingMetricThreshold) return;
+    if (!state.draggingMetricThreshold) {return;}
     state.draggingMetricThreshold = false;
     if (ids.metricTrendSvg.hasPointerCapture(evt.pointerId)) {
       ids.metricTrendSvg.releasePointerCapture(evt.pointerId);
@@ -195,14 +195,14 @@ function attachMetricTrendHandlers({
   });
 
   ids.metricTrendSvg.addEventListener("pointerleave", () => {
-    if (state.draggingMetricThreshold) return;
+    if (state.draggingMetricThreshold) {return;}
     setMetricTrendHoverKey(null);
   });
 }
 
 function attachDistThresholdHandlers({ ids, state, setThreshold, renderAll }) {
   ids.distSvg.addEventListener("pointerdown", (evt) => {
-    if (!isThresholdTarget(evt.target)) return;
+    if (!isThresholdTarget(evt.target)) {return;}
     evt.preventDefault();
     state.draggingThreshold = true;
     ids.distSvg.setPointerCapture(evt.pointerId);
@@ -211,14 +211,14 @@ function attachDistThresholdHandlers({ ids, state, setThreshold, renderAll }) {
   });
 
   ids.distSvg.addEventListener("pointermove", (evt) => {
-    if (!state.draggingThreshold) return;
+    if (!state.draggingThreshold) {return;}
     evt.preventDefault();
     setThreshold(thresholdFromDistPointer({ evt, state, ids }));
     renderAll();
   });
 
   ids.distSvg.addEventListener("pointerup", (evt) => {
-    if (!state.draggingThreshold) return;
+    if (!state.draggingThreshold) {return;}
     state.draggingThreshold = false;
     if (ids.distSvg.hasPointerCapture(evt.pointerId)) {
       ids.distSvg.releasePointerCapture(evt.pointerId);
@@ -226,7 +226,7 @@ function attachDistThresholdHandlers({ ids, state, setThreshold, renderAll }) {
   });
 
   ids.distSvg.addEventListener("pointercancel", (evt) => {
-    if (!state.draggingThreshold) return;
+    if (!state.draggingThreshold) {return;}
     state.draggingThreshold = false;
     if (ids.distSvg.hasPointerCapture(evt.pointerId)) {
       ids.distSvg.releasePointerCapture(evt.pointerId);
@@ -234,7 +234,7 @@ function attachDistThresholdHandlers({ ids, state, setThreshold, renderAll }) {
   });
 
   ids.distSvg.addEventListener("keydown", (evt) => {
-    if (!isThresholdTarget(evt.target)) return;
+    if (!isThresholdTarget(evt.target)) {return;}
     const step = state.thresholdStep || 0.001;
     const delta = evt.shiftKey ? step * 20 : step;
     if (evt.key === "ArrowLeft") {
@@ -273,7 +273,7 @@ export function initHandlers({
 
   const setMetricTrendHoverKey = (nextKey) => {
     const key = nextKey || null;
-    if (state.metricTrendHoverKey === key) return;
+    if (state.metricTrendHoverKey === key) {return;}
     state.metricTrendHoverKey = key;
     drawMetricTrend();
   };

@@ -14,6 +14,8 @@ export default [
       globals: globals.browser,
     },
     rules: {
+      curly: ["error", "all"],
+      eqeqeq: ["error", "always", { null: "ignore" }],
       complexity: ["warn", 12],
       "max-lines": [
         "warn",
@@ -33,10 +35,40 @@ export default [
         },
       ],
       "no-unused-vars": [
-        "warn",
+        "error",
         {
           args: "none",
           ignoreRestSiblings: true,
+        },
+      ],
+    },
+  },
+  {
+    files: ["core/**/*.js"],
+    rules: {
+      complexity: ["warn", 10],
+      "max-lines-per-function": [
+        "warn",
+        {
+          max: 70,
+          skipBlankLines: true,
+          skipComments: true,
+          IIFEs: true,
+        },
+      ],
+    },
+  },
+  {
+    files: ["ui/**/*.js", "viz/**/*.js"],
+    rules: {
+      complexity: ["warn", 20],
+      "max-lines-per-function": [
+        "warn",
+        {
+          max: 140,
+          skipBlankLines: true,
+          skipComments: true,
+          IIFEs: true,
         },
       ],
     },

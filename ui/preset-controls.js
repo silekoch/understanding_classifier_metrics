@@ -1,5 +1,5 @@
 function setHidden(el, hidden) {
-  if (!el) return;
+  if (!el) {return;}
   el.style.display = hidden ? "none" : "";
 }
 
@@ -85,7 +85,7 @@ export function applyPresetValues({ ids, presets, name }) {
     "nPerClass",
     "samplePosFrac",
   ];
-  if (!p) return;
+  if (!p) {return;}
   ids.preset.value = name;
   for (const key of keys) {
     if (Object.prototype.hasOwnProperty.call(p, key) && ids[key]) {
