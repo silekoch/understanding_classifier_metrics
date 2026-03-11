@@ -35,6 +35,7 @@ const state = createInitialState();
 const ids = getIds(document);
 const store = createStateStore({
   preset: state.preset,
+  seed: state.seed,
   threshold: state.threshold,
   metricTrendHoverKey: state.metricTrendHoverKey,
 });
@@ -61,9 +62,21 @@ store.subscribe("metricTrendHoverKey", (nextHoverKey) => {
   drawMetricTrend();
 });
 
+store.subscribe("seed", (nextSeed) => {
+  state.seed = nextSeed;
+  ids.seed.value = String(nextSeed);
+  regenerateAndRender();
+});
+
 function applyThreshold(nextThreshold) {
   const clampedThreshold = clamp(nextThreshold, state.thresholdMin, state.thresholdMax);
   store.set("threshold", clampedThreshold);
+}
+
+function applySeed(nextSeedRaw) {
+  const rounded = Math.round(Number(nextSeedRaw));
+  const nextSeed = Number.isFinite(rounded) ? Math.max(1, rounded) : 1;
+  store.set("seed", nextSeed);
 }
 
 function applyMetricTrendHoverKey(nextHoverKey) {
@@ -172,6 +185,7 @@ function regenerateAndRender() {
   state.data = generateSampleData(state, getActivePreset());
   updateThresholdRange();
   store.set("preset", state.preset, { silent: true });
+  store.set("seed", state.seed, { silent: true });
   store.set("threshold", state.threshold, { silent: true });
   store.set("metricTrendHoverKey", state.metricTrendHoverKey, { silent: true });
   state.metricCurves = computeMetricCurves(state.data.all, state.thresholdMin, state.thresholdMax);
@@ -187,6 +201,7 @@ function initHandlers() {
     applyPreset,
     scheduleUrlSync,
     applyThreshold,
+    applySeed,
     applyMetricTrendHoverKey,
     metricTrendHoverKeyFromPointer: metricTrendHoverKeyFromPointerView,
   });

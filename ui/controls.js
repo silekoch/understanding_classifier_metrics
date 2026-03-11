@@ -78,7 +78,6 @@ function attachRegenerateListeners({ ids, readControls, regenerateAndRender }) {
     ids.nPerClass,
     ids.samplePosFrac,
     ids.outlierFrac,
-    ids.seed,
   ];
 
   regenerateIds.forEach((el) => {
@@ -94,6 +93,14 @@ function attachRegenerateListeners({ ids, readControls, regenerateAndRender }) {
       regenerateAndRender();
     });
   });
+}
+
+function attachSeedListeners({ ids, applySeed }) {
+  const handleSeedInput = () => {
+    applySeed(Number(ids.seed.value));
+  };
+  ids.seed.addEventListener("input", handleSeedInput);
+  ids.seed.addEventListener("change", handleSeedInput);
 }
 
 function attachRocClickHandler({ ids, state, setThreshold }) {
@@ -295,6 +302,7 @@ export function initHandlers({
   applyPreset,
   scheduleUrlSync,
   applyThreshold,
+  applySeed,
   applyMetricTrendHoverKey,
   metricTrendHoverKeyFromPointer,
 }) {
@@ -302,11 +310,10 @@ export function initHandlers({
   const setMetricTrendHoverKey = applyMetricTrendHoverKey;
 
   attachRegenerateListeners({ ids, readControls, regenerateAndRender });
+  attachSeedListeners({ ids, applySeed });
 
   ids.resample.addEventListener("click", () => {
-    state.seed += 1;
-    ids.seed.value = String(state.seed);
-    regenerateAndRender();
+    applySeed(state.seed + 1);
   });
 
   ids.preset.addEventListener("change", (e) => {
