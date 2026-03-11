@@ -32,6 +32,24 @@ export function thresholdFromDistPointer({ evt, state, ids }) {
   return view.minX + u * (view.maxX - view.minX);
 }
 
+function isPointInBox(point, box) {
+  return (
+    point.x >= box.left &&
+    point.x <= box.left + box.width &&
+    point.y >= box.top &&
+    point.y <= box.top + box.height
+  );
+}
+
+function isWithinDistPlot({ evt, state, ids }) {
+  const view = state.distView;
+  if (!view) {
+    return false;
+  }
+  const point = eventToSvgCoordinates(evt, ids.distSvg, 760, 320);
+  return isPointInBox(point, view.box);
+}
+
 export function thresholdFromMetricTrendPointer({ evt, state, ids }) {
   const box = state.metricTrendBox;
   if (!box) {
@@ -177,6 +195,13 @@ export function attachMetricTrendHandlers({
 }
 
 export function attachDistThresholdHandlers({ ids, state, setThreshold }) {
+  ids.distSvg.addEventListener("click", (evt) => {
+    if (!isWithinDistPlot({ evt, state, ids })) {
+      return;
+    }
+    setThreshold(thresholdFromDistPointer({ evt, state, ids }));
+  });
+
   ids.distSvg.addEventListener("pointerdown", (evt) => {
     if (!isThresholdTarget(evt.target)) {
       return;

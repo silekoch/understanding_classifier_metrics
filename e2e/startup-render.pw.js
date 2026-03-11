@@ -21,3 +21,20 @@ test("cold startup renders all chart panels", async ({ page }) => {
       .toBeGreaterThan(0);
   }
 });
+
+test("clicking score distribution repositions threshold", async ({ page }) => {
+  await page.goto("/");
+
+  const handle = page.getByLabel("Threshold handle");
+  const getThreshold = async () => Number(await handle.getAttribute("aria-valuenow"));
+
+  await expect.poll(getThreshold).toBeGreaterThan(Number.NEGATIVE_INFINITY);
+  const before = await getThreshold();
+
+  await page.locator("#distSvg").click({ position: { x: 110, y: 120 } });
+  await expect.poll(getThreshold).not.toBe(before);
+  const afterLeftClick = await getThreshold();
+
+  await page.locator("#distSvg").click({ position: { x: 700, y: 120 } });
+  await expect.poll(getThreshold).toBeGreaterThan(afterLeftClick);
+});
