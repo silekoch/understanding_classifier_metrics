@@ -36,6 +36,10 @@ const state = createInitialState();
 const ids = getIds(document);
 const store = createStateStore({
   preset: state.preset,
+  muNeg: state.muNeg,
+  sdNeg: state.sdNeg,
+  muPos: state.muPos,
+  sdPos: state.sdPos,
   nPerClass: state.nPerClass,
   samplePosFrac: state.samplePosFrac,
   outlierFrac: state.outlierFrac,
@@ -58,6 +62,30 @@ store.subscribe("threshold", (nextThreshold) => {
 store.subscribe("preset", (nextPreset) => {
   state.preset = nextPreset;
   applyPresetValuesUi({ ids, presets: PRESETS, name: nextPreset });
+  regenerateAndRender();
+});
+
+store.subscribe("muNeg", (nextMuNeg) => {
+  state.muNeg = nextMuNeg;
+  ids.muNeg.value = String(nextMuNeg);
+  regenerateAndRender();
+});
+
+store.subscribe("sdNeg", (nextSdNeg) => {
+  state.sdNeg = nextSdNeg;
+  ids.sdNeg.value = String(nextSdNeg);
+  regenerateAndRender();
+});
+
+store.subscribe("muPos", (nextMuPos) => {
+  state.muPos = nextMuPos;
+  ids.muPos.value = String(nextMuPos);
+  regenerateAndRender();
+});
+
+store.subscribe("sdPos", (nextSdPos) => {
+  state.sdPos = nextSdPos;
+  ids.sdPos.value = String(nextSdPos);
   regenerateAndRender();
 });
 
@@ -99,6 +127,30 @@ function applySeed(nextSeedRaw) {
   const rounded = Math.round(Number(nextSeedRaw));
   const nextSeed = Number.isFinite(rounded) ? Math.max(1, rounded) : 1;
   store.set("seed", nextSeed);
+}
+
+function applyMuNeg(nextMuNegRaw) {
+  const raw = Number(nextMuNegRaw);
+  const nextMuNeg = Number.isFinite(raw) ? clamp(raw, -4, 4) : 0;
+  store.set("muNeg", nextMuNeg);
+}
+
+function applySdNeg(nextSdNegRaw) {
+  const raw = Number(nextSdNegRaw);
+  const nextSdNeg = Number.isFinite(raw) ? clamp(raw, 0.2, 3) : 1;
+  store.set("sdNeg", nextSdNeg);
+}
+
+function applyMuPos(nextMuPosRaw) {
+  const raw = Number(nextMuPosRaw);
+  const nextMuPos = Number.isFinite(raw) ? clamp(raw, -4, 6) : 2;
+  store.set("muPos", nextMuPos);
+}
+
+function applySdPos(nextSdPosRaw) {
+  const raw = Number(nextSdPosRaw);
+  const nextSdPos = Number.isFinite(raw) ? clamp(raw, 0.2, 3) : 1;
+  store.set("sdPos", nextSdPos);
 }
 
 function applyNPerClass(nextNPerClassRaw) {
@@ -225,6 +277,10 @@ function regenerateAndRender() {
   state.data = generateSampleData(state, getActivePreset());
   updateThresholdRange();
   store.set("preset", state.preset, { silent: true });
+  store.set("muNeg", state.muNeg, { silent: true });
+  store.set("sdNeg", state.sdNeg, { silent: true });
+  store.set("muPos", state.muPos, { silent: true });
+  store.set("sdPos", state.sdPos, { silent: true });
   store.set("nPerClass", state.nPerClass, { silent: true });
   store.set("samplePosFrac", state.samplePosFrac, { silent: true });
   store.set("outlierFrac", state.outlierFrac, { silent: true });
@@ -244,6 +300,10 @@ function initHandlers() {
     applyPreset,
     scheduleUrlSync,
     applyThreshold,
+    applyMuNeg,
+    applySdNeg,
+    applyMuPos,
+    applySdPos,
     applyNPerClass,
     applySamplePosFrac,
     applyOutlierFrac,

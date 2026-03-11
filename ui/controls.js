@@ -69,10 +69,6 @@ function bindNumericInputAndChange(el, onValue) {
 
 function attachRegenerateListeners({ ids, readControls, regenerateAndRender }) {
   const regenerateIds = [
-    ids.muNeg,
-    ids.sdNeg,
-    ids.muPos,
-    ids.sdPos,
     ids.logSigma,
     ids.dfNeg,
     ids.dfPos,
@@ -300,6 +296,10 @@ export function initHandlers({
   applyPreset,
   scheduleUrlSync,
   applyThreshold,
+  applyMuNeg,
+  applySdNeg,
+  applyMuPos,
+  applySdPos,
   applyNPerClass,
   applySamplePosFrac,
   applyOutlierFrac,
@@ -311,6 +311,10 @@ export function initHandlers({
   const setMetricTrendHoverKey = applyMetricTrendHoverKey;
 
   attachRegenerateListeners({ ids, readControls, regenerateAndRender });
+  bindNumericInputAndChange(ids.muNeg, applyMuNeg);
+  bindNumericInputAndChange(ids.sdNeg, applySdNeg);
+  bindNumericInputAndChange(ids.muPos, applyMuPos);
+  bindNumericInputAndChange(ids.sdPos, applySdPos);
   bindNumericInputAndChange(ids.nPerClass, applyNPerClass);
   bindNumericInputAndChange(ids.samplePosFrac, applySamplePosFrac);
   bindNumericInputAndChange(ids.outlierFrac, applyOutlierFrac);
