@@ -69,6 +69,19 @@ GitHub Actions runs the same core checks on each push and pull request:
 - `npm test`
 - `npm run build`
 
+### GitHub Pages deployment
+
+The workflow `.github/workflows/deploy-pages.yml` builds with Vite and deploys `dist/` to GitHub Pages on pushes
+to `main`.
+
+Setup required once in GitHub:
+
+- `Settings -> Pages -> Build and deployment -> Source = GitHub Actions`
+
+Notes:
+
+- `dist/` stays gitignored; deployment publishes CI-built artifacts, not committed build output.
+
 ## What you can explore
 
 - **Score distributions** — two-class data drawn from a variety of distribution families
