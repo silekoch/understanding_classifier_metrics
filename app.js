@@ -25,6 +25,7 @@ import {
   syncControlOutputs as syncControlOutputsImpl,
 } from "./ui/preset-controls.js";
 import { getIds } from "./ui/dom-ids.js";
+import { renderMetricsText as renderMetricsTextView } from "./ui/metrics-text.js";
 
 (function () {
   const state = {
@@ -278,20 +279,11 @@ import { getIds } from "./ui/dom-ids.js";
   }
 
   function renderMetrics() {
-    const op = state.roc.op;
-    const rows = [
-      ["Recall (TPR)", op.tpr],
-      ["False Positive Rate (FPR)", op.fpr],
-      ["Precision (PPV)", op.precision],
-      ["Specificity (TNR)", op.specificity],
-      ["F1 Score", op.f1],
-      ["MCC (Matthews)", op.mcc],
-    ];
-    const labelWidth = Math.max(...rows.map(([label]) => label.length)) + 2;
-
-    ids.metricsText.textContent = rows
-      .map(([label, value]) => `${label.padEnd(labelWidth)}${fmt(value, 2)}`)
-      .join("\n");
+    renderMetricsTextView({
+      metricsTextEl: ids.metricsText,
+      op: state.roc.op,
+      fmt,
+    });
   }
 
   function renderAll() {
