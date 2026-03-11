@@ -36,35 +36,7 @@ import { wireReactiveControls } from "./ui/reactive-controls.js";
 
 const state = createInitialState();
 const ids = getIds(document);
-const store = createStateStore({
-  preset: state.preset,
-  muNeg: state.muNeg,
-  sdNeg: state.sdNeg,
-  muPos: state.muPos,
-  sdPos: state.sdPos,
-  logSigma: state.logSigma,
-  dfNeg: state.dfNeg,
-  dfPos: state.dfPos,
-  mixWeight: state.mixWeight,
-  mixOffset: state.mixOffset,
-  mixSdMult: state.mixSdMult,
-  p0Neg: state.p0Neg,
-  p0Pos: state.p0Pos,
-  zeroValue: state.zeroValue,
-  alphaNeg: state.alphaNeg,
-  betaNeg: state.betaNeg,
-  alphaPos: state.alphaPos,
-  betaPos: state.betaPos,
-  epsPos: state.epsPos,
-  epsNeg: state.epsNeg,
-  confSharpness: state.confSharpness,
-  nPerClass: state.nPerClass,
-  samplePosFrac: state.samplePosFrac,
-  outlierFrac: state.outlierFrac,
-  seed: state.seed,
-  threshold: state.threshold,
-  metricTrendHoverKey: state.metricTrendHoverKey,
-});
+const store = createStateStore(state);
 
 function clamp(x, a, b) {
   return Math.max(a, Math.min(b, x));
