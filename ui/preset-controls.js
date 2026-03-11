@@ -93,3 +93,10 @@ export function applyPresetValues({ ids, presets, name }) {
     }
   }
 }
+
+export function bindPresetControls({ ids, state, presets, fmt, fmtPct }) {
+  return {
+    syncControlOutputs: () => syncControlOutputs({ ids, state, presets, fmt, fmtPct }),
+    applyPresetValues: (name) => applyPresetValues({ ids, presets, name }),
+  };
+}

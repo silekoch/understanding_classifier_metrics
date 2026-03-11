@@ -22,8 +22,7 @@ import {
   scheduleUrlSync as scheduleUrlSyncImpl,
 } from "./ui/url-state.js";
 import {
-  applyPresetValues as applyPresetValuesImpl,
-  syncControlOutputs as syncControlOutputsImpl,
+  bindPresetControls,
 } from "./ui/preset-controls.js";
 import { getIds } from "./ui/dom-ids.js";
 import { readControls as readControlsImpl } from "./ui/control-values.js";
@@ -34,7 +33,13 @@ const state = createInitialState();
 const ids = getIds(document);
 
 const readControls = () => readControlsImpl({ ids, state });
-const applyPresetValues = (name) => applyPresetValuesImpl({ ids, presets: PRESETS, name });
+const { syncControlOutputs, applyPresetValues } = bindPresetControls({
+  ids,
+  state,
+  presets: PRESETS,
+  fmt,
+  fmtPct,
+});
 
 function applyPreset(name) {
   applyPresetValues(name);
@@ -97,7 +102,7 @@ function drawMetricTrend() {
 
 function renderAll() {
   computeEverything();
-  syncControlOutputsImpl({ ids, state, presets: PRESETS, fmt, fmtPct });
+  syncControlOutputs();
   state.distView = drawDistView({
     svg: ids.distSvg,
     data: state.data,
@@ -144,12 +149,12 @@ function initHandlers() {
     state,
     readControls,
     regenerateAndRender,
-      applyPreset,
-      scheduleUrlSync,
-      renderAll,
-      drawMetricTrend,
-      metricTrendHoverKeyFromPointer: metricTrendHoverKeyFromPointerView,
-    });
+    applyPreset,
+    scheduleUrlSync,
+    renderAll,
+    drawMetricTrend,
+    metricTrendHoverKeyFromPointer: metricTrendHoverKeyFromPointerView,
+  });
 }
 
 function init() {
