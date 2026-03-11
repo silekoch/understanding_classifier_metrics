@@ -169,6 +169,9 @@ function sampleScoreByPreset(rng, label, preset, params) {
   const mu = label === 1 ? params.muPos : params.muNeg;
   const sd = Math.max(1e-6, label === 1 ? params.sdPos : params.sdNeg);
   const modeSampler = MODE_SAMPLERS[mode];
+  // Two-tier mode dispatch:
+  // 1) MODE_SAMPLERS modes return final scores directly (some may ignore mu/sd).
+  // 2) Other modes return standardized z via sampleStandardized, then apply mu + sd * z.
   if (modeSampler) {
     return modeSampler({ rng, label, params, mu, sd });
   }

@@ -4,6 +4,20 @@ function divideOr(num, den, fallback = 0) {
   return den > 0 ? num / den : fallback;
 }
 
+function scoreRange(all) {
+  let min = Infinity;
+  let max = -Infinity;
+  for (const d of all) {
+    if (d.score < min) {
+      min = d.score;
+    }
+    if (d.score > max) {
+      max = d.score;
+    }
+  }
+  return { min, max };
+}
+
 function computeConfusionCounts(threshold, all) {
   let tp = 0;
   let fp = 0;
@@ -112,6 +126,7 @@ export function computeApTrapezoid(prPoints) {
 }
 
 export function computeAucTrapezoid(points) {
+  // Reference implementation kept for test cross-checking of computeAucRank.
   let auc = 0;
   for (let i = 1; i < points.length; i += 1) {
     const x0 = points[i - 1].fpr;
@@ -184,8 +199,9 @@ export function computeMetricCurves(all, minThreshold, maxThreshold, sampleCount
     return curves;
   }
 
-  const minT = Number.isFinite(minThreshold) ? minThreshold : Math.min(...all.map((d) => d.score));
-  const maxT = Number.isFinite(maxThreshold) ? maxThreshold : Math.max(...all.map((d) => d.score));
+  const { min: dataMin, max: dataMax } = scoreRange(all);
+  const minT = Number.isFinite(minThreshold) ? minThreshold : dataMin;
+  const maxT = Number.isFinite(maxThreshold) ? maxThreshold : dataMax;
   const span = Math.max(1e-9, maxT - minT);
   const steps = Math.max(20, Math.round(sampleCount));
 
