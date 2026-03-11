@@ -184,8 +184,10 @@ function drawLegend({ svg, box }) {
     },
     "Score (single variable)"
   );
-  const legendLeft = box.left + box.width - 190;
+  const legendRight = box.left + box.width - 8;
   const legendTop = box.top + 8;
+  const swatchSize = 10;
+  const swatchGap = 6;
   const items = [
     { fill: "var(--neg)", text: "negative class" },
     { fill: "var(--pos)", text: "positive class" },
@@ -195,10 +197,10 @@ function drawLegend({ svg, box }) {
     const y = legendTop + i * 18;
     svg.appendChild(
       createSvgEl("rect", {
-        x: legendLeft,
+        x: legendRight - swatchSize,
         y,
-        width: 10,
-        height: 10,
+        width: swatchSize,
+        height: swatchSize,
         fill: items[i].fill,
         opacity: CLASS_FILL_OPACITY,
       })
@@ -206,9 +208,10 @@ function drawLegend({ svg, box }) {
     appendText(
       svg,
       {
-        x: legendLeft + 16,
+        x: legendRight - swatchSize - swatchGap,
         y: y + 9,
         class: "legend",
+        "text-anchor": "end",
       },
       items[i].text
     );
