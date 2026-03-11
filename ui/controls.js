@@ -45,28 +45,7 @@ function isThresholdTarget(el) {
   return role === "threshold-handle" || role === "threshold-line";
 }
 
-export function initHandlers({
-  ids,
-  state,
-  readControls,
-  regenerateAndRender,
-  applyPreset,
-  scheduleUrlSync,
-  renderAll,
-  drawMetricTrend,
-  metricTrendHoverKeyFromPointer,
-}) {
-  const setThreshold = (next) => {
-    state.threshold = clamp(next, state.thresholdMin, state.thresholdMax);
-  };
-
-  const setMetricTrendHoverKey = (nextKey) => {
-    const key = nextKey || null;
-    if (state.metricTrendHoverKey === key) return;
-    state.metricTrendHoverKey = key;
-    drawMetricTrend();
-  };
-
+function attachRegenerateListeners({ ids, readControls, regenerateAndRender }) {
   const regenerateIds = [
     ids.muNeg,
     ids.sdNeg,
@@ -105,21 +84,9 @@ export function initHandlers({
       regenerateAndRender();
     });
   });
+}
 
-  ids.resample.addEventListener("click", () => {
-    state.seed += 1;
-    ids.seed.value = String(state.seed);
-    regenerateAndRender();
-  });
-
-  ids.preset.addEventListener("change", (e) => {
-    applyPreset(e.target.value);
-  });
-
-  ids.advancedDetails.addEventListener("toggle", () => {
-    scheduleUrlSync();
-  });
-
+function attachRocClickHandler({ ids, state, setThreshold, renderAll }) {
   ids.rocSvg.addEventListener("click", (evt) => {
     const box = state.rocClickBox;
     if (!box) return;
@@ -137,7 +104,9 @@ export function initHandlers({
     setThreshold(nearest.threshold);
     renderAll();
   });
+}
 
+function attachPrClickHandler({ ids, state, setThreshold, renderAll }) {
   ids.prSvg.addEventListener("click", (evt) => {
     const box = state.prClickBox;
     if (!box) return;
@@ -155,7 +124,16 @@ export function initHandlers({
     setThreshold(nearest.threshold);
     renderAll();
   });
+}
 
+function attachMetricTrendHandlers({
+  ids,
+  state,
+  setThreshold,
+  renderAll,
+  setMetricTrendHoverKey,
+  metricTrendHoverKeyFromPointer,
+}) {
   ids.metricTrendSvg.addEventListener("pointerdown", (evt) => {
     const box = state.metricTrendBox;
     if (!box) return;
@@ -220,7 +198,9 @@ export function initHandlers({
     if (state.draggingMetricThreshold) return;
     setMetricTrendHoverKey(null);
   });
+}
 
+function attachDistThresholdHandlers({ ids, state, setThreshold, renderAll }) {
   ids.distSvg.addEventListener("pointerdown", (evt) => {
     if (!isThresholdTarget(evt.target)) return;
     evt.preventDefault();
@@ -274,4 +254,55 @@ export function initHandlers({
     }
     renderAll();
   });
+}
+
+export function initHandlers({
+  ids,
+  state,
+  readControls,
+  regenerateAndRender,
+  applyPreset,
+  scheduleUrlSync,
+  renderAll,
+  drawMetricTrend,
+  metricTrendHoverKeyFromPointer,
+}) {
+  const setThreshold = (next) => {
+    state.threshold = clamp(next, state.thresholdMin, state.thresholdMax);
+  };
+
+  const setMetricTrendHoverKey = (nextKey) => {
+    const key = nextKey || null;
+    if (state.metricTrendHoverKey === key) return;
+    state.metricTrendHoverKey = key;
+    drawMetricTrend();
+  };
+
+  attachRegenerateListeners({ ids, readControls, regenerateAndRender });
+
+  ids.resample.addEventListener("click", () => {
+    state.seed += 1;
+    ids.seed.value = String(state.seed);
+    regenerateAndRender();
+  });
+
+  ids.preset.addEventListener("change", (e) => {
+    applyPreset(e.target.value);
+  });
+
+  ids.advancedDetails.addEventListener("toggle", () => {
+    scheduleUrlSync();
+  });
+
+  attachRocClickHandler({ ids, state, setThreshold, renderAll });
+  attachPrClickHandler({ ids, state, setThreshold, renderAll });
+  attachMetricTrendHandlers({
+    ids,
+    state,
+    setThreshold,
+    renderAll,
+    setMetricTrendHoverKey,
+    metricTrendHoverKeyFromPointer,
+  });
+  attachDistThresholdHandlers({ ids, state, setThreshold, renderAll });
 }
