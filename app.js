@@ -109,20 +109,19 @@ const {
   clamp,
 });
 
-const applySeed = applyNumericByKey.seed;
-const applyMuNeg = applyNumericByKey.muNeg;
-const applySdNeg = applyNumericByKey.sdNeg;
-const applyMuPos = applyNumericByKey.muPos;
-const applySdPos = applyNumericByKey.sdPos;
-const applyLogSigma = applyNumericByKey.logSigma;
-const applyDfNeg = applyNumericByKey.dfNeg;
-const applyDfPos = applyNumericByKey.dfPos;
-const applyMixWeight = applyNumericByKey.mixWeight;
-const applyMixOffset = applyNumericByKey.mixOffset;
-const applyMixSdMult = applyNumericByKey.mixSdMult;
-const applyNPerClass = applyNumericByKey.nPerClass;
-const applySamplePosFrac = applyNumericByKey.samplePosFrac;
-const applyOutlierFrac = applyNumericByKey.outlierFrac;
+const applyByKey = {
+  ...applyNumericByKey,
+  p0Neg: applyP0Neg,
+  p0Pos: applyP0Pos,
+  zeroValue: applyZeroValue,
+  alphaNeg: applyAlphaNeg,
+  betaNeg: applyBetaNeg,
+  alphaPos: applyAlphaPos,
+  betaPos: applyBetaPos,
+  epsPos: applyEpsPos,
+  epsNeg: applyEpsNeg,
+  confSharpness: applyConfSharpness,
+};
 
 function getActivePreset() {
   return PRESETS[state.preset] || PRESETS.separated;
@@ -229,35 +228,17 @@ function initHandlers() {
   initControlHandlers({
     ids,
     state,
-    applyPreset,
-    scheduleUrlSync,
-    applyThreshold,
-    applyMuNeg,
-    applySdNeg,
-    applyMuPos,
-    applySdPos,
-    applyLogSigma,
-    applyDfNeg,
-    applyDfPos,
-    applyMixWeight,
-    applyMixOffset,
-    applyMixSdMult,
-    applyP0Neg,
-    applyP0Pos,
-    applyZeroValue,
-    applyAlphaNeg,
-    applyBetaNeg,
-    applyAlphaPos,
-    applyBetaPos,
-    applyEpsPos,
-    applyEpsNeg,
-    applyConfSharpness,
-    applyNPerClass,
-    applySamplePosFrac,
-    applyOutlierFrac,
-    applySeed,
-    applyMetricTrendHoverKey,
-    metricTrendHoverKeyFromPointer: metricTrendHoverKeyFromPointerView,
+    actions: {
+      applyPreset,
+      applyThreshold,
+      applySeed: applyNumericByKey.seed,
+      applyMetricTrendHoverKey,
+    },
+    applyByKey,
+    deps: {
+      scheduleUrlSync,
+      metricTrendHoverKeyFromPointer: metricTrendHoverKeyFromPointerView,
+    },
   });
 }
 
