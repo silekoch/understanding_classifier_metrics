@@ -1,4 +1,5 @@
 import { PRESETS } from "./presets.js";
+import { createInitialState } from "./core/state.js";
 import { computeMetricCurves } from "./core/metrics.js";
 import {
   computeCurveState as computeCurveStateCore,
@@ -28,46 +29,7 @@ import { renderMetricsText as renderMetricsTextView } from "./ui/metrics-text.js
 import { readControls as readControlsImpl } from "./ui/control-values.js";
 
 (function () {
-  const state = {
-    preset: "separated",
-    muNeg: 0,
-    sdNeg: 1,
-    muPos: 2,
-    sdPos: 1,
-    logSigma: 0.7,
-    dfNeg: 3,
-    dfPos: 3,
-    mixWeight: 0.24,
-    mixOffset: 0.15,
-    mixSdMult: 1.1,
-    p0Neg: 0.42,
-    p0Pos: 0.12,
-    zeroValue: 0,
-    alphaNeg: 2.0,
-    betaNeg: 8.0,
-    alphaPos: 8.0,
-    betaPos: 2.0,
-    epsPos: 0.12,
-    epsNeg: 0.08,
-    confSharpness: 14.0,
-    samplePosFrac: 0.5,
-    nPerClass: 500,
-    outlierFrac: 0,
-    seed: 13,
-    threshold: 1,
-    rocClickBox: null,
-    prClickBox: null,
-    metricTrendBox: null,
-    metricTrendHoverKey: null,
-    distView: null,
-    draggingThreshold: false,
-    draggingMetricThreshold: false,
-    urlSyncTimer: null,
-    data: null,
-    roc: null,
-    pr: null,
-    metricCurves: null,
-  };
+  const state = createInitialState();
 
   const ids = getIds(document);
 
