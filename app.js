@@ -40,6 +40,9 @@ const store = createStateStore({
   sdNeg: state.sdNeg,
   muPos: state.muPos,
   sdPos: state.sdPos,
+  logSigma: state.logSigma,
+  dfNeg: state.dfNeg,
+  dfPos: state.dfPos,
   nPerClass: state.nPerClass,
   samplePosFrac: state.samplePosFrac,
   outlierFrac: state.outlierFrac,
@@ -86,6 +89,24 @@ store.subscribe("muPos", (nextMuPos) => {
 store.subscribe("sdPos", (nextSdPos) => {
   state.sdPos = nextSdPos;
   ids.sdPos.value = String(nextSdPos);
+  regenerateAndRender();
+});
+
+store.subscribe("logSigma", (nextLogSigma) => {
+  state.logSigma = nextLogSigma;
+  ids.logSigma.value = String(nextLogSigma);
+  regenerateAndRender();
+});
+
+store.subscribe("dfNeg", (nextDfNeg) => {
+  state.dfNeg = nextDfNeg;
+  ids.dfNeg.value = String(nextDfNeg);
+  regenerateAndRender();
+});
+
+store.subscribe("dfPos", (nextDfPos) => {
+  state.dfPos = nextDfPos;
+  ids.dfPos.value = String(nextDfPos);
   regenerateAndRender();
 });
 
@@ -151,6 +172,24 @@ function applySdPos(nextSdPosRaw) {
   const raw = Number(nextSdPosRaw);
   const nextSdPos = Number.isFinite(raw) ? clamp(raw, 0.2, 3) : 1;
   store.set("sdPos", nextSdPos);
+}
+
+function applyLogSigma(nextLogSigmaRaw) {
+  const raw = Number(nextLogSigmaRaw);
+  const nextLogSigma = Number.isFinite(raw) ? clamp(raw, 0.2, 1.6) : 0.7;
+  store.set("logSigma", nextLogSigma);
+}
+
+function applyDfNeg(nextDfNegRaw) {
+  const rounded = Math.round(Number(nextDfNegRaw));
+  const nextDfNeg = Number.isFinite(rounded) ? clamp(rounded, 3, 30) : 3;
+  store.set("dfNeg", nextDfNeg);
+}
+
+function applyDfPos(nextDfPosRaw) {
+  const rounded = Math.round(Number(nextDfPosRaw));
+  const nextDfPos = Number.isFinite(rounded) ? clamp(rounded, 3, 30) : 3;
+  store.set("dfPos", nextDfPos);
 }
 
 function applyNPerClass(nextNPerClassRaw) {
@@ -281,6 +320,9 @@ function regenerateAndRender() {
   store.set("sdNeg", state.sdNeg, { silent: true });
   store.set("muPos", state.muPos, { silent: true });
   store.set("sdPos", state.sdPos, { silent: true });
+  store.set("logSigma", state.logSigma, { silent: true });
+  store.set("dfNeg", state.dfNeg, { silent: true });
+  store.set("dfPos", state.dfPos, { silent: true });
   store.set("nPerClass", state.nPerClass, { silent: true });
   store.set("samplePosFrac", state.samplePosFrac, { silent: true });
   store.set("outlierFrac", state.outlierFrac, { silent: true });
@@ -304,6 +346,9 @@ function initHandlers() {
     applySdNeg,
     applyMuPos,
     applySdPos,
+    applyLogSigma,
+    applyDfNeg,
+    applyDfPos,
     applyNPerClass,
     applySamplePosFrac,
     applyOutlierFrac,
