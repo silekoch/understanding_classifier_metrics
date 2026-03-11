@@ -13,9 +13,9 @@ export function wireShapeControls({ store, state, ids, regenerateAndRender }) {
     subscribeShapeControl({ store, key, state, ids, regenerateAndRender });
   }
 
-  const applyShapeByKey = {};
+  const applyByKey = {};
   for (const key of SHAPE_CONTROL_KEYS) {
-    applyShapeByKey[key] = (rawValue) => {
+    applyByKey[key] = (rawValue) => {
       store.set(key, sanitizeControlValue(key, rawValue));
     };
   }
@@ -27,16 +27,7 @@ export function wireShapeControls({ store, state, ids, regenerateAndRender }) {
   }
 
   return {
-    applyP0Neg: applyShapeByKey.p0Neg,
-    applyP0Pos: applyShapeByKey.p0Pos,
-    applyZeroValue: applyShapeByKey.zeroValue,
-    applyAlphaNeg: applyShapeByKey.alphaNeg,
-    applyBetaNeg: applyShapeByKey.betaNeg,
-    applyAlphaPos: applyShapeByKey.alphaPos,
-    applyBetaPos: applyShapeByKey.betaPos,
-    applyEpsPos: applyShapeByKey.epsPos,
-    applyEpsNeg: applyShapeByKey.epsNeg,
-    applyConfSharpness: applyShapeByKey.confSharpness,
+    applyByKey,
     syncShapeControlsToStore,
   };
 }

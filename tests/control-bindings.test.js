@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { REACTIVE_NUMERIC_CONTROL_KEYS } from "../ui/control-specs.js";
-import { bindReactiveNumericControls } from "../ui/controls.js";
+import { bindReactiveNumericControls } from "../ui/control-bindings.js";
 
 function makeFakeElement() {
   return {

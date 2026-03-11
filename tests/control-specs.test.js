@@ -2,8 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   CONTROL_SPECS,
+  NON_SHAPE_REACTIVE_NUMERIC_CONTROL_KEYS,
   PRESET_CONTROL_KEYS,
   REACTIVE_NUMERIC_CONTROL_KEYS,
+  SHAPE_CONTROL_KEYS,
   sanitizeControlValue,
 } from "../ui/control-specs.js";
 
@@ -31,6 +33,12 @@ describe("control specs", () => {
     }
     for (const key of REACTIVE_NUMERIC_CONTROL_KEYS) {
       expect(CONTROL_SPECS[key]?.reactive).toBe(true);
+    }
+    for (const key of SHAPE_CONTROL_KEYS) {
+      expect(CONTROL_SPECS[key]?.shape).toBe(true);
+    }
+    for (const key of NON_SHAPE_REACTIVE_NUMERIC_CONTROL_KEYS) {
+      expect(CONTROL_SPECS[key]?.shape).not.toBe(true);
     }
   });
 

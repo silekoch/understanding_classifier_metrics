@@ -51,9 +51,9 @@ export function wireReactiveControls({
     subscribeRegenerateControl({ store, key, state, ids, regenerateAndRender });
   }
 
-  const applyNumericByKey = {};
+  const applyByKey = {};
   for (const key of NON_SHAPE_REACTIVE_NUMERIC_CONTROL_KEYS) {
-    applyNumericByKey[key] = (rawValue) => {
+    applyByKey[key] = (rawValue) => {
       store.set(key, sanitizeControlValue(key, rawValue));
     };
   }
@@ -81,7 +81,7 @@ export function wireReactiveControls({
   }
 
   return {
-    applyNumericByKey,
+    applyByKey,
     applyThreshold,
     applyMetricTrendHoverKey,
     applyPreset,

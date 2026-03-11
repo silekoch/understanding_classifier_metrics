@@ -6,8 +6,6 @@ import {
   attachRocClickHandler,
 } from "./chart-interactions.js";
 
-export { bindReactiveNumericControls } from "./control-bindings.js";
-
 export function initHandlers({ ids, state, actions, applyByKey, deps }) {
   const { applyPreset, applyThreshold, applySeed, applyMetricTrendHoverKey } = actions;
   const { scheduleUrlSync, metricTrendHoverKeyFromPointer } = deps;

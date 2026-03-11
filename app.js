@@ -72,19 +72,7 @@ function clamp(x, a, b) {
 
 const readControls = () => readControlsImpl({ ids, state });
 
-const {
-  applyP0Neg,
-  applyP0Pos,
-  applyZeroValue,
-  applyAlphaNeg,
-  applyBetaNeg,
-  applyAlphaPos,
-  applyBetaPos,
-  applyEpsPos,
-  applyEpsNeg,
-  applyConfSharpness,
-  syncShapeControlsToStore,
-} = wireShapeControls({
+const { applyByKey: shapeApplyByKey, syncShapeControlsToStore } = wireShapeControls({
   store,
   state,
   ids,
@@ -92,7 +80,7 @@ const {
 });
 
 const {
-  applyNumericByKey,
+  applyByKey: nonShapeApplyByKey,
   applyThreshold,
   applyMetricTrendHoverKey,
   applyPreset,
@@ -110,17 +98,8 @@ const {
 });
 
 const applyByKey = {
-  ...applyNumericByKey,
-  p0Neg: applyP0Neg,
-  p0Pos: applyP0Pos,
-  zeroValue: applyZeroValue,
-  alphaNeg: applyAlphaNeg,
-  betaNeg: applyBetaNeg,
-  alphaPos: applyAlphaPos,
-  betaPos: applyBetaPos,
-  epsPos: applyEpsPos,
-  epsNeg: applyEpsNeg,
-  confSharpness: applyConfSharpness,
+  ...nonShapeApplyByKey,
+  ...shapeApplyByKey,
 };
 
 function getActivePreset() {
@@ -231,7 +210,7 @@ function initHandlers() {
     actions: {
       applyPreset,
       applyThreshold,
-      applySeed: applyNumericByKey.seed,
+      applySeed: applyByKey.seed,
       applyMetricTrendHoverKey,
     },
     applyByKey,
@@ -254,7 +233,14 @@ function init() {
   readControls();
   runStartupRender({
     restored,
-    setPresetFromControls: () => store.set("preset", ids.preset.value),
+    setPresetFromControls: () => {
+      const nextPreset = ids.preset.value;
+      if (Object.is(store.get("preset"), nextPreset)) {
+        return false;
+      }
+      store.set("preset", nextPreset);
+      return true;
+    },
     regenerateAndRender,
   });
 }
