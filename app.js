@@ -43,6 +43,9 @@ const store = createStateStore({
   logSigma: state.logSigma,
   dfNeg: state.dfNeg,
   dfPos: state.dfPos,
+  mixWeight: state.mixWeight,
+  mixOffset: state.mixOffset,
+  mixSdMult: state.mixSdMult,
   nPerClass: state.nPerClass,
   samplePosFrac: state.samplePosFrac,
   outlierFrac: state.outlierFrac,
@@ -107,6 +110,24 @@ store.subscribe("dfNeg", (nextDfNeg) => {
 store.subscribe("dfPos", (nextDfPos) => {
   state.dfPos = nextDfPos;
   ids.dfPos.value = String(nextDfPos);
+  regenerateAndRender();
+});
+
+store.subscribe("mixWeight", (nextMixWeight) => {
+  state.mixWeight = nextMixWeight;
+  ids.mixWeight.value = String(nextMixWeight);
+  regenerateAndRender();
+});
+
+store.subscribe("mixOffset", (nextMixOffset) => {
+  state.mixOffset = nextMixOffset;
+  ids.mixOffset.value = String(nextMixOffset);
+  regenerateAndRender();
+});
+
+store.subscribe("mixSdMult", (nextMixSdMult) => {
+  state.mixSdMult = nextMixSdMult;
+  ids.mixSdMult.value = String(nextMixSdMult);
   regenerateAndRender();
 });
 
@@ -190,6 +211,24 @@ function applyDfPos(nextDfPosRaw) {
   const rounded = Math.round(Number(nextDfPosRaw));
   const nextDfPos = Number.isFinite(rounded) ? clamp(rounded, 3, 30) : 3;
   store.set("dfPos", nextDfPos);
+}
+
+function applyMixWeight(nextMixWeightRaw) {
+  const raw = Number(nextMixWeightRaw);
+  const nextMixWeight = Number.isFinite(raw) ? clamp(raw, 0, 0.8) : 0.24;
+  store.set("mixWeight", nextMixWeight);
+}
+
+function applyMixOffset(nextMixOffsetRaw) {
+  const raw = Number(nextMixOffsetRaw);
+  const nextMixOffset = Number.isFinite(raw) ? clamp(raw, -1, 2) : 0.15;
+  store.set("mixOffset", nextMixOffset);
+}
+
+function applyMixSdMult(nextMixSdMultRaw) {
+  const raw = Number(nextMixSdMultRaw);
+  const nextMixSdMult = Number.isFinite(raw) ? clamp(raw, 0.2, 2.5) : 1.1;
+  store.set("mixSdMult", nextMixSdMult);
 }
 
 function applyNPerClass(nextNPerClassRaw) {
@@ -323,6 +362,9 @@ function regenerateAndRender() {
   store.set("logSigma", state.logSigma, { silent: true });
   store.set("dfNeg", state.dfNeg, { silent: true });
   store.set("dfPos", state.dfPos, { silent: true });
+  store.set("mixWeight", state.mixWeight, { silent: true });
+  store.set("mixOffset", state.mixOffset, { silent: true });
+  store.set("mixSdMult", state.mixSdMult, { silent: true });
   store.set("nPerClass", state.nPerClass, { silent: true });
   store.set("samplePosFrac", state.samplePosFrac, { silent: true });
   store.set("outlierFrac", state.outlierFrac, { silent: true });
@@ -349,6 +391,9 @@ function initHandlers() {
     applyLogSigma,
     applyDfNeg,
     applyDfPos,
+    applyMixWeight,
+    applyMixOffset,
+    applyMixSdMult,
     applyNPerClass,
     applySamplePosFrac,
     applyOutlierFrac,

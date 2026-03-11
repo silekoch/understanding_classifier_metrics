@@ -69,9 +69,6 @@ function bindNumericInputAndChange(el, onValue) {
 
 function attachRegenerateListeners({ ids, readControls, regenerateAndRender }) {
   const regenerateIds = [
-    ids.mixWeight,
-    ids.mixOffset,
-    ids.mixSdMult,
     ids.p0Neg,
     ids.p0Pos,
     ids.zeroValue,
@@ -300,6 +297,9 @@ export function initHandlers({
   applyLogSigma,
   applyDfNeg,
   applyDfPos,
+  applyMixWeight,
+  applyMixOffset,
+  applyMixSdMult,
   applyNPerClass,
   applySamplePosFrac,
   applyOutlierFrac,
@@ -318,6 +318,9 @@ export function initHandlers({
   bindNumericInputAndChange(ids.logSigma, applyLogSigma);
   bindNumericInputAndChange(ids.dfNeg, applyDfNeg);
   bindNumericInputAndChange(ids.dfPos, applyDfPos);
+  bindNumericInputAndChange(ids.mixWeight, applyMixWeight);
+  bindNumericInputAndChange(ids.mixOffset, applyMixOffset);
+  bindNumericInputAndChange(ids.mixSdMult, applyMixSdMult);
   bindNumericInputAndChange(ids.nPerClass, applyNPerClass);
   bindNumericInputAndChange(ids.samplePosFrac, applySamplePosFrac);
   bindNumericInputAndChange(ids.outlierFrac, applyOutlierFrac);
