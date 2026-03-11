@@ -15,20 +15,13 @@ function histogram(values, bins, min, max) {
   return out;
 }
 
-export function drawDist({ svg, data, threshold, fmt }) {
-  clear(svg);
+function appendText(svg, attrs, text) {
+  svg.appendChild(createSvgEl("text", attrs)).textContent = text;
+}
 
-  const box = { left: 70, top: 16, width: 640, height: 240 };
-  const span = data.max - data.min;
-  const minX = data.min - 0.05 * span;
-  const maxX = data.max + 0.05 * span;
-  const bins = 34;
-
-  const hNeg = histogram(data.negatives, bins, minX, maxX);
-  const hPos = histogram(data.positives, bins, minX, maxX);
-  const yMax = Math.max(...hNeg, ...hPos, 1);
-
+function drawAxes({ svg, box, minX, maxX, yMax, fmt }) {
   const axis = createSvgEl("g", {});
+
   for (let i = 0; i <= 10; i += 1) {
     const x = box.left + (i / 10) * box.width;
     axis.appendChild(
@@ -41,14 +34,16 @@ export function drawDist({ svg, data, threshold, fmt }) {
       })
     );
     const val = minX + (i / 10) * (maxX - minX);
-    axis.appendChild(
-      createSvgEl("text", {
+    appendText(
+      axis,
+      {
         x,
         y: box.top + box.height + 18,
         class: "tick",
         "text-anchor": "middle",
-      })
-    ).textContent = fmt(val, 2);
+      },
+      fmt(val, 2)
+    );
   }
 
   for (let i = 0; i <= 5; i += 1) {
@@ -62,14 +57,16 @@ export function drawDist({ svg, data, threshold, fmt }) {
         stroke: "rgba(0,0,0,0.07)",
       })
     );
-    axis.appendChild(
-      createSvgEl("text", {
+    appendText(
+      axis,
+      {
         x: box.left - 10,
         y: y + 4,
         class: "tick",
         "text-anchor": "end",
-      })
-    ).textContent = String(Math.round((i / 5) * yMax));
+      },
+      String(Math.round((i / 5) * yMax))
+    );
   }
 
   axis.appendChild(
@@ -84,10 +81,10 @@ export function drawDist({ svg, data, threshold, fmt }) {
   );
 
   svg.appendChild(axis);
+}
 
+function drawHistogramBars({ svg, box, bins, hNeg, hPos, yMax }) {
   const binW = box.width / bins;
-  const boundedThreshold = clamp(threshold, minX, maxX);
-
   for (let i = 0; i < bins; i += 1) {
     const x = box.left + i * binW;
     const h0 = (hNeg[i] / yMax) * box.height;
@@ -115,9 +112,13 @@ export function drawDist({ svg, data, threshold, fmt }) {
       })
     );
   }
+}
 
+function drawThresholdHandle({ svg, box, minX, maxX, threshold, fmt }) {
+  const boundedThreshold = clamp(threshold, minX, maxX);
   const tx = box.left + ((boundedThreshold - minX) / (maxX - minX)) * box.width;
   const handleY = box.top + box.height / 2;
+
   svg.appendChild(
     createSvgEl("line", {
       x1: tx,
@@ -163,37 +164,64 @@ export function drawDist({ svg, data, threshold, fmt }) {
     })
   );
 
-  svg.appendChild(
-    createSvgEl("text", {
+  appendText(
+    svg,
+    {
       x: tx + 7,
       y: box.top + 16,
       class: "legend",
-    })
-  ).textContent = `threshold ${fmt(threshold, 3)}`;
+    },
+    `threshold ${fmt(threshold, 3)}`
+  );
+}
 
-  svg.appendChild(
-    createSvgEl("text", {
+function drawLegend({ svg, box }) {
+  appendText(
+    svg,
+    {
       x: box.left,
       y: box.top + box.height + 46,
       class: "axis-label",
-    })
-  ).textContent = "Score (single variable)";
-
-  svg.appendChild(
-    createSvgEl("text", {
+    },
+    "Score (single variable)"
+  );
+  appendText(
+    svg,
+    {
       x: box.left + box.width - 180,
       y: box.top + 16,
       class: "legend",
-    })
-  ).textContent = "orange = negative class";
-
-  svg.appendChild(
-    createSvgEl("text", {
+    },
+    "orange = negative class"
+  );
+  appendText(
+    svg,
+    {
       x: box.left + box.width - 180,
       y: box.top + 34,
       class: "legend",
-    })
-  ).textContent = "blue = positive class";
+    },
+    "blue = positive class"
+  );
+}
+
+export function drawDist({ svg, data, threshold, fmt }) {
+  clear(svg);
+
+  const box = { left: 70, top: 16, width: 640, height: 240 };
+  const span = data.max - data.min;
+  const minX = data.min - 0.05 * span;
+  const maxX = data.max + 0.05 * span;
+  const bins = 34;
+
+  const hNeg = histogram(data.negatives, bins, minX, maxX);
+  const hPos = histogram(data.positives, bins, minX, maxX);
+  const yMax = Math.max(...hNeg, ...hPos, 1);
+
+  drawAxes({ svg, box, minX, maxX, yMax, fmt });
+  drawHistogramBars({ svg, box, bins, hNeg, hPos, yMax });
+  drawThresholdHandle({ svg, box, minX, maxX, threshold, fmt });
+  drawLegend({ svg, box });
 
   return { box, minX, maxX };
 }
