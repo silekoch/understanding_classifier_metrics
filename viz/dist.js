@@ -185,24 +185,35 @@ function drawLegend({ svg, box }) {
     },
     "Score (single variable)"
   );
-  appendText(
-    svg,
-    {
-      x: box.left + box.width - 180,
-      y: box.top + 16,
-      class: "legend",
-    },
-    "orange = negative class"
-  );
-  appendText(
-    svg,
-    {
-      x: box.left + box.width - 180,
-      y: box.top + 34,
-      class: "legend",
-    },
-    "blue = positive class"
-  );
+  const legendLeft = box.left + box.width - 190;
+  const legendTop = box.top + 8;
+  const items = [
+    { fill: "var(--neg)", text: "negative class" },
+    { fill: "var(--pos)", text: "positive class" },
+  ];
+
+  for (let i = 0; i < items.length; i += 1) {
+    const y = legendTop + i * 18;
+    svg.appendChild(
+      createSvgEl("rect", {
+        x: legendLeft,
+        y,
+        width: 10,
+        height: 10,
+        fill: items[i].fill,
+        opacity: 0.7,
+      })
+    );
+    appendText(
+      svg,
+      {
+        x: legendLeft + 16,
+        y: y + 9,
+        class: "legend",
+      },
+      items[i].text
+    );
+  }
 }
 
 export function drawDist({ svg, data, threshold, fmt }) {
