@@ -69,6 +69,32 @@ function clamp(x, a, b) {
   return Math.max(a, Math.min(b, x));
 }
 
+const PRESET_STATE_KEYS = [
+  "muNeg",
+  "sdNeg",
+  "muPos",
+  "sdPos",
+  "logSigma",
+  "dfNeg",
+  "dfPos",
+  "mixWeight",
+  "mixOffset",
+  "mixSdMult",
+  "p0Neg",
+  "p0Pos",
+  "zeroValue",
+  "alphaNeg",
+  "betaNeg",
+  "alphaPos",
+  "betaPos",
+  "epsPos",
+  "epsNeg",
+  "confSharpness",
+  "outlierFrac",
+  "nPerClass",
+  "samplePosFrac",
+];
+
 const readControls = () => readControlsImpl({ ids, state });
 
 const {
@@ -99,6 +125,14 @@ store.subscribe("threshold", (nextThreshold) => {
 store.subscribe("preset", (nextPreset) => {
   state.preset = nextPreset;
   applyPresetValuesUi({ ids, presets: PRESETS, name: nextPreset });
+  const preset = PRESETS[nextPreset];
+  if (preset) {
+    for (const key of PRESET_STATE_KEYS) {
+      if (Object.prototype.hasOwnProperty.call(preset, key)) {
+        state[key] = preset[key];
+      }
+    }
+  }
   regenerateAndRender();
 });
 
@@ -382,7 +416,6 @@ function renderAll() {
 }
 
 function regenerateAndRender() {
-  readControls();
   state.data = generateSampleData(state, getActivePreset());
   updateThresholdRange();
   store.set("preset", state.preset, { silent: true });
@@ -452,10 +485,10 @@ function init() {
     urlNumKeys: URL_NUM_KEYS,
     urlBoolKeys: URL_BOOL_KEYS,
   });
+  readControls();
   runStartupRender({
     restored,
     setPresetFromControls: () => store.set("preset", ids.preset.value),
-    readControls,
     regenerateAndRender,
   });
 }

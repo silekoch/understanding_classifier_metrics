@@ -1,6 +1,5 @@
-export function runStartupRender({ restored, setPresetFromControls, readControls, regenerateAndRender }) {
+export function runStartupRender({ restored, setPresetFromControls, regenerateAndRender }) {
   if (restored) {
-    readControls();
     regenerateAndRender();
     return;
   }
