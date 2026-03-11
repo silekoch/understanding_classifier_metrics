@@ -38,6 +38,8 @@ export function restoreStateFromUrl({ ids, presets, applyPresetValues, urlNumKey
     return false;
   }
 
+  // Precedence contract: apply preset first, then apply explicit URL control params,
+  // so a shared link can tweak individual controls on top of a base preset.
   const preset = params.get("preset");
   if (preset && presets[preset]) {
     applyPresetValues(preset);

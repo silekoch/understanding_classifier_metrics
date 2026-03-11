@@ -114,3 +114,4 @@ Notes:
 - **Distribution presets** — quickly switch between distribution shapes and Beta-family probability
   score presets to see how model output characteristics affect the curves
 - **URL sharing** — every state is encoded in the URL; copy and paste to share a specific configuration
+  (when both are present, preset is applied first, then explicit URL control params override it)

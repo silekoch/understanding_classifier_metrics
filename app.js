@@ -1,6 +1,7 @@
 import { PRESETS } from "./presets.js";
 import { createInitialState } from "./core/state.js";
 import { createStateStore } from "./core/state-store.js";
+import { assertValidPresets } from "./core/preset-validation.js";
 import { fmt, fmtPct } from "./core/format.js";
 import { computeMetricCurves, computeOperatingPoint } from "./core/metrics.js";
 import { computeCurveState, computeThresholdBounds } from "./core/derived-state.js";
@@ -20,6 +21,8 @@ import { renderMetricsText } from "./ui/metrics-text.js";
 import { runStartupRender } from "./ui/startup.js";
 import { wireShapeControls } from "./ui/reactive-shape-controls.js";
 import { wireReactiveControls } from "./ui/reactive-controls.js";
+
+assertValidPresets(PRESETS);
 
 const state = createInitialState();
 const view = {
