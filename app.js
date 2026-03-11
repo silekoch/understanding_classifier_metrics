@@ -34,6 +34,7 @@ import { renderMetricsText as renderMetricsTextView } from "./ui/metrics-text.js
 const state = createInitialState();
 const ids = getIds(document);
 const store = createStateStore({
+  preset: state.preset,
   threshold: state.threshold,
   metricTrendHoverKey: state.metricTrendHoverKey,
 });
@@ -47,6 +48,12 @@ const readControls = () => readControlsImpl({ ids, state });
 store.subscribe("threshold", (nextThreshold) => {
   state.threshold = nextThreshold;
   renderThresholdViews();
+});
+
+store.subscribe("preset", (nextPreset) => {
+  state.preset = nextPreset;
+  applyPresetValuesUi({ ids, presets: PRESETS, name: nextPreset });
+  regenerateAndRender();
 });
 
 store.subscribe("metricTrendHoverKey", (nextHoverKey) => {
@@ -65,9 +72,7 @@ function applyMetricTrendHoverKey(nextHoverKey) {
 }
 
 function applyPreset(name) {
-  applyPresetValuesUi({ ids, presets: PRESETS, name });
-  readControls();
-  regenerateAndRender();
+  store.set("preset", name);
 }
 
 function getActivePreset() {
@@ -166,6 +171,7 @@ function regenerateAndRender() {
   readControls();
   state.data = generateSampleData(state, getActivePreset());
   updateThresholdRange();
+  store.set("preset", state.preset, { silent: true });
   store.set("threshold", state.threshold, { silent: true });
   store.set("metricTrendHoverKey", state.metricTrendHoverKey, { silent: true });
   state.metricCurves = computeMetricCurves(state.data.all, state.thresholdMin, state.thresholdMax);
@@ -199,7 +205,7 @@ function init() {
     readControls();
     regenerateAndRender();
   } else {
-    applyPreset(ids.preset.value);
+    store.set("preset", ids.preset.value);
   }
 }
 
