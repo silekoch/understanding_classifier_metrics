@@ -38,6 +38,7 @@ const store = createStateStore({
   preset: state.preset,
   nPerClass: state.nPerClass,
   samplePosFrac: state.samplePosFrac,
+  outlierFrac: state.outlierFrac,
   seed: state.seed,
   threshold: state.threshold,
   metricTrendHoverKey: state.metricTrendHoverKey,
@@ -83,6 +84,12 @@ store.subscribe("samplePosFrac", (nextSamplePosFrac) => {
   regenerateAndRender();
 });
 
+store.subscribe("outlierFrac", (nextOutlierFrac) => {
+  state.outlierFrac = nextOutlierFrac;
+  ids.outlierFrac.value = String(nextOutlierFrac);
+  regenerateAndRender();
+});
+
 function applyThreshold(nextThreshold) {
   const clampedThreshold = clamp(nextThreshold, state.thresholdMin, state.thresholdMax);
   store.set("threshold", clampedThreshold);
@@ -104,6 +111,12 @@ function applySamplePosFrac(nextSamplePosFracRaw) {
   const raw = Number(nextSamplePosFracRaw);
   const nextSamplePosFrac = Number.isFinite(raw) ? clamp(raw, 0.02, 0.98) : 0.5;
   store.set("samplePosFrac", nextSamplePosFrac);
+}
+
+function applyOutlierFrac(nextOutlierFracRaw) {
+  const raw = Number(nextOutlierFracRaw);
+  const nextOutlierFrac = Number.isFinite(raw) ? clamp(raw, 0, 0.5) : 0;
+  store.set("outlierFrac", nextOutlierFrac);
 }
 
 function applyMetricTrendHoverKey(nextHoverKey) {
@@ -214,6 +227,7 @@ function regenerateAndRender() {
   store.set("preset", state.preset, { silent: true });
   store.set("nPerClass", state.nPerClass, { silent: true });
   store.set("samplePosFrac", state.samplePosFrac, { silent: true });
+  store.set("outlierFrac", state.outlierFrac, { silent: true });
   store.set("seed", state.seed, { silent: true });
   store.set("threshold", state.threshold, { silent: true });
   store.set("metricTrendHoverKey", state.metricTrendHoverKey, { silent: true });
@@ -232,6 +246,7 @@ function initHandlers() {
     applyThreshold,
     applyNPerClass,
     applySamplePosFrac,
+    applyOutlierFrac,
     applySeed,
     applyMetricTrendHoverKey,
     metricTrendHoverKeyFromPointer: metricTrendHoverKeyFromPointerView,
