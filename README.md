@@ -39,6 +39,7 @@ npm run lint:fix
 npm test
 npm run test:watch
 npm run test:e2e:install
+npm run test:e2e:install:ci
 npm run test:e2e
 npm run format:check
 npm run format
@@ -56,6 +57,12 @@ Playwright smoke test verifies that all chart panels render on a cold startup (r
 ```bash
 npm run test:e2e:install
 npm run test:e2e
+```
+
+CI uses:
+
+```bash
+npm run test:e2e:install:ci
 ```
 
 ### Git hooks (local quality gates)

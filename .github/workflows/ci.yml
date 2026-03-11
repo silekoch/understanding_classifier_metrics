@@ -55,7 +55,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browser
-        run: npm run test:e2e:install
+        run: npm run test:e2e:install:ci
 
       - name: E2E smoke test
         run: npm run test:e2e
