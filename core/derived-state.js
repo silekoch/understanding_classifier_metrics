@@ -1,5 +1,6 @@
 import { computeOperatingPoint, computePrPoints, computeRocPoints } from "./metrics.js";
 import { clamp } from "./math.js";
+import { computePaddedScoreRange } from "./score-range.js";
 
 export function computeCurveState({ samples, threshold }) {
   const rocPoints = computeRocPoints(samples);
@@ -20,13 +21,11 @@ export function computeCurveState({ samples, threshold }) {
 }
 
 export function computeThresholdBounds({ data, threshold }) {
-  const span = Math.max(1e-6, data.max - data.min);
-  const min = data.min - 0.08 * span;
-  const max = data.max + 0.08 * span;
+  const { minX, maxX, span } = computePaddedScoreRange(data.min, data.max);
   return {
-    thresholdMin: min,
-    thresholdMax: max,
+    thresholdMin: minX,
+    thresholdMax: maxX,
     thresholdStep: span / 1000,
-    threshold: clamp(threshold, min, max),
+    threshold: clamp(threshold, minX, maxX),
   };
 }

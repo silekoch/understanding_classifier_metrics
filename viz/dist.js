@@ -1,5 +1,6 @@
 import { clear, createSvgEl } from "./svg.js";
 import { clamp } from "../core/math.js";
+import { computePaddedScoreRange } from "../core/score-range.js";
 
 const CLASS_FILL_OPACITY = 0.4;
 
@@ -222,17 +223,16 @@ export function drawDist({ svg, data, threshold, fmt }) {
   clear(svg);
 
   const box = { left: 70, top: 16, width: 640, height: 240 };
-  const span = data.max - data.min;
-  const minX = data.min - 0.05 * span;
-  const maxX = data.max + 0.05 * span;
+  const { minX, maxX } = computePaddedScoreRange(data.min, data.max);
   const bins = 34;
 
   const hNeg = histogram(data.negatives, bins, minX, maxX);
   const hPos = histogram(data.positives, bins, minX, maxX);
   const yMax = Math.max(...hNeg, ...hPos, 1);
+  const yMaxWithHeadroom = yMax * 1.08;
 
-  drawAxes({ svg, box, minX, maxX, yMax, fmt });
-  drawHistogramBars({ svg, box, bins, hNeg, hPos, yMax });
+  drawAxes({ svg, box, minX, maxX, yMax: yMaxWithHeadroom, fmt });
+  drawHistogramBars({ svg, box, bins, hNeg, hPos, yMax: yMaxWithHeadroom });
   drawThresholdHandle({ svg, box, minX, maxX, threshold, fmt });
   drawLegend({ svg, box });
 
