@@ -75,7 +75,6 @@ function attachRegenerateListeners({ ids, readControls, regenerateAndRender }) {
     ids.epsPos,
     ids.epsNeg,
     ids.confSharpness,
-    ids.samplePosFrac,
     ids.outlierFrac,
   ];
 
@@ -108,6 +107,14 @@ function attachNPerClassListeners({ ids, applyNPerClass }) {
   };
   ids.nPerClass.addEventListener("input", handleNPerClassInput);
   ids.nPerClass.addEventListener("change", handleNPerClassInput);
+}
+
+function attachSamplePosFracListeners({ ids, applySamplePosFrac }) {
+  const handleSamplePosFracInput = () => {
+    applySamplePosFrac(Number(ids.samplePosFrac.value));
+  };
+  ids.samplePosFrac.addEventListener("input", handleSamplePosFracInput);
+  ids.samplePosFrac.addEventListener("change", handleSamplePosFracInput);
 }
 
 function attachRocClickHandler({ ids, state, setThreshold }) {
@@ -310,6 +317,7 @@ export function initHandlers({
   scheduleUrlSync,
   applyThreshold,
   applyNPerClass,
+  applySamplePosFrac,
   applySeed,
   applyMetricTrendHoverKey,
   metricTrendHoverKeyFromPointer,
@@ -319,6 +327,7 @@ export function initHandlers({
 
   attachRegenerateListeners({ ids, readControls, regenerateAndRender });
   attachNPerClassListeners({ ids, applyNPerClass });
+  attachSamplePosFracListeners({ ids, applySamplePosFrac });
   attachSeedListeners({ ids, applySeed });
 
   ids.resample.addEventListener("click", () => {
