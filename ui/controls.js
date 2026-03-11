@@ -67,19 +67,6 @@ function bindNumericInputAndChange(el, onValue) {
   });
 }
 
-function attachRegenerateListeners({ ids, readControls, regenerateAndRender }) {
-  const regenerateIds = [ids.epsPos, ids.epsNeg, ids.confSharpness];
-
-  const handleRegenerate = () => {
-    readControls();
-    regenerateAndRender();
-  };
-
-  regenerateIds.forEach((el) => {
-    bindInputAndChange(el, handleRegenerate);
-  });
-}
-
 function attachRocClickHandler({ ids, state, setThreshold }) {
   ids.rocSvg.addEventListener("click", (evt) => {
     const box = state.rocClickBox;
@@ -274,8 +261,6 @@ function attachDistThresholdHandlers({ ids, state, setThreshold }) {
 export function initHandlers({
   ids,
   state,
-  readControls,
-  regenerateAndRender,
   applyPreset,
   scheduleUrlSync,
   applyThreshold,
@@ -296,6 +281,9 @@ export function initHandlers({
   applyBetaNeg,
   applyAlphaPos,
   applyBetaPos,
+  applyEpsPos,
+  applyEpsNeg,
+  applyConfSharpness,
   applyNPerClass,
   applySamplePosFrac,
   applyOutlierFrac,
@@ -306,7 +294,6 @@ export function initHandlers({
   const setThreshold = applyThreshold;
   const setMetricTrendHoverKey = applyMetricTrendHoverKey;
 
-  attachRegenerateListeners({ ids, readControls, regenerateAndRender });
   bindNumericInputAndChange(ids.muNeg, applyMuNeg);
   bindNumericInputAndChange(ids.sdNeg, applySdNeg);
   bindNumericInputAndChange(ids.muPos, applyMuPos);
@@ -324,6 +311,9 @@ export function initHandlers({
   bindNumericInputAndChange(ids.betaNeg, applyBetaNeg);
   bindNumericInputAndChange(ids.alphaPos, applyAlphaPos);
   bindNumericInputAndChange(ids.betaPos, applyBetaPos);
+  bindNumericInputAndChange(ids.epsPos, applyEpsPos);
+  bindNumericInputAndChange(ids.epsNeg, applyEpsNeg);
+  bindNumericInputAndChange(ids.confSharpness, applyConfSharpness);
   bindNumericInputAndChange(ids.nPerClass, applyNPerClass);
   bindNumericInputAndChange(ids.samplePosFrac, applySamplePosFrac);
   bindNumericInputAndChange(ids.outlierFrac, applyOutlierFrac);

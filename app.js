@@ -31,6 +31,7 @@ import { readControls as readControlsImpl } from "./ui/control-values.js";
 import { URL_BOOL_KEYS, URL_NUM_KEYS } from "./ui/url-state-keys.js";
 import { renderMetricsText as renderMetricsTextView } from "./ui/metrics-text.js";
 import { runStartupRender } from "./ui/startup.js";
+import { wireShapeControls } from "./ui/reactive-shape-controls.js";
 
 const state = createInitialState();
 const ids = getIds(document);
@@ -53,6 +54,9 @@ const store = createStateStore({
   betaNeg: state.betaNeg,
   alphaPos: state.alphaPos,
   betaPos: state.betaPos,
+  epsPos: state.epsPos,
+  epsNeg: state.epsNeg,
+  confSharpness: state.confSharpness,
   nPerClass: state.nPerClass,
   samplePosFrac: state.samplePosFrac,
   outlierFrac: state.outlierFrac,
@@ -66,6 +70,26 @@ function clamp(x, a, b) {
 }
 
 const readControls = () => readControlsImpl({ ids, state });
+
+const {
+  applyP0Neg,
+  applyP0Pos,
+  applyZeroValue,
+  applyAlphaNeg,
+  applyBetaNeg,
+  applyAlphaPos,
+  applyBetaPos,
+  applyEpsPos,
+  applyEpsNeg,
+  applyConfSharpness,
+  syncShapeControlsToStore,
+} = wireShapeControls({
+  store,
+  state,
+  ids,
+  regenerateAndRender,
+  clamp,
+});
 
 store.subscribe("threshold", (nextThreshold) => {
   state.threshold = nextThreshold;
@@ -135,48 +159,6 @@ store.subscribe("mixOffset", (nextMixOffset) => {
 store.subscribe("mixSdMult", (nextMixSdMult) => {
   state.mixSdMult = nextMixSdMult;
   ids.mixSdMult.value = String(nextMixSdMult);
-  regenerateAndRender();
-});
-
-store.subscribe("p0Neg", (nextP0Neg) => {
-  state.p0Neg = nextP0Neg;
-  ids.p0Neg.value = String(nextP0Neg);
-  regenerateAndRender();
-});
-
-store.subscribe("p0Pos", (nextP0Pos) => {
-  state.p0Pos = nextP0Pos;
-  ids.p0Pos.value = String(nextP0Pos);
-  regenerateAndRender();
-});
-
-store.subscribe("zeroValue", (nextZeroValue) => {
-  state.zeroValue = nextZeroValue;
-  ids.zeroValue.value = String(nextZeroValue);
-  regenerateAndRender();
-});
-
-store.subscribe("alphaNeg", (nextAlphaNeg) => {
-  state.alphaNeg = nextAlphaNeg;
-  ids.alphaNeg.value = String(nextAlphaNeg);
-  regenerateAndRender();
-});
-
-store.subscribe("betaNeg", (nextBetaNeg) => {
-  state.betaNeg = nextBetaNeg;
-  ids.betaNeg.value = String(nextBetaNeg);
-  regenerateAndRender();
-});
-
-store.subscribe("alphaPos", (nextAlphaPos) => {
-  state.alphaPos = nextAlphaPos;
-  ids.alphaPos.value = String(nextAlphaPos);
-  regenerateAndRender();
-});
-
-store.subscribe("betaPos", (nextBetaPos) => {
-  state.betaPos = nextBetaPos;
-  ids.betaPos.value = String(nextBetaPos);
   regenerateAndRender();
 });
 
@@ -278,48 +260,6 @@ function applyMixSdMult(nextMixSdMultRaw) {
   const raw = Number(nextMixSdMultRaw);
   const nextMixSdMult = Number.isFinite(raw) ? clamp(raw, 0.2, 2.5) : 1.1;
   store.set("mixSdMult", nextMixSdMult);
-}
-
-function applyP0Neg(nextP0NegRaw) {
-  const raw = Number(nextP0NegRaw);
-  const nextP0Neg = Number.isFinite(raw) ? clamp(raw, 0, 0.95) : 0.42;
-  store.set("p0Neg", nextP0Neg);
-}
-
-function applyP0Pos(nextP0PosRaw) {
-  const raw = Number(nextP0PosRaw);
-  const nextP0Pos = Number.isFinite(raw) ? clamp(raw, 0, 0.95) : 0.12;
-  store.set("p0Pos", nextP0Pos);
-}
-
-function applyZeroValue(nextZeroValueRaw) {
-  const raw = Number(nextZeroValueRaw);
-  const nextZeroValue = Number.isFinite(raw) ? clamp(raw, -3, 3) : 0;
-  store.set("zeroValue", nextZeroValue);
-}
-
-function applyAlphaNeg(nextAlphaNegRaw) {
-  const raw = Number(nextAlphaNegRaw);
-  const nextAlphaNeg = Number.isFinite(raw) ? clamp(raw, 0.2, 20) : 2;
-  store.set("alphaNeg", nextAlphaNeg);
-}
-
-function applyBetaNeg(nextBetaNegRaw) {
-  const raw = Number(nextBetaNegRaw);
-  const nextBetaNeg = Number.isFinite(raw) ? clamp(raw, 0.2, 20) : 8;
-  store.set("betaNeg", nextBetaNeg);
-}
-
-function applyAlphaPos(nextAlphaPosRaw) {
-  const raw = Number(nextAlphaPosRaw);
-  const nextAlphaPos = Number.isFinite(raw) ? clamp(raw, 0.2, 20) : 8;
-  store.set("alphaPos", nextAlphaPos);
-}
-
-function applyBetaPos(nextBetaPosRaw) {
-  const raw = Number(nextBetaPosRaw);
-  const nextBetaPos = Number.isFinite(raw) ? clamp(raw, 0.2, 20) : 2;
-  store.set("betaPos", nextBetaPos);
 }
 
 function applyNPerClass(nextNPerClassRaw) {
@@ -456,13 +396,7 @@ function regenerateAndRender() {
   store.set("mixWeight", state.mixWeight, { silent: true });
   store.set("mixOffset", state.mixOffset, { silent: true });
   store.set("mixSdMult", state.mixSdMult, { silent: true });
-  store.set("p0Neg", state.p0Neg, { silent: true });
-  store.set("p0Pos", state.p0Pos, { silent: true });
-  store.set("zeroValue", state.zeroValue, { silent: true });
-  store.set("alphaNeg", state.alphaNeg, { silent: true });
-  store.set("betaNeg", state.betaNeg, { silent: true });
-  store.set("alphaPos", state.alphaPos, { silent: true });
-  store.set("betaPos", state.betaPos, { silent: true });
+  syncShapeControlsToStore();
   store.set("nPerClass", state.nPerClass, { silent: true });
   store.set("samplePosFrac", state.samplePosFrac, { silent: true });
   store.set("outlierFrac", state.outlierFrac, { silent: true });
@@ -477,8 +411,6 @@ function initHandlers() {
   initControlHandlers({
     ids,
     state,
-    readControls,
-    regenerateAndRender,
     applyPreset,
     scheduleUrlSync,
     applyThreshold,
@@ -499,6 +431,9 @@ function initHandlers() {
     applyBetaNeg,
     applyAlphaPos,
     applyBetaPos,
+    applyEpsPos,
+    applyEpsNeg,
+    applyConfSharpness,
     applyNPerClass,
     applySamplePosFrac,
     applyOutlierFrac,
