@@ -30,6 +30,7 @@ import { getIds } from "./ui/dom-ids.js";
 import { readControls as readControlsImpl } from "./ui/control-values.js";
 import { URL_BOOL_KEYS, URL_NUM_KEYS } from "./ui/url-state-keys.js";
 import { renderMetricsText as renderMetricsTextView } from "./ui/metrics-text.js";
+import { runStartupRender } from "./ui/startup.js";
 
 const state = createInitialState();
 const ids = getIds(document);
@@ -246,15 +247,12 @@ function init() {
     urlNumKeys: URL_NUM_KEYS,
     urlBoolKeys: URL_BOOL_KEYS,
   });
-  if (restored) {
-    readControls();
-    regenerateAndRender();
-  } else {
-    const didSetPreset = store.set("preset", ids.preset.value);
-    if (!didSetPreset) {
-      regenerateAndRender();
-    }
-  }
+  runStartupRender({
+    restored,
+    setPresetFromControls: () => store.set("preset", ids.preset.value),
+    readControls,
+    regenerateAndRender,
+  });
 }
 
 init();
