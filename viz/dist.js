@@ -1,6 +1,8 @@
 import { clear, createSvgEl } from "./svg.js";
 import { clamp } from "../core/math.js";
 
+const CLASS_FILL_OPACITY = 0.4;
+
 function histogram(values, bins, min, max) {
   const out = new Array(bins).fill(0);
   const width = max - min;
@@ -94,7 +96,7 @@ function drawHistogramBars({ svg, box, bins, hNeg, hPos, yMax }) {
         width: binW - 1,
         height: h0,
         fill: "var(--neg)",
-        opacity: 0.4,
+        opacity: CLASS_FILL_OPACITY,
       })
     );
 
@@ -105,7 +107,7 @@ function drawHistogramBars({ svg, box, bins, hNeg, hPos, yMax }) {
         width: binW - 1,
         height: h1,
         fill: "var(--pos)",
-        opacity: 0.4,
+        opacity: CLASS_FILL_OPACITY,
       })
     );
   }
@@ -198,7 +200,7 @@ function drawLegend({ svg, box }) {
         width: 10,
         height: 10,
         fill: items[i].fill,
-        opacity: 0.7,
+        opacity: CLASS_FILL_OPACITY,
       })
     );
     appendText(
