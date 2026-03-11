@@ -250,7 +250,10 @@ function init() {
     readControls();
     regenerateAndRender();
   } else {
-    store.set("preset", ids.preset.value);
+    const didSetPreset = store.set("preset", ids.preset.value);
+    if (!didSetPreset) {
+      regenerateAndRender();
+    }
   }
 }
 
