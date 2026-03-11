@@ -7,14 +7,14 @@ function parseBoolParam(value, fallback = false) {
 
 export function saveStateToUrl({ state, ids, urlNumKeys, urlBoolKeys }) {
   const params = new URLSearchParams();
-  params.set("preset", state.preset);
+  params.set("preset", state.controls.preset);
   for (const key of urlNumKeys) {
-    if (typeof state[key] === "number" && Number.isFinite(state[key])) {
-      params.set(key, String(state[key]));
+    if (typeof state.controls[key] === "number" && Number.isFinite(state.controls[key])) {
+      params.set(key, String(state.controls[key]));
     }
   }
   for (const key of urlBoolKeys) {
-    params.set(key, state[key] ? "1" : "0");
+    params.set(key, state.controls[key] ? "1" : "0");
   }
   params.set("advancedOpen", ids.advancedDetails.open ? "1" : "0");
 
@@ -23,12 +23,12 @@ export function saveStateToUrl({ state, ids, urlNumKeys, urlBoolKeys }) {
 }
 
 export function scheduleUrlSync({ state, saveStateToUrl, delayMs = 120 }) {
-  if (state.urlSyncTimer) {
-    window.clearTimeout(state.urlSyncTimer);
+  if (state.ui.urlSyncTimer) {
+    window.clearTimeout(state.ui.urlSyncTimer);
   }
-  state.urlSyncTimer = window.setTimeout(() => {
+  state.ui.urlSyncTimer = window.setTimeout(() => {
     saveStateToUrl();
-    state.urlSyncTimer = null;
+    state.ui.urlSyncTimer = null;
   }, delayMs);
 }
 

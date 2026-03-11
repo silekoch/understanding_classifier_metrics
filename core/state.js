@@ -6,20 +6,31 @@ const CONTROL_DEFAULTS = Object.fromEntries(
 
 export function createInitialState() {
   return {
-    preset: "separated",
-    ...CONTROL_DEFAULTS,
-    threshold: 1,
-    rocClickBox: null,
-    prClickBox: null,
-    metricTrendBox: null,
-    metricTrendHoverKey: null,
-    distView: null,
-    draggingThreshold: false,
-    draggingMetricThreshold: false,
-    urlSyncTimer: null,
-    data: null,
-    roc: null,
-    pr: null,
-    metricCurves: null,
+    controls: {
+      preset: "separated",
+      ...CONTROL_DEFAULTS,
+      threshold: 1,
+    },
+    computed: {
+      thresholdMin: 0,
+      thresholdMax: 1,
+      thresholdStep: 0.001,
+      data: null,
+      roc: null,
+      pr: null,
+      metricCurves: null,
+    },
+    ui: {
+      metricTrendHoverKey: null,
+      draggingThreshold: false,
+      draggingMetricThreshold: false,
+      urlSyncTimer: null,
+    },
+    view: {
+      rocClickBox: null,
+      prClickBox: null,
+      metricTrendBox: null,
+      distView: null,
+    },
   };
 }

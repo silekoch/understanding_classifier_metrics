@@ -73,7 +73,7 @@ describe("control specs", () => {
   it("drive initial state defaults from control specs", () => {
     const state = createInitialState();
     for (const [key, spec] of Object.entries(CONTROL_SPECS)) {
-      expect(state[key]).toBe(spec.default);
+      expect(state.controls[key]).toBe(spec.default);
     }
   });
 });

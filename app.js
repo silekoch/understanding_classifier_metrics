@@ -36,7 +36,10 @@ import { wireReactiveControls } from "./ui/reactive-controls.js";
 
 const state = createInitialState();
 const ids = getIds(document);
-const store = createStateStore(state);
+const store = createStateStore({
+  ...state.controls,
+  metricTrendHoverKey: state.ui.metricTrendHoverKey,
+});
 
 const readControls = () => readControlsImpl({ ids, state });
 
@@ -70,27 +73,27 @@ const applyByKey = {
 };
 
 function getActivePreset() {
-  return PRESETS[state.preset] || PRESETS.separated;
+  return PRESETS[state.controls.preset] || PRESETS.separated;
 }
 
 function computeEverything() {
   const { roc, pr } = computeCurveStateCore({
-    samples: state.data.all,
-    threshold: state.threshold,
+    samples: state.computed.data.all,
+    threshold: state.controls.threshold,
   });
-  state.roc = roc;
-  state.pr = pr;
+  state.computed.roc = roc;
+  state.computed.pr = pr;
 }
 
 function updateThresholdRange() {
   const bounds = computeThresholdBoundsCore({
-    data: state.data,
-    threshold: state.threshold,
+    data: state.computed.data,
+    threshold: state.controls.threshold,
   });
-  state.thresholdMin = bounds.thresholdMin;
-  state.thresholdMax = bounds.thresholdMax;
-  state.thresholdStep = bounds.thresholdStep;
-  state.threshold = bounds.threshold;
+  state.computed.thresholdMin = bounds.thresholdMin;
+  state.computed.thresholdMax = bounds.thresholdMax;
+  state.computed.thresholdStep = bounds.thresholdStep;
+  state.controls.threshold = bounds.threshold;
 }
 
 function saveStateToUrl() {
@@ -111,45 +114,45 @@ function scheduleUrlSync() {
 }
 
 function drawMetricTrend() {
-  state.metricTrendBox = drawMetricTrendView({
+  state.view.metricTrendBox = drawMetricTrendView({
     svg: ids.metricTrendSvg,
-    curves: state.metricCurves,
-    hoveredKey: state.metricTrendHoverKey,
-    threshold: state.threshold,
-    thresholdMin: state.thresholdMin,
-    thresholdMax: state.thresholdMax,
+    curves: state.computed.metricCurves,
+    hoveredKey: state.ui.metricTrendHoverKey,
+    threshold: state.controls.threshold,
+    thresholdMin: state.computed.thresholdMin,
+    thresholdMax: state.computed.thresholdMax,
     fmt,
   });
 }
 
 function renderThresholdViews() {
   computeEverything();
-  state.distView = drawDistView({
+  state.view.distView = drawDistView({
     svg: ids.distSvg,
-    data: state.data,
-    threshold: state.threshold,
+    data: state.computed.data,
+    threshold: state.controls.threshold,
     fmt,
   });
   drawConfusionMatrixView({
     svg: ids.confusionSvg,
-    op: state.roc.op,
+    op: state.computed.roc.op,
     fmtPct,
   });
-  state.rocClickBox = drawRocView({
+  state.view.rocClickBox = drawRocView({
     svg: ids.rocSvg,
-    roc: state.roc,
-    threshold: state.threshold,
+    roc: state.computed.roc,
+    threshold: state.controls.threshold,
     fmt,
   });
-  state.prClickBox = drawPrView({
+  state.view.prClickBox = drawPrView({
     svg: ids.prSvg,
-    pr: state.pr,
-    threshold: state.threshold,
+    pr: state.computed.pr,
+    threshold: state.controls.threshold,
     fmt,
   });
   renderMetricsTextView({
     metricsTextEl: ids.metricsText,
-    op: state.roc.op,
+    op: state.computed.roc.op,
     fmt,
   });
   drawMetricTrend();
@@ -162,11 +165,15 @@ function renderAll() {
 }
 
 function regenerateAndRender() {
-  state.data = generateSampleData(state, getActivePreset());
+  state.computed.data = generateSampleData(state.controls, getActivePreset());
   updateThresholdRange();
   syncNonShapeControlsToStore();
   syncShapeControlsToStore();
-  state.metricCurves = computeMetricCurves(state.data.all, state.thresholdMin, state.thresholdMax);
+  state.computed.metricCurves = computeMetricCurves(
+    state.computed.data.all,
+    state.computed.thresholdMin,
+    state.computed.thresholdMax
+  );
   renderAll();
 }
 

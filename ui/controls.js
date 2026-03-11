@@ -15,7 +15,7 @@ export function initHandlers({ ids, state, actions, applyByKey, deps }) {
   bindReactiveNumericControls({ ids, applyByKey });
 
   ids.resample.addEventListener("click", () => {
-    applySeed(state.seed + 1);
+    applySeed(state.controls.seed + 1);
   });
 
   ids.preset.addEventListener("change", (e) => {

@@ -64,7 +64,7 @@ function updateConditionalParameterUI({ ids, preset }) {
 }
 
 export function syncControlOutputs({ ids, state, presets, fmt, fmtPct }) {
-  const preset = presets[state.preset] || presets.separated;
+  const preset = presets[state.controls.preset] || presets.separated;
   const outlierEnabled = preset.mode === "normal";
 
   for (const [key, spec] of Object.entries(CONTROL_SPECS)) {
@@ -75,7 +75,7 @@ export function syncControlOutputs({ ids, state, presets, fmt, fmtPct }) {
     outputEl.textContent = formatControlOutput({
       key,
       spec,
-      value: state[key],
+      value: state.controls[key],
       outlierEnabled,
       fmt,
       fmtPct,
@@ -83,7 +83,7 @@ export function syncControlOutputs({ ids, state, presets, fmt, fmtPct }) {
   }
 
   ids.outlierFrac.disabled = !outlierEnabled;
-  ids.seed.value = String(state.seed);
+  ids.seed.value = String(state.controls.seed);
   ids.presetDesc.textContent = preset.desc || "";
 
   updateConditionalParameterUI({ ids, preset });

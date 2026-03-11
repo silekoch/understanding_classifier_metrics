@@ -2,7 +2,7 @@ import { SHAPE_CONTROL_KEYS, sanitizeControlValue } from "../core/control-specs.
 
 function subscribeShapeControl({ store, key, state, ids, regenerateAndRender }) {
   store.subscribe(key, (nextValue) => {
-    state[key] = nextValue;
+    state.controls[key] = nextValue;
     ids[key].value = String(nextValue);
     regenerateAndRender();
   });
@@ -22,7 +22,7 @@ export function wireShapeControls({ store, state, ids, regenerateAndRender }) {
 
   function syncShapeControlsToStore() {
     for (const key of SHAPE_CONTROL_KEYS) {
-      store.set(key, state[key], { silent: true });
+      store.set(key, state.controls[key], { silent: true });
     }
   }
 
