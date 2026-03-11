@@ -62,6 +62,21 @@ export const CONTROL_SPECS = {
 
 export const PRESET_CONTROL_KEYS = pickKeysByFlag("preset");
 export const REACTIVE_NUMERIC_CONTROL_KEYS = pickKeysByFlag("reactive");
+export const SHAPE_CONTROL_KEYS = [
+  "p0Neg",
+  "p0Pos",
+  "zeroValue",
+  "alphaNeg",
+  "betaNeg",
+  "alphaPos",
+  "betaPos",
+  "epsPos",
+  "epsNeg",
+  "confSharpness",
+];
+export const NON_SHAPE_REACTIVE_NUMERIC_CONTROL_KEYS = REACTIVE_NUMERIC_CONTROL_KEYS.filter(
+  (key) => !SHAPE_CONTROL_KEYS.includes(key)
+);
 
 export function sanitizeControlValue(key, rawValue) {
   const spec = CONTROL_SPECS[key];
