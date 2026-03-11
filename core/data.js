@@ -15,8 +15,12 @@ function mulberry32(seed) {
 function sampleNormal(rng, mean, sd) {
   let u = 0;
   let v = 0;
-  while (u === 0) {u = rng();}
-  while (v === 0) {v = rng();}
+  while (u === 0) {
+    u = rng();
+  }
+  while (v === 0) {
+    v = rng();
+  }
   const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
   return mean + sd * z;
 }
@@ -45,11 +49,17 @@ function sampleGamma(rng, shape) {
   while (true) {
     const x = sampleNormal(rng, 0, 1);
     let v = 1 + c * x;
-    if (v <= 0) {continue;}
+    if (v <= 0) {
+      continue;
+    }
     v = v * v * v;
     const u = clamp(rng(), 1e-12, 1 - 1e-12);
-    if (u < 1 - 0.0331 * Math.pow(x, 4)) {return d * v;}
-    if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) {return d * v;}
+    if (u < 1 - 0.0331 * Math.pow(x, 4)) {
+      return d * v;
+    }
+    if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) {
+      return d * v;
+    }
   }
 }
 
@@ -59,7 +69,9 @@ function sampleBeta(rng, alpha, beta) {
   const x = sampleGamma(rng, a);
   const y = sampleGamma(rng, b);
   const denom = x + y;
-  if (denom <= 0) {return 0.5;}
+  if (denom <= 0) {
+    return 0.5;
+  }
   return clamp(x / denom, 0, 1);
 }
 
@@ -100,7 +112,9 @@ function sampleScoreNormalMode({ rng, label, params, mu, sd }) {
 }
 
 function sampleScoreMixturePosMode({ rng, label, params }) {
-  if (label === 0) {return sampleNormal(rng, params.muNeg, Math.max(1e-6, params.sdNeg));}
+  if (label === 0) {
+    return sampleNormal(rng, params.muNeg, Math.max(1e-6, params.sdNeg));
+  }
   const w = clamp(params.mixWeight, 0, 0.98);
   if (rng() < w) {
     const offset = params.mixOffset;
@@ -112,7 +126,9 @@ function sampleScoreMixturePosMode({ rng, label, params }) {
 
 function sampleScoreZeroInflatedMode({ rng, label, params, mu, sd }) {
   const p0 = clamp(label === 1 ? params.p0Pos : params.p0Neg, 0, 0.99);
-  if (rng() < p0) {return params.zeroValue;}
+  if (rng() < p0) {
+    return params.zeroValue;
+  }
   return sampleNormal(rng, mu, sd);
 }
 
@@ -129,12 +145,16 @@ function sampleScoreBetaConfMixtureMode({ rng, label, params }) {
 
   if (label === 1) {
     const eps = clamp(params.epsPos, 0, 0.49);
-    if (rng() < eps) {return sampleBeta(rng, lo.alpha, lo.beta);}
+    if (rng() < eps) {
+      return sampleBeta(rng, lo.alpha, lo.beta);
+    }
     return sampleBeta(rng, hi.alpha, hi.beta);
   }
 
   const eps = clamp(params.epsNeg, 0, 0.49);
-  if (rng() < eps) {return sampleBeta(rng, hi.alpha, hi.beta);}
+  if (rng() < eps) {
+    return sampleBeta(rng, hi.alpha, hi.beta);
+  }
   return sampleBeta(rng, lo.alpha, lo.beta);
 }
 
@@ -151,7 +171,9 @@ function sampleScoreByPreset(rng, label, preset, params) {
   const mu = label === 1 ? params.muPos : params.muNeg;
   const sd = Math.max(1e-6, label === 1 ? params.sdPos : params.sdNeg);
   const modeSampler = MODE_SAMPLERS[mode];
-  if (modeSampler) {return modeSampler({ rng, label, params, mu, sd });}
+  if (modeSampler) {
+    return modeSampler({ rng, label, params, mu, sd });
+  }
 
   const z = sampleStandardized(mode, rng, label, params);
   return mu + sd * z;
@@ -159,9 +181,13 @@ function sampleScoreByPreset(rng, label, preset, params) {
 
 function meanSd(values) {
   const n = values.length;
-  if (!n) {return { mean: 0, sd: 0 };}
+  if (!n) {
+    return { mean: 0, sd: 0 };
+  }
   let sum = 0;
-  for (const v of values) {sum += v;}
+  for (const v of values) {
+    sum += v;
+  }
   const mean = sum / n;
   let ss = 0;
   for (const v of values) {

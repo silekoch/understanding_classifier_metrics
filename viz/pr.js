@@ -1,11 +1,4 @@
-import {
-  addPath,
-  clear,
-  computeCurveLayout,
-  createSvgEl,
-  drawAxes,
-  drawLegend,
-} from "./svg.js";
+import { addPath, clear, computeCurveLayout, createSvgEl, drawAxes, drawLegend } from "./svg.js";
 
 export function drawPr({ svg, pr, threshold, fmt }) {
   clear(svg);

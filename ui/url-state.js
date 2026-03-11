@@ -1,5 +1,7 @@
 function parseBoolParam(value, fallback = false) {
-  if (value == null) {return fallback;}
+  if (value == null) {
+    return fallback;
+  }
   return value === "1" || value === "true";
 }
 
@@ -21,22 +23,20 @@ export function saveStateToUrl({ state, ids, urlNumKeys, urlBoolKeys }) {
 }
 
 export function scheduleUrlSync({ state, saveStateToUrl, delayMs = 120 }) {
-  if (state.urlSyncTimer) {window.clearTimeout(state.urlSyncTimer);}
+  if (state.urlSyncTimer) {
+    window.clearTimeout(state.urlSyncTimer);
+  }
   state.urlSyncTimer = window.setTimeout(() => {
     saveStateToUrl();
     state.urlSyncTimer = null;
   }, delayMs);
 }
 
-export function restoreStateFromUrl({
-  ids,
-  presets,
-  applyPresetValues,
-  urlNumKeys,
-  urlBoolKeys,
-}) {
+export function restoreStateFromUrl({ ids, presets, applyPresetValues, urlNumKeys, urlBoolKeys }) {
   const params = new URLSearchParams(window.location.search);
-  if (!params.toString()) {return false;}
+  if (!params.toString()) {
+    return false;
+  }
 
   const preset = params.get("preset");
   if (preset && presets[preset]) {
@@ -46,17 +46,27 @@ export function restoreStateFromUrl({
   }
 
   for (const key of urlNumKeys) {
-    if (!ids[key]) {continue;}
+    if (!ids[key]) {
+      continue;
+    }
     const raw = params.get(key);
-    if (raw == null) {continue;}
+    if (raw == null) {
+      continue;
+    }
     const num = Number(raw);
-    if (Number.isFinite(num)) {ids[key].value = String(num);}
+    if (Number.isFinite(num)) {
+      ids[key].value = String(num);
+    }
   }
 
   for (const key of urlBoolKeys) {
-    if (!ids[key]) {continue;}
+    if (!ids[key]) {
+      continue;
+    }
     const raw = params.get(key);
-    if (raw == null) {continue;}
+    if (raw == null) {
+      continue;
+    }
     ids[key].checked = parseBoolParam(raw, ids[key].checked);
   }
 

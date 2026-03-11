@@ -1,8 +1,4 @@
-import {
-  computeOperatingPoint,
-  computePrPoints,
-  computeRocPoints,
-} from "./metrics.js";
+import { computeOperatingPoint, computePrPoints, computeRocPoints } from "./metrics.js";
 
 function clamp(x, a, b) {
   return Math.max(a, Math.min(b, x));

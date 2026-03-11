@@ -1,5 +1,7 @@
 export function fmt(num, digits = 4) {
-  if (!Number.isFinite(num)) {return "NaN";}
+  if (!Number.isFinite(num)) {
+    return "NaN";
+  }
   return num.toFixed(digits);
 }
 

@@ -7,7 +7,9 @@ export function createSvgEl(name, attrs) {
 }
 
 export function clear(svg) {
-  while (svg.firstChild) {svg.removeChild(svg.firstChild);}
+  while (svg.firstChild) {
+    svg.removeChild(svg.firstChild);
+  }
 }
 
 export function drawAxes(svg, box, xTicks, yTicks, xLabel, yLabel) {
@@ -91,7 +93,9 @@ export function drawAxes(svg, box, xTicks, yTicks, xLabel, yLabel) {
 }
 
 export function linePathFromUnitPoints(points, box, xKey, yKey) {
-  if (!points.length) {return "";}
+  if (!points.length) {
+    return "";
+  }
   const first = points[0];
   let d = `M ${box.left + first[xKey] * box.width} ${box.top + (1 - first[yKey]) * box.height}`;
   for (let i = 1; i < points.length; i += 1) {
@@ -112,7 +116,9 @@ export function addPath(svg, points, box, stroke, width, dash, xKey = "fpr", yKe
     "stroke-linejoin": "round",
     "stroke-linecap": "round",
   });
-  if (dash) {path.setAttribute("stroke-dasharray", dash);}
+  if (dash) {
+    path.setAttribute("stroke-dasharray", dash);
+  }
   svg.appendChild(path);
   return path;
 }
@@ -136,33 +142,34 @@ export function eventToSvgCoordinates(evt, svg, fallbackW = 760, fallbackH = 420
 
 export function computeCurveLayout(svg, mode = "single") {
   const view = getSvgViewSize(svg);
-  const cfg = mode === "two-up"
-    ? {
-        padTop: 22,
-        padRight: 48,
-        padBottom: 64,
-        padLeft: 48,
-        legendPad: 12,
-        legendRow: 19,
-        legendLine: 20,
-        strokeMain: 3.6,
-        strokeAux: 2.6,
-        pointRadius: 7,
-        pointStroke: 2.2,
-      }
-    : {
-        padTop: 20,
-        padRight: 200,
-        padBottom: 58,
-        padLeft: 70,
-        legendPad: 10,
-        legendRow: 18,
-        legendLine: 20,
-        strokeMain: 3,
-        strokeAux: 2,
-        pointRadius: 6,
-        pointStroke: 2,
-      };
+  const cfg =
+    mode === "two-up"
+      ? {
+          padTop: 22,
+          padRight: 48,
+          padBottom: 64,
+          padLeft: 48,
+          legendPad: 12,
+          legendRow: 19,
+          legendLine: 20,
+          strokeMain: 3.6,
+          strokeAux: 2.6,
+          pointRadius: 7,
+          pointStroke: 2.2,
+        }
+      : {
+          padTop: 20,
+          padRight: 200,
+          padBottom: 58,
+          padLeft: 70,
+          legendPad: 10,
+          legendRow: 18,
+          legendLine: 20,
+          strokeMain: 3,
+          strokeAux: 2,
+          pointRadius: 6,
+          pointStroke: 2,
+        };
 
   const availW = Math.max(20, view.width - cfg.padLeft - cfg.padRight);
   const availH = Math.max(20, view.height - cfg.padTop - cfg.padBottom);
@@ -178,7 +185,9 @@ export function computeCurveLayout(svg, mode = "single") {
 }
 
 function setLegendKey(el, key) {
-  if (!key) {return;}
+  if (!key) {
+    return;
+  }
   el.setAttribute("data-legend-key", key);
 }
 
@@ -208,7 +217,9 @@ function createLegendText({ x, y, item, textAnchor }) {
     class: "legend",
     opacity: legendOpacity(item),
   };
-  if (textAnchor) {attrs["text-anchor"] = textAnchor;}
+  if (textAnchor) {
+    attrs["text-anchor"] = textAnchor;
+  }
   const el = createSvgEl("text", attrs);
   setLegendKey(el, item.key);
   el.textContent = item.label;
@@ -242,11 +253,12 @@ export function drawLegend(svg, items, box, cfg, anchor = "outside-right") {
   const pad = cfg.legendPad || 10;
   const startY = box.top + box.height - pad - (items.length - 1) * row;
 
-  const drawItem = anchor === "inside-right"
-    ? drawLegendItemInsideRight
-    : anchor === "inside-left"
-      ? drawLegendItemInsideLeft
-      : drawLegendItemOutsideRight;
+  const drawItem =
+    anchor === "inside-right"
+      ? drawLegendItemInsideRight
+      : anchor === "inside-left"
+        ? drawLegendItemInsideLeft
+        : drawLegendItemOutsideRight;
 
   for (let idx = 0; idx < items.length; idx += 1) {
     drawItem(svg, {

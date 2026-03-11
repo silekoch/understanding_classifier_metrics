@@ -1,5 +1,7 @@
 function setHidden(el, hidden) {
-  if (!el) {return;}
+  if (!el) {
+    return;
+  }
   el.style.display = hidden ? "none" : "";
 }
 
@@ -50,7 +52,9 @@ export function syncControlOutputs({ ids, state, presets, fmt, fmtPct }) {
   ids.confSharpnessValue.textContent = fmt(state.confSharpness, 1);
   ids.nPerClassValue.textContent = String(2 * state.nPerClass);
   ids.samplePosFracValue.textContent = fmtPct(state.samplePosFrac, 1);
-  ids.outlierFracValue.textContent = outlierEnabled ? fmt(state.outlierFrac, 2) : `${fmt(state.outlierFrac, 2)} (normal only)`;
+  ids.outlierFracValue.textContent = outlierEnabled
+    ? fmt(state.outlierFrac, 2)
+    : `${fmt(state.outlierFrac, 2)} (normal only)`;
   ids.outlierFrac.disabled = !outlierEnabled;
   ids.seed.value = String(state.seed);
   ids.presetDesc.textContent = preset.desc || "";
@@ -85,7 +89,9 @@ export function applyPresetValues({ ids, presets, name }) {
     "nPerClass",
     "samplePosFrac",
   ];
-  if (!p) {return;}
+  if (!p) {
+    return;
+  }
   ids.preset.value = name;
   for (const key of keys) {
     if (Object.prototype.hasOwnProperty.call(p, key) && ids[key]) {

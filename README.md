@@ -34,15 +34,40 @@ Available commands:
 
 ```bash
 npm run lint
+npm run lint:strict
 npm run lint:fix
 npm test
 npm run test:watch
 npm run format:check
 npm run format
+npm run build
+npm run check
 ```
 
 Linting includes warning-level structural limits (`max-lines`, `max-lines-per-function`, and `complexity`) to guide
-incremental splitting without blocking work.
+incremental splitting without blocking work, while correctness rules are enforced as errors.
+
+### Git hooks (local quality gates)
+
+Install versioned hooks once per clone:
+
+```bash
+npm run hooks:install
+```
+
+Installed hooks:
+
+- `pre-commit`: staged Prettier/ESLint checks, then `npm test` and `npm run build`
+- `pre-push`: `npm run lint:strict`, `npm test`, and `npm run build`
+
+### CI
+
+GitHub Actions runs the same core checks on each push and pull request:
+
+- `npm run format:check`
+- `npm run lint:strict`
+- `npm test`
+- `npm run build`
 
 ## What you can explore
 

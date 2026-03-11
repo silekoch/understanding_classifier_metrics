@@ -8,13 +8,15 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "check": "npm run format:check && npm run lint:strict && npm test && npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --cache",
     "lint:strict": "eslint . --cache --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "format": "prettier . --write",
-    "format:check": "prettier . --check"
+    "format:check": "prettier . --check",
+    "hooks:install": "bash scripts/setup-hooks.sh"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",

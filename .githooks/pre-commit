@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+echo "[pre-commit] running staged lint/format checks, tests, and build..."
+
+declare -a ESLINT_FILES=()
+declare -a PRETTIER_FILES=()
+
+while IFS= read -r -d '' file; do
+  [[ -f "$file" ]] || continue
+  case "$file" in
+    *.js|*.cjs|*.mjs)
+      ESLINT_FILES+=("$file")
+      PRETTIER_FILES+=("$file")
+      ;;
+    *.json|*.css|*.md|*.html|*.yml|*.yaml)
+      PRETTIER_FILES+=("$file")
+      ;;
+  esac
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+
+if ((${#PRETTIER_FILES[@]} > 0)); then
+  npx --no-install prettier --check "${PRETTIER_FILES[@]}"
+fi
+
+if ((${#ESLINT_FILES[@]} > 0)); then
+  npx --no-install eslint --max-warnings=0 "${ESLINT_FILES[@]}"
+fi
+
+npm test
+npm run build
