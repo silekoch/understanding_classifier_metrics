@@ -8,6 +8,7 @@ import {
   SHAPE_CONTROL_KEYS,
   sanitizeControlValue,
 } from "../ui/control-specs.js";
+import { createInitialState } from "../core/state.js";
 
 const INDEX_HTML = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
@@ -67,5 +68,12 @@ describe("control specs", () => {
 
     expect(sanitizeControlValue("dfNeg", 9.6)).toBe(10);
     expect(sanitizeControlValue("seed", 3.2)).toBe(3);
+  });
+
+  it("drive initial state defaults from control specs", () => {
+    const state = createInitialState();
+    for (const [key, spec] of Object.entries(CONTROL_SPECS)) {
+      expect(state[key]).toBe(spec.default);
+    }
   });
 });
