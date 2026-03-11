@@ -1,5 +1,6 @@
 import { addPath, clear, createSvgEl, drawLegend, eventToSvgCoordinates, getSvgViewSize } from "./svg.js";
 import { clamp } from "../core/math.js";
+import { METRIC_TREND_LAYOUT, METRIC_TREND_VIEW_FALLBACK } from "./layout-config.js";
 import { drawThresholdMarker } from "./threshold-marker.js";
 
 const METRIC_SERIES = [
@@ -34,17 +35,17 @@ function getMetricSeries(curves) {
 }
 
 function getMetricTrendBox(svg) {
-  const view = getSvgViewSize(svg, 760, 240);
+  const view = getSvgViewSize(svg, METRIC_TREND_VIEW_FALLBACK.width, METRIC_TREND_VIEW_FALLBACK.height);
   return {
-    left: 66,
-    top: 18,
-    width: Math.max(140, view.width - 250),
-    height: Math.max(80, view.height - 62),
+    left: METRIC_TREND_LAYOUT.boxLeft,
+    top: METRIC_TREND_LAYOUT.boxTop,
+    width: Math.max(METRIC_TREND_LAYOUT.minWidth, view.width - METRIC_TREND_LAYOUT.widthInset),
+    height: Math.max(METRIC_TREND_LAYOUT.minHeight, view.height - METRIC_TREND_LAYOUT.heightInset),
   };
 }
 
 function drawMetricTrendXAxis(axis, { box, thresholdMin, thresholdMax, fmt }) {
-  const xTicks = 6;
+  const xTicks = METRIC_TREND_LAYOUT.xTicks;
   for (let i = 0; i <= xTicks; i += 1) {
     const u = i / xTicks;
     const x = box.left + u * box.width;
@@ -70,7 +71,7 @@ function drawMetricTrendXAxis(axis, { box, thresholdMin, thresholdMax, fmt }) {
 }
 
 function drawMetricTrendYAxis(axis, { box, yMin, yMax, fmt }) {
-  const yTicks = 5;
+  const yTicks = METRIC_TREND_LAYOUT.yTicks;
   for (let i = 0; i <= yTicks; i += 1) {
     const u = i / yTicks;
     const y = box.top + box.height - u * box.height;
@@ -125,7 +126,7 @@ function drawMetricTrendFrameAndLabels(axis, box) {
   axis.appendChild(
     createSvgEl("text", {
       x: box.left + box.width / 2,
-      y: box.top + box.height + 40,
+      y: box.top + box.height + METRIC_TREND_LAYOUT.axisLabelYOffset,
       class: "axis-label",
       "text-anchor": "middle",
     })
@@ -190,7 +191,12 @@ export function metricTrendHoverKeyFromPointer({ evt, svg, box, curves }) {
   if (!box || !curves) {
     return null;
   }
-  const point = eventToSvgCoordinates(evt, svg, 760, 240);
+  const point = eventToSvgCoordinates(
+    evt,
+    svg,
+    METRIC_TREND_VIEW_FALLBACK.width,
+    METRIC_TREND_VIEW_FALLBACK.height
+  );
   if (
     point.x < box.left ||
     point.x > box.left + box.width ||
@@ -220,7 +226,7 @@ export function metricTrendHoverKeyFromPointer({ evt, svg, box, curves }) {
     }
   }
 
-  return bestDist <= 12 ? bestKey : null;
+  return bestDist <= METRIC_TREND_LAYOUT.hoverSnapPx ? bestKey : null;
 }
 
 export function drawMetricTrend({ svg, curves, hoveredKey, threshold, thresholdMin, thresholdMax, fmt }) {
@@ -260,7 +266,11 @@ export function drawMetricTrend({ svg, curves, hoveredKey, threshold, thresholdM
     svg,
     metricLegendItems(series, hoveredKey),
     box,
-    { legendPad: 10, legendRow: 17, legendLine: 18 },
+    {
+      legendPad: METRIC_TREND_LAYOUT.legendPad,
+      legendRow: METRIC_TREND_LAYOUT.legendRow,
+      legendLine: METRIC_TREND_LAYOUT.legendLine,
+    },
     "outside-right"
   );
 

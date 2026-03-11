@@ -1,3 +1,5 @@
+import { SVG_VIEW_FALLBACK } from "./layout-config.js";
+
 export function createSvgEl(name, attrs) {
   const el = document.createElementNS("http://www.w3.org/2000/svg", name);
   for (const [k, v] of Object.entries(attrs || {})) {
@@ -144,7 +146,11 @@ export function clampPointLabelPosition({
   };
 }
 
-export function getSvgViewSize(svg, fallbackW = 760, fallbackH = 420) {
+export function getSvgViewSize(
+  svg,
+  fallbackW = SVG_VIEW_FALLBACK.width,
+  fallbackH = SVG_VIEW_FALLBACK.height
+) {
   const vb = svg && svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
   if (vb && vb.width > 0 && vb.height > 0) {
     return { width: vb.width, height: vb.height };
@@ -152,7 +158,12 @@ export function getSvgViewSize(svg, fallbackW = 760, fallbackH = 420) {
   return { width: fallbackW, height: fallbackH };
 }
 
-export function eventToSvgCoordinates(evt, svg, fallbackW = 760, fallbackH = 420) {
+export function eventToSvgCoordinates(
+  evt,
+  svg,
+  fallbackW = SVG_VIEW_FALLBACK.width,
+  fallbackH = SVG_VIEW_FALLBACK.height
+) {
   const rect = svg.getBoundingClientRect();
   const view = getSvgViewSize(svg, fallbackW, fallbackH);
   return {

@@ -1,6 +1,7 @@
 import { clear, createSvgEl } from "./svg.js";
 import { clamp } from "../core/math.js";
 import { computePaddedScoreRange } from "../core/score-range.js";
+import { DIST_LAYOUT } from "./layout-config.js";
 import { drawThresholdMarker } from "./threshold-marker.js";
 
 const CLASS_FILL_OPACITY = 0.4;
@@ -23,8 +24,8 @@ function appendText(svg, attrs, text) {
 function drawAxes({ svg, box, minX, maxX, yMax, fmt }) {
   const axis = createSvgEl("g", {});
 
-  for (let i = 0; i <= 10; i += 1) {
-    const x = box.left + (i / 10) * box.width;
+  for (let i = 0; i <= DIST_LAYOUT.xTicks; i += 1) {
+    const x = box.left + (i / DIST_LAYOUT.xTicks) * box.width;
     axis.appendChild(
       createSvgEl("line", {
         x1: x,
@@ -34,7 +35,7 @@ function drawAxes({ svg, box, minX, maxX, yMax, fmt }) {
         stroke: "rgba(0,0,0,0.07)",
       })
     );
-    const val = minX + (i / 10) * (maxX - minX);
+    const val = minX + (i / DIST_LAYOUT.xTicks) * (maxX - minX);
     appendText(
       axis,
       {
@@ -47,8 +48,8 @@ function drawAxes({ svg, box, minX, maxX, yMax, fmt }) {
     );
   }
 
-  for (let i = 0; i <= 5; i += 1) {
-    const y = box.top + box.height - (i / 5) * box.height;
+  for (let i = 0; i <= DIST_LAYOUT.yTicks; i += 1) {
+    const y = box.top + box.height - (i / DIST_LAYOUT.yTicks) * box.height;
     axis.appendChild(
       createSvgEl("line", {
         x1: box.left,
@@ -66,7 +67,7 @@ function drawAxes({ svg, box, minX, maxX, yMax, fmt }) {
         class: "tick",
         "text-anchor": "end",
       },
-      String(Math.round((i / 5) * yMax))
+      String(Math.round((i / DIST_LAYOUT.yTicks) * yMax))
     );
   }
 
@@ -120,22 +121,22 @@ function drawLegend({ svg, box }) {
     svg,
     {
       x: box.left,
-      y: box.top + box.height + 46,
+      y: box.top + box.height + DIST_LAYOUT.axisLabelOffsetY,
       class: "axis-label",
     },
     "Score (single variable)"
   );
-  const legendRight = box.left + box.width - 8;
-  const legendTop = box.top + 8;
-  const swatchSize = 10;
-  const swatchGap = 6;
+  const legendRight = box.left + box.width - DIST_LAYOUT.legendRightInset;
+  const legendTop = box.top + DIST_LAYOUT.legendTopInset;
+  const swatchSize = DIST_LAYOUT.swatchSize;
+  const swatchGap = DIST_LAYOUT.swatchGap;
   const items = [
     { fill: "var(--neg)", text: "negative class" },
     { fill: "var(--pos)", text: "positive class" },
   ];
 
   for (let i = 0; i < items.length; i += 1) {
-    const y = legendTop + i * 18;
+    const y = legendTop + i * DIST_LAYOUT.legendRowGap;
     svg.appendChild(
       createSvgEl("rect", {
         x: legendRight - swatchSize,
@@ -162,14 +163,14 @@ function drawLegend({ svg, box }) {
 export function drawDist({ svg, data, threshold, fmt }) {
   clear(svg);
 
-  const box = { left: 70, top: 16, width: 640, height: 240 };
+  const box = DIST_LAYOUT.box;
   const { minX, maxX } = computePaddedScoreRange(data.min, data.max);
-  const bins = 34;
+  const bins = DIST_LAYOUT.bins;
 
   const hNeg = histogram(data.negatives, bins, minX, maxX);
   const hPos = histogram(data.positives, bins, minX, maxX);
   const yMax = Math.max(...hNeg, ...hPos, 1);
-  const yMaxWithHeadroom = yMax * 1.08;
+  const yMaxWithHeadroom = yMax * DIST_LAYOUT.yHeadroomFactor;
 
   drawAxes({ svg, box, minX, maxX, yMax: yMaxWithHeadroom, fmt });
   drawHistogramBars({ svg, box, bins, hNeg, hPos, yMax: yMaxWithHeadroom });

@@ -1,6 +1,7 @@
 import { clear, createSvgEl } from "./svg.js";
+import { MATRIX_LAYOUT } from "./layout-config.js";
 
-const grid = { left: 170, top: 70, cellW: 230, cellH: 110 };
+const grid = MATRIX_LAYOUT.grid;
 const cells = [
   { key: "tp", label: "TP", col: 0, row: 0, color: "var(--pos)", denomKey: "P" },
   { key: "fn", label: "FN", col: 1, row: 0, color: "var(--pos)", denomKey: "P" },
@@ -17,7 +18,7 @@ function drawAxisLabels(svg) {
     svg,
     {
       x: grid.left + grid.cellW,
-      y: 28,
+      y: MATRIX_LAYOUT.axisTitleY,
       class: "axis-label",
       "text-anchor": "middle",
     },
@@ -27,7 +28,7 @@ function drawAxisLabels(svg) {
     svg,
     {
       x: grid.left + grid.cellW * 0.5,
-      y: 52,
+      y: MATRIX_LAYOUT.predictedLabelsY,
       class: "legend",
       "text-anchor": "middle",
     },
@@ -37,7 +38,7 @@ function drawAxisLabels(svg) {
     svg,
     {
       x: grid.left + grid.cellW * 1.5,
-      y: 52,
+      y: MATRIX_LAYOUT.predictedLabelsY,
       class: "legend",
       "text-anchor": "middle",
     },
@@ -45,11 +46,11 @@ function drawAxisLabels(svg) {
   );
 
   const yLabel = createSvgEl("text", {
-    x: 60,
+    x: MATRIX_LAYOUT.yAxisLabelX,
     y: grid.top + grid.cellH,
     class: "axis-label",
     "text-anchor": "middle",
-    transform: `rotate(-90 60 ${grid.top + grid.cellH})`,
+    transform: `rotate(-90 ${MATRIX_LAYOUT.yAxisLabelX} ${grid.top + grid.cellH})`,
   });
   yLabel.textContent = "Actual class";
   svg.appendChild(yLabel);
@@ -57,8 +58,8 @@ function drawAxisLabels(svg) {
   appendText(
     svg,
     {
-      x: 132,
-      y: grid.top + grid.cellH * 0.5 + 4,
+      x: MATRIX_LAYOUT.actualLabelsX,
+      y: grid.top + grid.cellH * 0.5 + MATRIX_LAYOUT.actualLabelOffsetY,
       class: "legend",
       "text-anchor": "middle",
     },
@@ -67,8 +68,8 @@ function drawAxisLabels(svg) {
   appendText(
     svg,
     {
-      x: 132,
-      y: grid.top + grid.cellH * 1.5 + 4,
+      x: MATRIX_LAYOUT.actualLabelsX,
+      y: grid.top + grid.cellH * 1.5 + MATRIX_LAYOUT.actualLabelOffsetY,
       class: "legend",
       "text-anchor": "middle",
     },
@@ -95,8 +96,8 @@ function drawCellInnerBox(svg, { x, y, cell, rate }) {
     return;
   }
   const scale = Math.sqrt(rate);
-  const innerW = Math.max(6, grid.cellW * scale);
-  const innerH = Math.max(6, grid.cellH * scale);
+  const innerW = Math.max(MATRIX_LAYOUT.minInnerSize, grid.cellW * scale);
+  const innerH = Math.max(MATRIX_LAYOUT.minInnerSize, grid.cellH * scale);
   const innerX = x + (grid.cellW - innerW) / 2;
   const innerY = y + (grid.cellH - innerH) / 2;
 
@@ -117,8 +118,8 @@ function drawCellTexts(svg, { x, y, cell, count, rate, fmtPct }) {
   appendText(
     svg,
     {
-      x: x + 10,
-      y: y + 22,
+      x: x + MATRIX_LAYOUT.cellTextXOffset,
+      y: y + MATRIX_LAYOUT.cellTitleYOffset,
       class: "legend",
     },
     cell.label
@@ -126,8 +127,8 @@ function drawCellTexts(svg, { x, y, cell, count, rate, fmtPct }) {
   appendText(
     svg,
     {
-      x: x + 10,
-      y: y + 44,
+      x: x + MATRIX_LAYOUT.cellTextXOffset,
+      y: y + MATRIX_LAYOUT.cellValueYOffset,
       class: "legend",
     },
     `${count} (${fmtPct(rate, 1)})`
@@ -160,7 +161,7 @@ export function drawConfusionMatrix({ svg, op, fmtPct }) {
     svg,
     {
       x: grid.left,
-      y: grid.top + grid.cellH * 2 + 26,
+      y: grid.top + grid.cellH * 2 + MATRIX_LAYOUT.totalLabelOffsetY,
       class: "legend",
     },
     `Total samples: ${total}`

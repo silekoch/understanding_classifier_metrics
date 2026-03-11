@@ -1,5 +1,6 @@
 import { eventToSvgCoordinates } from "../viz/svg.js";
 import { clamp } from "../core/math.js";
+import { DIST_VIEW_FALLBACK, METRIC_TREND_VIEW_FALLBACK, SVG_VIEW_FALLBACK } from "../viz/layout-config.js";
 
 export function nearestFiniteThreshold(points, xTarget, yTarget, xKey = "fpr", yKey = "tpr") {
   let best = null;
@@ -26,7 +27,7 @@ export function thresholdFromDistPointer({ evt, state, ids, view }) {
   if (!distView) {
     return state.controls.threshold;
   }
-  const point = eventToSvgCoordinates(evt, ids.distSvg, 760, 320);
+  const point = eventToSvgCoordinates(evt, ids.distSvg, DIST_VIEW_FALLBACK.width, DIST_VIEW_FALLBACK.height);
   const x = point.x;
   const u = clamp((x - distView.box.left) / distView.box.width, 0, 1);
   return distView.minX + u * (distView.maxX - distView.minX);
@@ -46,7 +47,7 @@ function isWithinDistPlot({ evt, ids, view }) {
   if (!distView) {
     return false;
   }
-  const point = eventToSvgCoordinates(evt, ids.distSvg, 760, 320);
+  const point = eventToSvgCoordinates(evt, ids.distSvg, DIST_VIEW_FALLBACK.width, DIST_VIEW_FALLBACK.height);
   return isPointInBox(point, distView.box);
 }
 
@@ -55,7 +56,12 @@ export function thresholdFromMetricTrendPointer({ evt, state, ids, view }) {
   if (!box) {
     return state.controls.threshold;
   }
-  const point = eventToSvgCoordinates(evt, ids.metricTrendSvg, 760, 240);
+  const point = eventToSvgCoordinates(
+    evt,
+    ids.metricTrendSvg,
+    METRIC_TREND_VIEW_FALLBACK.width,
+    METRIC_TREND_VIEW_FALLBACK.height
+  );
   const u = clamp((point.x - box.left) / box.width, 0, 1);
   return state.computed.thresholdMin + u * (state.computed.thresholdMax - state.computed.thresholdMin);
 }
@@ -75,7 +81,7 @@ export function attachRocClickHandler({ ids, state, view, setThreshold }) {
       return;
     }
 
-    const point = eventToSvgCoordinates(evt, ids.rocSvg, 760, 420);
+    const point = eventToSvgCoordinates(evt, ids.rocSvg, SVG_VIEW_FALLBACK.width, SVG_VIEW_FALLBACK.height);
     const x = point.x;
     const y = point.y;
 
@@ -98,7 +104,7 @@ export function attachPrClickHandler({ ids, state, view, setThreshold }) {
       return;
     }
 
-    const point = eventToSvgCoordinates(evt, ids.prSvg, 760, 420);
+    const point = eventToSvgCoordinates(evt, ids.prSvg, SVG_VIEW_FALLBACK.width, SVG_VIEW_FALLBACK.height);
     const x = point.x;
     const y = point.y;
 
@@ -133,7 +139,12 @@ export function attachMetricTrendHandlers({
     if (!box) {
       return;
     }
-    const point = eventToSvgCoordinates(evt, ids.metricTrendSvg, 760, 240);
+    const point = eventToSvgCoordinates(
+      evt,
+      ids.metricTrendSvg,
+      METRIC_TREND_VIEW_FALLBACK.width,
+      METRIC_TREND_VIEW_FALLBACK.height
+    );
     if (
       point.x < box.left ||
       point.x > box.left + box.width ||
