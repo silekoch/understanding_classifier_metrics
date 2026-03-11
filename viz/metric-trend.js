@@ -29,71 +29,24 @@ function getMetricTrendYRange(curves) {
   return { yMin, yMax, ySpan };
 }
 
-export function metricTrendHoverKeyFromPointer({ evt, svg, box, curves }) {
-  if (!box || !curves) return null;
-  const point = eventToSvgCoordinates(evt, svg, 760, 240);
-  if (
-    point.x < box.left ||
-    point.x > box.left + box.width ||
-    point.y < box.top ||
-    point.y > box.top + box.height
-  ) {
-    return null;
-  }
-
-  const { yMin, ySpan } = getMetricTrendYRange(curves);
-  const u = clamp((point.x - box.left) / box.width, 0, 1);
-
-  let bestKey = null;
-  let bestDist = Infinity;
-  for (const item of METRIC_SERIES) {
-    const points = curves[item.key];
-    if (!points || !points.length) continue;
-    const idx = clamp(Math.round(u * (points.length - 1)), 0, points.length - 1);
-    const yNorm = clamp((points[idx].v - yMin) / ySpan, 0, 1);
-    const y = box.top + (1 - yNorm) * box.height;
-    const dist = Math.abs(point.y - y);
-    if (dist < bestDist) {
-      bestDist = dist;
-      bestKey = item.key;
-    }
-  }
-
-  return bestDist <= 12 ? bestKey : null;
-}
-
-export function drawMetricTrend({
-  svg,
-  curves,
-  hoveredKey,
-  threshold,
-  thresholdMin,
-  thresholdMax,
-  fmt,
-}) {
-  if (!svg) return null;
-  clear(svg);
-  if (!curves) return null;
-
-  const series = METRIC_SERIES
+function getMetricSeries(curves) {
+  return METRIC_SERIES
     .map((s) => ({ ...s, points: curves[s.key] }))
     .filter((s) => Array.isArray(s.points) && s.points.length > 0);
+}
 
-  const { yMin, yMax, ySpan } = getMetricTrendYRange(curves);
-  const hasNegative = yMin < 0;
-
+function getMetricTrendBox(svg) {
   const view = getSvgViewSize(svg, 760, 240);
-  const box = {
+  return {
     left: 66,
     top: 18,
     width: Math.max(140, view.width - 250),
     height: Math.max(80, view.height - 62),
   };
+}
 
-  const axis = createSvgEl("g", {});
+function drawMetricTrendXAxis(axis, { box, thresholdMin, thresholdMax, fmt }) {
   const xTicks = 6;
-  const yTicks = 5;
-
   for (let i = 0; i <= xTicks; i += 1) {
     const u = i / xTicks;
     const x = box.left + u * box.width;
@@ -116,7 +69,10 @@ export function drawMetricTrend({
       })
     ).textContent = fmt(tickThreshold, 2);
   }
+}
 
+function drawMetricTrendYAxis(axis, { box, yMin, yMax, fmt }) {
+  const yTicks = 5;
   for (let i = 0; i <= yTicks; i += 1) {
     const u = i / yTicks;
     const y = box.top + box.height - u * box.height;
@@ -139,22 +95,24 @@ export function drawMetricTrend({
       })
     ).textContent = fmt(value, 2);
   }
+}
 
-  if (hasNegative) {
-    const zeroU = (0 - yMin) / ySpan;
-    const zeroY = box.top + (1 - zeroU) * box.height;
-    axis.appendChild(
-      createSvgEl("line", {
-        x1: box.left,
-        y1: zeroY,
-        x2: box.left + box.width,
-        y2: zeroY,
-        stroke: "rgba(0,0,0,0.25)",
-        "stroke-dasharray": "4 4",
-      })
-    );
-  }
+function drawMetricTrendZeroLine(axis, { box, yMin, ySpan }) {
+  const zeroU = (0 - yMin) / ySpan;
+  const zeroY = box.top + (1 - zeroU) * box.height;
+  axis.appendChild(
+    createSvgEl("line", {
+      x1: box.left,
+      y1: zeroY,
+      x2: box.left + box.width,
+      y2: zeroY,
+      stroke: "rgba(0,0,0,0.25)",
+      "stroke-dasharray": "4 4",
+    })
+  );
+}
 
+function drawMetricTrendFrameAndLabels(axis, box) {
   axis.appendChild(
     createSvgEl("rect", {
       x: box.left,
@@ -184,8 +142,28 @@ export function drawMetricTrend({
   });
   yLabel.textContent = "Metric value";
   axis.appendChild(yLabel);
-  svg.appendChild(axis);
+}
 
+function drawMetricTrendAxis({
+  svg,
+  box,
+  yMin,
+  yMax,
+  ySpan,
+  thresholdMin,
+  thresholdMax,
+  fmt,
+  hasNegative,
+}) {
+  const axis = createSvgEl("g", {});
+  drawMetricTrendXAxis(axis, { box, thresholdMin, thresholdMax, fmt });
+  drawMetricTrendYAxis(axis, { box, yMin, yMax, fmt });
+  if (hasNegative) drawMetricTrendZeroLine(axis, { box, yMin, ySpan });
+  drawMetricTrendFrameAndLabels(axis, box);
+  svg.appendChild(axis);
+}
+
+function drawMetricSeries({ svg, series, box, yMin, ySpan, hoveredKey }) {
   for (const item of series) {
     const unitPoints = item.points.map((p) => ({
       x: p.u,
@@ -205,7 +183,9 @@ export function drawMetricTrend({
     );
     path.setAttribute("opacity", isDimmed ? "0.2" : "1");
   }
+}
 
+function drawThresholdMarker({ svg, box, threshold, thresholdMin, thresholdMax, fmt }) {
   const uCurrent = clamp(
     (threshold - thresholdMin) / Math.max(1e-9, thresholdMax - thresholdMin),
     0,
@@ -213,6 +193,7 @@ export function drawMetricTrend({
   );
   const markerX = box.left + uCurrent * box.width;
   const handleY = box.top + box.height / 2;
+
   svg.appendChild(
     createSvgEl("line", {
       x1: markerX,
@@ -259,17 +240,85 @@ export function drawMetricTrend({
       class: "legend",
     })
   ).textContent = `threshold ${fmt(threshold, 3)}`;
+}
 
+function metricLegendItems(series, hoveredKey) {
+  return series.map(({ key, label, color, dash, width }) => ({
+    key,
+    label,
+    color,
+    dash,
+    width: (width || 3) + (hoveredKey === key ? 0.8 : 0),
+    opacity: hoveredKey && hoveredKey !== key ? 0.25 : 1,
+  }));
+}
+
+export function metricTrendHoverKeyFromPointer({ evt, svg, box, curves }) {
+  if (!box || !curves) return null;
+  const point = eventToSvgCoordinates(evt, svg, 760, 240);
+  if (
+    point.x < box.left ||
+    point.x > box.left + box.width ||
+    point.y < box.top ||
+    point.y > box.top + box.height
+  ) {
+    return null;
+  }
+
+  const { yMin, ySpan } = getMetricTrendYRange(curves);
+  const u = clamp((point.x - box.left) / box.width, 0, 1);
+
+  let bestKey = null;
+  let bestDist = Infinity;
+  for (const item of METRIC_SERIES) {
+    const points = curves[item.key];
+    if (!points || !points.length) continue;
+    const idx = clamp(Math.round(u * (points.length - 1)), 0, points.length - 1);
+    const yNorm = clamp((points[idx].v - yMin) / ySpan, 0, 1);
+    const y = box.top + (1 - yNorm) * box.height;
+    const dist = Math.abs(point.y - y);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestKey = item.key;
+    }
+  }
+
+  return bestDist <= 12 ? bestKey : null;
+}
+
+export function drawMetricTrend({
+  svg,
+  curves,
+  hoveredKey,
+  threshold,
+  thresholdMin,
+  thresholdMax,
+  fmt,
+}) {
+  if (!svg) return null;
+  clear(svg);
+  if (!curves) return null;
+
+  const series = getMetricSeries(curves);
+  const { yMin, yMax, ySpan } = getMetricTrendYRange(curves);
+  const hasNegative = yMin < 0;
+  const box = getMetricTrendBox(svg);
+  drawMetricTrendAxis({
+    svg,
+    box,
+    yMin,
+    yMax,
+    ySpan,
+    thresholdMin,
+    thresholdMax,
+    fmt,
+    hasNegative,
+  });
+  drawMetricSeries({ svg, series, box, yMin, ySpan, hoveredKey });
+  drawThresholdMarker({ svg, box, threshold, thresholdMin, thresholdMax, fmt });
   drawLegend(
     svg,
-    series.map(({ key, label, color, dash, width }) => ({
-      key,
-      label,
-      color,
-      dash,
-      width: (width || 3) + (hoveredKey === key ? 0.8 : 0),
-      opacity: hoveredKey && hoveredKey !== key ? 0.25 : 1,
-    })),
+    metricLegendItems(series, hoveredKey),
     box,
     { legendPad: 10, legendRow: 17, legendLine: 18 },
     "outside-right"
