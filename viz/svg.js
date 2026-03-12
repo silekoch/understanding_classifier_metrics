@@ -94,7 +94,7 @@ export function drawAxes(svg, box, xTicks, yTicks, xLabel, yLabel) {
   svg.appendChild(axis);
 }
 
-export function linePathFromUnitPoints(points, box, xKey, yKey) {
+function linePathFromUnitPoints(points, box, xKey, yKey) {
   if (!points.length) {
     return "";
   }

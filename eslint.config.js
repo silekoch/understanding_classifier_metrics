@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import globals from "globals";
+import importX from "eslint-plugin-import-x";
 
 export default [
   {
@@ -12,6 +13,9 @@ export default [
       ecmaVersion: "latest",
       sourceType: "module",
       globals: globals.browser,
+    },
+    plugins: {
+      "import-x": importX,
     },
     rules: {
       curly: ["error", "all"],
@@ -37,8 +41,17 @@ export default [
       "no-unused-vars": [
         "error",
         {
-          args: "none",
+          args: "after-used",
+          argsIgnorePattern: "^_",
           ignoreRestSiblings: true,
+        },
+      ],
+      "import-x/no-unused-modules": [
+        "error",
+        {
+          unusedExports: true,
+          missingExports: false,
+          ignoreExports: ["eslint.config.js", "e2e/**"],
         },
       ],
     },

@@ -1,5 +1,3 @@
-import { clamp } from "./math.js";
-
 function divideOr(num, den, fallback = 0) {
   return den > 0 ? num / den : fallback;
 }
@@ -111,18 +109,6 @@ export function computePrPoints(all) {
     points.push({ threshold: -Infinity, recall: 1, precision: prevalence });
   }
   return { points, prevalence };
-}
-
-export function computeApTrapezoid(prPoints) {
-  let ap = 0;
-  for (let i = 1; i < prPoints.length; i += 1) {
-    const x0 = prPoints[i - 1].recall;
-    const x1 = prPoints[i].recall;
-    const y0 = prPoints[i - 1].precision;
-    const y1 = prPoints[i].precision;
-    ap += Math.max(0, x1 - x0) * (y0 + y1) * 0.5;
-  }
-  return clamp(ap, 0, 1);
 }
 
 export function computeAucRank(all) {

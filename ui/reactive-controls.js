@@ -18,7 +18,7 @@ export function wireReactiveControls({
   renderThresholdViews,
   drawMetricTrend,
 }) {
-  store.subscribe("threshold", (nextThreshold) => {
+  store.subscribe("threshold", () => {
     renderThresholdViews();
   });
 
