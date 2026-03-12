@@ -1,5 +1,5 @@
 import { clamp } from "../core/math.js";
-import { createSvgEl } from "./svg.js";
+import { clampPointLabelPosition, createSvgEl } from "./svg.js";
 
 function appendThresholdLine(svg, { x, box }) {
   svg.appendChild(
@@ -70,6 +70,21 @@ export function drawThresholdMarker({
   const boundedThreshold = clamp(threshold, minX, maxX);
   const x = box.left + ((boundedThreshold - minX) / (maxX - minX)) * box.width;
   const y = box.top + box.height / 2;
+  const labelText = `threshold ${fmt(threshold, 3)}`;
+  const labelBaseY = labelY == null ? box.top + 16 : labelY;
+  const labelPos = clampPointLabelPosition({
+    box,
+    x,
+    y: labelBaseY,
+    dx: 7,
+    dy: 0,
+    // Approximate text width so we can keep the label inside plot bounds
+    // without relying on getBBox (unavailable in some test environments).
+    labelWidth: Math.max(88, labelText.length * 6.4),
+    padX: 6,
+    padTop: 14,
+    padBottom: 6,
+  });
 
   appendThresholdLine(svg, { x, box });
   appendThresholdHandle(svg, {
@@ -88,8 +103,8 @@ export function drawThresholdMarker({
   });
   appendThresholdGrabRing(svg, { x, y });
   appendThresholdLabel(svg, {
-    x: x + 7,
-    y: labelY == null ? box.top + 16 : labelY,
-    text: `threshold ${fmt(threshold, 3)}`,
+    x: labelPos.x,
+    y: labelPos.y,
+    text: labelText,
   });
 }
