@@ -46,6 +46,8 @@ export default [
           ignoreRestSiblings: true,
         },
       ],
+      "consistent-return": "error",
+      "import-x/no-cycle": "error",
       "import-x/no-unused-modules": [
         "error",
         {
@@ -60,6 +62,12 @@ export default [
     files: ["core/**/*.js"],
     rules: {
       complexity: ["warn", 10],
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: ["../ui/**", "./ui/**", "../viz/**", "./viz/**"],
+        },
+      ],
       "max-lines-per-function": [
         "warn",
         {
@@ -72,9 +80,30 @@ export default [
     },
   },
   {
-    files: ["ui/**/*.js", "viz/**/*.js"],
+    files: ["ui/**/*.js"],
     rules: {
       complexity: ["warn", 20],
+      "max-lines-per-function": [
+        "warn",
+        {
+          max: 140,
+          skipBlankLines: true,
+          skipComments: true,
+          IIFEs: true,
+        },
+      ],
+    },
+  },
+  {
+    files: ["viz/**/*.js"],
+    rules: {
+      complexity: ["warn", 20],
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: ["../ui/**", "./ui/**"],
+        },
+      ],
       "max-lines-per-function": [
         "warn",
         {
