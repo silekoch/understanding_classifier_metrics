@@ -239,19 +239,7 @@ svg {
   outline: none;
 }
 
-.metrics pre {
-  margin: 0;
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: rgba(252, 250, 245, 0.9);
-  font-size: 0.82rem;
-  font-family: "Menlo", "Consolas", monospace;
-  overflow-x: auto;
-}
-
 #metricTrendSvg {
-  margin-top: 10px;
   touch-action: none;
 }
 
@@ -269,6 +257,11 @@ svg {
 .legend {
   font-size: 12px;
   fill: #363027;
+}
+
+.legend-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 @media (max-width: 1100px) {

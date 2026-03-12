@@ -69,7 +69,6 @@ function makeIds() {
   const ids = {
     preset: { value: "separated" },
     advancedDetails: { open: false },
-    metricsText: { textContent: "" },
     distSvg: { _drawn: false },
     confusionSvg: { _drawn: false },
     rocSvg: { _drawn: false },

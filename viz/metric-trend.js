@@ -1,12 +1,12 @@
-import { addPath, clear, createSvgEl, drawLegend, eventToSvgCoordinates, getSvgViewSize } from "./svg.js";
+import { addPath, clear, createSvgEl, eventToSvgCoordinates, getSvgViewSize } from "./svg.js";
 import { clamp } from "../core/math.js";
 import { METRIC_TREND_LAYOUT, METRIC_TREND_VIEW_FALLBACK } from "./layout-config.js";
 import { drawThresholdMarker } from "./threshold-marker.js";
 
 const METRIC_SERIES = [
-  { key: "recall", label: "Recall (TPR)", color: "#0D9488", width: 2.6 },
-  { key: "precision", label: "Precision (PPV)", color: "#2563EB", width: 2.4, dash: "10 5" },
-  { key: "specificity", label: "Specificity (TNR)", color: "#D97706", width: 2.4, dash: "2 5" },
+  { key: "recall", label: "Recall", color: "#0D9488", width: 2.6 },
+  { key: "precision", label: "Precision", color: "#2563EB", width: 2.4, dash: "10 5" },
+  { key: "specificity", label: "Specificity", color: "#D97706", width: 2.4, dash: "2 5" },
   { key: "f1", label: "F1 Score", color: "#7C3AED", width: 2.4, dash: "12 4 2 4" },
   { key: "mcc", label: "MCC", color: "#111111", width: 3.0 },
   { key: "accuracy", label: "Accuracy", color: "#7A7062", width: 1.8, dash: "5 4" },
@@ -176,15 +176,98 @@ function drawMetricSeries({ svg, series, box, yMin, ySpan, hoveredKey }) {
   }
 }
 
-function metricLegendItems(series, hoveredKey) {
-  return series.map(({ key, label, color, dash, width }) => ({
-    key,
-    label,
-    color,
-    dash,
-    width: (width || 3) + (hoveredKey === key ? 0.8 : 0),
-    opacity: hoveredKey && hoveredKey !== key ? 0.25 : 1,
-  }));
+function metricValueAtThreshold(points, threshold, thresholdMin, thresholdMax) {
+  if (!Array.isArray(points) || points.length === 0) {
+    return null;
+  }
+  if (points.length === 1 || thresholdMax <= thresholdMin) {
+    return points[0].v;
+  }
+  const u = clamp((threshold - thresholdMin) / (thresholdMax - thresholdMin), 0, 1);
+  const scaledIndex = u * (points.length - 1);
+  const lowerIndex = Math.floor(scaledIndex);
+  const upperIndex = Math.min(points.length - 1, lowerIndex + 1);
+  const t = scaledIndex - lowerIndex;
+  const lowerValue = points[lowerIndex].v;
+  const upperValue = points[upperIndex].v;
+  return lowerValue + (upperValue - lowerValue) * t;
+}
+
+function metricLegendItems(series, hoveredKey, { threshold, thresholdMin, thresholdMax, fmt }) {
+  return series.map(({ key, label, color, dash, width, points }) => {
+    const value = metricValueAtThreshold(points, threshold, thresholdMin, thresholdMax);
+    const valueLabel = value == null ? "n/a" : fmt(value, 2);
+    return {
+      key,
+      label,
+      valueLabel,
+      color,
+      dash,
+      width: (width || 3) + (hoveredKey === key ? 0.8 : 0),
+      opacity: hoveredKey && hoveredKey !== key ? 0.25 : 1,
+    };
+  });
+}
+
+function setLegendKey(el, key) {
+  if (!key) {
+    return;
+  }
+  el.setAttribute("data-legend-key", key);
+}
+
+function drawMetricLegend({ svg, box, items }) {
+  const row = METRIC_TREND_LAYOUT.legendRow || 18;
+  const lineLen = METRIC_TREND_LAYOUT.legendLine || 20;
+  const pad = METRIC_TREND_LAYOUT.legendPad || 10;
+  const labelGap = METRIC_TREND_LAYOUT.legendLabelGap || 6;
+  const valueOffset = METRIC_TREND_LAYOUT.legendValueOffset || 116;
+  const startY = box.top + box.height - pad - (items.length - 1) * row;
+
+  const x1 = box.left + box.width + 12;
+  const x2 = x1 + lineLen;
+  const labelX = x2 + labelGap;
+  const valueX = labelX + valueOffset;
+
+  for (let idx = 0; idx < items.length; idx += 1) {
+    const item = items[idx];
+    const y = startY + idx * row;
+    const opacity = item.opacity == null ? 1 : item.opacity;
+
+    const line = createSvgEl("line", {
+      x1,
+      y1: y,
+      x2,
+      y2: y,
+      stroke: item.color,
+      "stroke-width": item.width || 3,
+      "stroke-dasharray": item.dash || "",
+      opacity,
+    });
+    setLegendKey(line, item.key);
+    svg.appendChild(line);
+
+    const labelText = createSvgEl("text", {
+      x: labelX,
+      y: y + 4,
+      class: "legend",
+      opacity,
+    });
+    setLegendKey(labelText, item.key);
+    labelText.textContent = item.label;
+    svg.appendChild(labelText);
+
+    const valueText = createSvgEl("text", {
+      x: valueX,
+      y: y + 4,
+      class: "legend legend-value",
+      "text-anchor": "end",
+      opacity,
+    });
+    setLegendKey(valueText, item.key);
+    valueText.textContent = item.valueLabel;
+    svg.appendChild(valueText);
+  }
 }
 
 export function metricTrendHoverKeyFromPointer({ evt, svg, box, curves }) {
@@ -262,17 +345,16 @@ export function drawMetricTrend({ svg, curves, hoveredKey, threshold, thresholdM
     threshold,
     fmt,
   });
-  drawLegend(
+  drawMetricLegend({
     svg,
-    metricLegendItems(series, hoveredKey),
     box,
-    {
-      legendPad: METRIC_TREND_LAYOUT.legendPad,
-      legendRow: METRIC_TREND_LAYOUT.legendRow,
-      legendLine: METRIC_TREND_LAYOUT.legendLine,
-    },
-    "outside-right"
-  );
+    items: metricLegendItems(series, hoveredKey, {
+      threshold,
+      thresholdMin,
+      thresholdMax,
+      fmt,
+    }),
+  });
 
   return box;
 }

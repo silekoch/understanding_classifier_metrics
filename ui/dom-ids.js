@@ -67,7 +67,6 @@ const ID_KEYS = [
   "prSvg",
   "distSvg",
   "confusionSvg",
-  "metricsText",
   "metricTrendSvg",
 ];
 

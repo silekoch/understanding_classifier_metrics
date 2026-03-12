@@ -54,5 +54,7 @@ export const METRIC_TREND_LAYOUT = {
   legendPad: 10,
   legendRow: 17,
   legendLine: 18,
+  legendLabelGap: 6,
+  legendValueOffset: 132,
   axisLabelYOffset: 40,
 };

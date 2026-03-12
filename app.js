@@ -17,7 +17,6 @@ import { applyPresetValues, syncControlOutputs } from "./ui/preset-controls.js";
 import { getIds } from "./ui/dom-ids.js";
 import { writeControls } from "./ui/control-values.js";
 import { URL_BOOL_KEYS, URL_NUM_KEYS } from "./ui/url-state-keys.js";
-import { renderMetricsText } from "./ui/metrics-text.js";
 import { runStartupRender } from "./ui/startup.js";
 import { wireShapeControls } from "./ui/reactive-shape-controls.js";
 import { wireReactiveControls } from "./ui/reactive-controls.js";
@@ -155,11 +154,6 @@ function renderThresholdViews() {
     svg: ids.prSvg,
     pr: state.computed.pr,
     threshold,
-    fmt,
-  });
-  renderMetricsText({
-    metricsTextEl: ids.metricsText,
-    op: state.computed.roc.op,
     fmt,
   });
   renderMetricTrend();
