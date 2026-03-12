@@ -176,14 +176,12 @@ function renderThresholdViews({ persistUrl = true } = {}) {
     roc: state.computed.roc,
     threshold,
     fmt,
-    highlightCellKey: matrixHighlightCellKey,
   });
   view.prClickBox = drawPr({
     svg: ids.prSvg,
     pr: state.computed.pr,
     threshold,
     fmt,
-    highlightCellKey: matrixHighlightCellKey,
   });
   renderMetricTrend();
   if (persistUrl) {

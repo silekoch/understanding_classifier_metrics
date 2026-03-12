@@ -39,17 +39,7 @@ function prLegendBounds(box, cfg, labels) {
   };
 }
 
-function highlightStrokeForCell(cellKey) {
-  if (cellKey === "tp" || cellKey === "fn") {
-    return "var(--pos)";
-  }
-  if (cellKey === "fp" || cellKey === "tn") {
-    return "var(--neg)";
-  }
-  return null;
-}
-
-export function drawPr({ svg, pr, threshold, fmt, highlightCellKey = null }) {
+export function drawPr({ svg, pr, threshold, fmt }) {
   clear(svg);
 
   const layout = computeCurveLayout(svg, "two-up");
@@ -74,7 +64,6 @@ export function drawPr({ svg, pr, threshold, fmt, highlightCellKey = null }) {
   const op = pr.op;
   const cx = box.left + op.recall * box.width;
   const cy = box.top + (1 - op.precision) * box.height;
-  const highlightStroke = highlightStrokeForCell(highlightCellKey);
   const labelText = `threshold = ${fmt(threshold, 3)}`;
   const labelWidth = Math.max(112, labelText.length * 6.4);
   let labelPos = clampPointLabelPosition({ box, x: cx, y: cy, labelWidth });
@@ -89,33 +78,6 @@ export function drawPr({ svg, pr, threshold, fmt, highlightCellKey = null }) {
       ...labelPos,
       y: Math.max(box.top + 14, Math.min(labelPos.y, legendRect.top - 6)),
     };
-  }
-
-  if (highlightStroke) {
-    svg.appendChild(
-      createSvgEl("circle", {
-        cx,
-        cy,
-        r: layout.cfg.pointRadius + 4.5,
-        fill: "none",
-        stroke: highlightStroke,
-        "stroke-width": 8,
-        opacity: 0.2,
-        "pointer-events": "none",
-      })
-    );
-    svg.appendChild(
-      createSvgEl("circle", {
-        cx,
-        cy,
-        r: layout.cfg.pointRadius + 2.5,
-        fill: "none",
-        stroke: highlightStroke,
-        "stroke-width": 2.5,
-        opacity: 0.95,
-        "pointer-events": "none",
-      })
-    );
   }
 
   svg.appendChild(
