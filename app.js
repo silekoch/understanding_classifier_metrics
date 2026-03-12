@@ -1,7 +1,6 @@
 import { PRESETS } from "./presets.js";
-import { createInitialState } from "./core/state.js";
+import { createInitialControlValues, createInitialState } from "./core/state.js";
 import { createStateStore } from "./core/state-store.js";
-import { CONTROL_SPECS } from "./core/control-specs.js";
 import { assertValidPresets } from "./core/preset-validation.js";
 import { fmt, fmtPct } from "./core/format.js";
 import { computeMetricCurves, computeOperatingPoint } from "./core/metrics.js";
@@ -33,24 +32,12 @@ const view = {
 };
 const ids = getIds(document);
 const store = createStateStore({
-  ...state.controls,
+  ...createInitialControlValues(),
   metricTrendHoverKey: state.ui.metricTrendHoverKey,
 });
-const CONTROL_KEYS = Object.keys(CONTROL_SPECS);
 
 function getControl(key) {
   return store.get(key);
-}
-
-function getControlSnapshot() {
-  const snapshot = {
-    preset: getControl("preset"),
-    threshold: getControl("threshold"),
-  };
-  for (const key of CONTROL_KEYS) {
-    snapshot[key] = getControl(key);
-  }
-  return snapshot;
 }
 
 const { applyByKey: shapeApplyByKey } = wireShapeControls({
@@ -185,7 +172,7 @@ function renderAll() {
 }
 
 function regenerateAndRender() {
-  state.computed.data = generateData(getControlSnapshot(), getActivePreset());
+  state.computed.data = generateData(store.get(), getActivePreset());
   updateThresholdRange();
   computeEverything();
   state.computed.metricCurves = computeMetricCurves(

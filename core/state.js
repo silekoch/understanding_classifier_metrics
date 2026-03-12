@@ -4,13 +4,16 @@ const CONTROL_DEFAULTS = Object.fromEntries(
   Object.entries(CONTROL_SPECS).map(([key, spec]) => [key, spec.default])
 );
 
+export function createInitialControlValues() {
+  return {
+    preset: "separated",
+    ...CONTROL_DEFAULTS,
+    threshold: 1,
+  };
+}
+
 export function createInitialState() {
   return {
-    controls: {
-      preset: "separated",
-      ...CONTROL_DEFAULTS,
-      threshold: 1,
-    },
     computed: {
       thresholdMin: 0,
       thresholdMax: 1,

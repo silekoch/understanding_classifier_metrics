@@ -34,7 +34,7 @@ describe("url state restore", () => {
     };
 
     try {
-      const restored = restoreStateFromUrl({
+      restoreStateFromUrl({
         store,
         ids,
         presets,
@@ -42,7 +42,6 @@ describe("url state restore", () => {
         urlBoolKeys: URL_BOOL_KEYS,
       });
 
-      expect(restored).toBe(true);
       expect(store.get("preset")).toBe("separated");
       expect(store.get("muNeg")).toBe(0.8);
       expect(ids.advancedDetails.open).toBe(true);
@@ -65,7 +64,7 @@ describe("url state restore", () => {
     };
 
     try {
-      const restored = restoreStateFromUrl({
+      restoreStateFromUrl({
         store,
         ids,
         presets,
@@ -74,7 +73,6 @@ describe("url state restore", () => {
         onIssue,
       });
 
-      expect(restored).toBe(true);
       expect(store.get("preset")).toBe("separated");
       expect(store.get("muNeg")).toBe(0);
       expect(ids.advancedDetails.open).toBe(false);

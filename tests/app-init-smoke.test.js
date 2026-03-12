@@ -4,6 +4,7 @@ import { CONTROL_SPECS } from "../core/control-specs.js";
 function makeIds() {
   const ids = {
     preset: { value: "separated" },
+    statusBanner: { hidden: true, textContent: "", classList: { remove: () => {}, add: () => {} } },
     metricsText: { textContent: "" },
     distSvg: { _drawn: false },
     confusionSvg: { _drawn: false },

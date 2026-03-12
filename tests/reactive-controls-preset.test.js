@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { CONTROL_SPECS } from "../core/control-specs.js";
-import { createInitialState } from "../core/state.js";
+import { createInitialControlValues, createInitialState } from "../core/state.js";
 import { createStateStore } from "../core/state-store.js";
 import { wireReactiveControls } from "../ui/reactive-controls.js";
 import { wireShapeControls } from "../ui/reactive-shape-controls.js";
@@ -32,7 +32,7 @@ describe("preset reactive wiring", () => {
   it("notifies key subscribers on preset apply and triggers one full render", () => {
     const state = createInitialState();
     const store = createStateStore({
-      ...state.controls,
+      ...createInitialControlValues(),
       metricTrendHoverKey: state.ui.metricTrendHoverKey,
     });
     const ids = makeIds();

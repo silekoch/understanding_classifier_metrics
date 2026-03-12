@@ -122,7 +122,7 @@ export function scheduleUrlSync({ state, saveStateToUrl, delayMs = 120 }) {
 export function restoreStateFromUrl({ store, ids, presets, urlNumKeys, urlBoolKeys, onIssue = null }) {
   const params = new URLSearchParams(window.location.search);
   if (!params.toString()) {
-    return false;
+    return;
   }
   const issues = [];
 
@@ -136,5 +136,4 @@ export function restoreStateFromUrl({ store, ids, presets, urlNumKeys, urlBoolKe
   if (issues.length && typeof onIssue === "function") {
     onIssue(formatRestoreIssues(issues));
   }
-  return true;
 }
