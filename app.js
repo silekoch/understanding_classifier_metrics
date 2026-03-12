@@ -15,7 +15,7 @@ import { initHandlers } from "./ui/controls.js";
 import { restoreStateFromUrl, saveStateToUrl, scheduleUrlSync } from "./ui/url-state.js";
 import { applyPresetValues, syncControlOutputs } from "./ui/preset-controls.js";
 import { getIds } from "./ui/dom-ids.js";
-import { readControls } from "./ui/control-values.js";
+import { writeControls } from "./ui/control-values.js";
 import { URL_BOOL_KEYS, URL_NUM_KEYS } from "./ui/url-state-keys.js";
 import { renderMetricsText } from "./ui/metrics-text.js";
 import { runStartupRender } from "./ui/startup.js";
@@ -41,11 +41,6 @@ function syncControlsFromStore() {
     state.controls[key] = store.get(key);
   }
 }
-
-const readControlValues = () => {
-  readControls({ ids, store });
-  syncControlsFromStore();
-};
 
 const { applyByKey: shapeApplyByKey } = wireShapeControls({
   store,
@@ -223,9 +218,9 @@ function init() {
   initAppHandlers();
   clearStatusBanner({ el: ids.statusBanner });
   restoreStateFromUrl({
+    store,
     ids,
     presets: PRESETS,
-    applyPresetValues: (name) => applyPresetValues({ ids, presets: PRESETS, name }),
     urlNumKeys: URL_NUM_KEYS,
     urlBoolKeys: URL_BOOL_KEYS,
     onIssue: (message) =>
@@ -235,7 +230,8 @@ function init() {
         message,
       }),
   });
-  readControlValues();
+  writeControls({ ids, store });
+  syncControlsFromStore();
   runStartupRender({
     regenerateAndRender,
   });
