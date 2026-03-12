@@ -239,19 +239,20 @@ svg {
   outline: none;
 }
 
-.metrics {
-  position: relative;
-}
-
 #metricTrendSvg {
   touch-action: none;
 }
 
+.metric-trend-wrap {
+  position: relative;
+}
+
 .metric-tooltip {
   position: absolute;
-  top: 38px;
+  top: 10px;
   right: 10px;
   width: 246px;
+  max-width: calc(100% - 20px);
   padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid rgba(0, 0, 0, 0.22);
