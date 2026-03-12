@@ -8,6 +8,37 @@ import {
   drawLegend,
 } from "./svg.js";
 
+function rectsOverlap(a, b) {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
+function labelBounds({ x, y, width, height = 12 }) {
+  return {
+    left: x,
+    right: x + width,
+    top: y - height,
+    bottom: y + 4,
+  };
+}
+
+function prLegendBounds(box, cfg, labels) {
+  const row = cfg.legendRow || 18;
+  const lineLen = cfg.legendLine || 20;
+  const pad = cfg.legendPad || 10;
+  const startY = box.top + box.height - pad - (labels.length - 1) * row;
+  const maxLabelWidth = Math.max(...labels.map((label) => label.length * 6.4));
+  const x1 = box.left + pad;
+  const x2 = x1 + lineLen;
+  const textX = x2 + 6;
+
+  return {
+    left: x1 - 2,
+    right: textX + maxLabelWidth + 2,
+    top: startY - 12,
+    bottom: startY + (labels.length - 1) * row + 6,
+  };
+}
+
 export function drawPr({ svg, pr, threshold, fmt }) {
   clear(svg);
 
@@ -33,7 +64,21 @@ export function drawPr({ svg, pr, threshold, fmt }) {
   const op = pr.op;
   const cx = box.left + op.recall * box.width;
   const cy = box.top + (1 - op.precision) * box.height;
-  const labelPos = clampPointLabelPosition({ box, x: cx, y: cy });
+  const labelText = `threshold = ${fmt(threshold, 3)}`;
+  const labelWidth = Math.max(112, labelText.length * 6.4);
+  let labelPos = clampPointLabelPosition({ box, x: cx, y: cy, labelWidth });
+  const legendLabels = ["Empirical PR", `Random baseline (${fmt(pr.prevalence, 3)})`];
+  const legendItems = [
+    { label: legendLabels[0], color: "var(--emp)" },
+    { label: legendLabels[1], color: "var(--diag)", dash: "6 6" },
+  ];
+  const legendRect = prLegendBounds(box, layout.cfg, legendLabels);
+  if (rectsOverlap(labelBounds({ ...labelPos, width: labelWidth }), legendRect)) {
+    labelPos = {
+      ...labelPos,
+      y: Math.max(box.top + 14, Math.min(labelPos.y, legendRect.top - 6)),
+    };
+  }
 
   svg.appendChild(
     createSvgEl("circle", {
@@ -52,18 +97,9 @@ export function drawPr({ svg, pr, threshold, fmt }) {
       y: labelPos.y,
       class: "legend",
     })
-  ).textContent = `threshold = ${fmt(threshold, 3)}`;
+  ).textContent = labelText;
 
-  drawLegend(
-    svg,
-    [
-      { label: "Empirical PR", color: "var(--emp)" },
-      { label: `Random baseline (${fmt(pr.prevalence, 3)})`, color: "var(--diag)", dash: "6 6" },
-    ],
-    box,
-    layout.cfg,
-    "inside-left"
-  );
+  drawLegend(svg, legendItems, box, layout.cfg, "inside-left");
 
   return box;
 }
