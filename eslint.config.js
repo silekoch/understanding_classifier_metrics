@@ -1,6 +1,8 @@
 import js from "@eslint/js";
 import globals from "globals";
 import importX from "eslint-plugin-import-x";
+import vitest from "eslint-plugin-vitest";
+import playwright from "eslint-plugin-playwright";
 
 export default [
   {
@@ -38,6 +40,7 @@ export default [
           IIFEs: true,
         },
       ],
+      "no-duplicate-imports": "error",
       "no-unused-vars": [
         "error",
         {
@@ -54,6 +57,21 @@ export default [
           unusedExports: true,
           missingExports: false,
           ignoreExports: ["eslint.config.js", "e2e/**"],
+        },
+      ],
+    },
+  },
+  {
+    files: ["app.js", "presets.js", "core/**/*.js", "ui/**/*.js", "viz/**/*.js"],
+    rules: {
+      "import-x/no-extraneous-dependencies": [
+        "error",
+        {
+          devDependencies: false,
+          optionalDependencies: false,
+          peerDependencies: false,
+          bundledDependencies: false,
+          packageDir: ["."],
         },
       ],
     },
@@ -113,6 +131,38 @@ export default [
           IIFEs: true,
         },
       ],
+    },
+  },
+  {
+    files: ["tests/**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+    plugins: {
+      vitest,
+    },
+    rules: {
+      "vitest/no-focused-tests": "error",
+      "vitest/no-disabled-tests": "error",
+      "vitest/expect-expect": "error",
+    },
+  },
+  {
+    files: ["e2e/**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+    plugins: {
+      playwright,
+    },
+    rules: {
+      "playwright/no-focused-test": "error",
+      "playwright/no-skipped-test": "error",
+      "playwright/no-wait-for-timeout": "error",
     },
   },
 ];
