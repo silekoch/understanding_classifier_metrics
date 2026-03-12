@@ -33,6 +33,32 @@ export function thresholdFromDistPointer({ evt, ids, view, getThreshold }) {
   return distView.minX + u * (distView.maxX - distView.minX);
 }
 
+function thresholdFromRocPointer({ evt, ids, state, view, getThreshold }) {
+  const box = view.rocClickBox;
+  if (!box) {
+    return getThreshold();
+  }
+
+  const point = eventToSvgCoordinates(evt, ids.rocSvg, SVG_VIEW_FALLBACK.width, SVG_VIEW_FALLBACK.height);
+  const fpr = clamp((point.x - box.left) / box.width, 0, 1);
+  const tpr = clamp(1 - (point.y - box.top) / box.height, 0, 1);
+  const nearest = nearestFiniteThreshold(state.computed.roc.empirical, fpr, tpr);
+  return nearest ? nearest.threshold : getThreshold();
+}
+
+function thresholdFromPrPointer({ evt, ids, state, view, getThreshold }) {
+  const box = view.prClickBox;
+  if (!box) {
+    return getThreshold();
+  }
+
+  const point = eventToSvgCoordinates(evt, ids.prSvg, SVG_VIEW_FALLBACK.width, SVG_VIEW_FALLBACK.height);
+  const recall = clamp((point.x - box.left) / box.width, 0, 1);
+  const precision = clamp(1 - (point.y - box.top) / box.height, 0, 1);
+  const nearest = nearestFiniteThreshold(state.computed.pr.points, recall, precision, "recall", "precision");
+  return nearest ? nearest.threshold : getThreshold();
+}
+
 function isPointInBox(point, box) {
   return (
     point.x >= box.left &&
@@ -74,6 +100,21 @@ export function isThresholdTarget(el) {
   return role === "threshold-handle" || role === "threshold-line";
 }
 
+function hasRole(el, role) {
+  if (!el || typeof el.getAttribute !== "function") {
+    return false;
+  }
+  return el.getAttribute("data-role") === role;
+}
+
+function getMatrixCellKeyFromTarget(target) {
+  if (!target || typeof target.getAttribute !== "function") {
+    return null;
+  }
+  const key = target.getAttribute("data-matrix-cell-key");
+  return key || null;
+}
+
 export function attachRocClickHandler({ ids, state, view, setThreshold }) {
   ids.rocSvg.addEventListener("click", (evt) => {
     const box = view.rocClickBox;
@@ -94,6 +135,46 @@ export function attachRocClickHandler({ ids, state, view, setThreshold }) {
     }
 
     setThreshold(nearest.threshold);
+  });
+}
+
+export function attachRocDragHandler({ ids, state, view, setThreshold, getThreshold }) {
+  ids.rocSvg.addEventListener("pointerdown", (evt) => {
+    if (!hasRole(evt.target, "roc-op-dot")) {
+      return;
+    }
+    evt.preventDefault();
+    state.ui.draggingRocThreshold = true;
+    ids.rocSvg.setPointerCapture(evt.pointerId);
+    setThreshold(thresholdFromRocPointer({ evt, ids, state, view, getThreshold }));
+  });
+
+  ids.rocSvg.addEventListener("pointermove", (evt) => {
+    if (!state.ui.draggingRocThreshold) {
+      return;
+    }
+    evt.preventDefault();
+    setThreshold(thresholdFromRocPointer({ evt, ids, state, view, getThreshold }));
+  });
+
+  ids.rocSvg.addEventListener("pointerup", (evt) => {
+    if (!state.ui.draggingRocThreshold) {
+      return;
+    }
+    state.ui.draggingRocThreshold = false;
+    if (ids.rocSvg.hasPointerCapture(evt.pointerId)) {
+      ids.rocSvg.releasePointerCapture(evt.pointerId);
+    }
+  });
+
+  ids.rocSvg.addEventListener("pointercancel", (evt) => {
+    if (!state.ui.draggingRocThreshold) {
+      return;
+    }
+    state.ui.draggingRocThreshold = false;
+    if (ids.rocSvg.hasPointerCapture(evt.pointerId)) {
+      ids.rocSvg.releasePointerCapture(evt.pointerId);
+    }
   });
 }
 
@@ -123,6 +204,64 @@ export function attachPrClickHandler({ ids, state, view, setThreshold }) {
     }
 
     setThreshold(nearest.threshold);
+  });
+}
+
+export function attachPrDragHandler({ ids, state, view, setThreshold, getThreshold }) {
+  ids.prSvg.addEventListener("pointerdown", (evt) => {
+    if (!hasRole(evt.target, "pr-op-dot")) {
+      return;
+    }
+    evt.preventDefault();
+    state.ui.draggingPrThreshold = true;
+    ids.prSvg.setPointerCapture(evt.pointerId);
+    setThreshold(thresholdFromPrPointer({ evt, ids, state, view, getThreshold }));
+  });
+
+  ids.prSvg.addEventListener("pointermove", (evt) => {
+    if (!state.ui.draggingPrThreshold) {
+      return;
+    }
+    evt.preventDefault();
+    setThreshold(thresholdFromPrPointer({ evt, ids, state, view, getThreshold }));
+  });
+
+  ids.prSvg.addEventListener("pointerup", (evt) => {
+    if (!state.ui.draggingPrThreshold) {
+      return;
+    }
+    state.ui.draggingPrThreshold = false;
+    if (ids.prSvg.hasPointerCapture(evt.pointerId)) {
+      ids.prSvg.releasePointerCapture(evt.pointerId);
+    }
+  });
+
+  ids.prSvg.addEventListener("pointercancel", (evt) => {
+    if (!state.ui.draggingPrThreshold) {
+      return;
+    }
+    state.ui.draggingPrThreshold = false;
+    if (ids.prSvg.hasPointerCapture(evt.pointerId)) {
+      ids.prSvg.releasePointerCapture(evt.pointerId);
+    }
+  });
+}
+
+export function attachConfusionMatrixHandlers({ ids, setMatrixHoverCell, toggleMatrixPinnedCell }) {
+  ids.confusionSvg.addEventListener("pointermove", (evt) => {
+    setMatrixHoverCell(getMatrixCellKeyFromTarget(evt.target));
+  });
+
+  ids.confusionSvg.addEventListener("pointerleave", () => {
+    setMatrixHoverCell(null);
+  });
+
+  ids.confusionSvg.addEventListener("click", (evt) => {
+    const key = getMatrixCellKeyFromTarget(evt.target);
+    if (!key) {
+      return;
+    }
+    toggleMatrixPinnedCell(key);
   });
 }
 

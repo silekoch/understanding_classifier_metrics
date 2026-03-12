@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  attachConfusionMatrixHandlers,
   isThresholdTarget,
   nearestFiniteThreshold,
   thresholdFromDistPointer,
@@ -52,5 +53,46 @@ describe("chart interaction helpers", () => {
     expect(thresholdFromMetricTrendPointer({ evt: {}, state, ids, view, getThreshold: () => 0.42 })).toBe(
       0.42
     );
+  });
+
+  it("wires confusion-matrix hover and click cell keys", () => {
+    const listeners = {};
+    const confusionSvg = {
+      addEventListener: (name, fn) => {
+        listeners[name] = fn;
+      },
+    };
+    const hovered = [];
+    const toggled = [];
+    attachConfusionMatrixHandlers({
+      ids: { confusionSvg },
+      setMatrixHoverCell: (key) => hovered.push(key),
+      toggleMatrixPinnedCell: (key) => toggled.push(key),
+    });
+
+    listeners.pointermove({
+      target: {
+        getAttribute: (name) => (name === "data-matrix-cell-key" ? "fp" : null),
+      },
+    });
+    listeners.pointermove({
+      target: {
+        getAttribute: () => null,
+      },
+    });
+    listeners.click({
+      target: {
+        getAttribute: (name) => (name === "data-matrix-cell-key" ? "tp" : null),
+      },
+    });
+    listeners.click({
+      target: {
+        getAttribute: () => null,
+      },
+    });
+    listeners.pointerleave();
+
+    expect(hovered).toEqual(["fp", null, null]);
+    expect(toggled).toEqual(["tp"]);
   });
 });

@@ -5,6 +5,8 @@ import { DIST_LAYOUT } from "./layout-config.js";
 import { drawThresholdMarker, raiseThresholdLabel } from "./threshold-marker.js";
 
 const CLASS_FILL_OPACITY = 0.4;
+const GLOW_OUTER_STROKE = 8;
+const GLOW_INNER_STROKE = 2.5;
 
 function histogram(values, bins, min, max) {
   const out = new Array(bins).fill(0);
@@ -116,6 +118,77 @@ function drawHistogramBars({ svg, box, bins, hNeg, hPos, yMax }) {
   }
 }
 
+function getCellHighlightSpec(cellKey) {
+  if (cellKey === "tp") {
+    return { classKey: "pos", predictedPositive: true };
+  }
+  if (cellKey === "fn") {
+    return { classKey: "pos", predictedPositive: false };
+  }
+  if (cellKey === "fp") {
+    return { classKey: "neg", predictedPositive: true };
+  }
+  if (cellKey === "tn") {
+    return { classKey: "neg", predictedPositive: false };
+  }
+  return null;
+}
+
+function drawHistogramHighlightGlow({ svg, box, bins, minX, maxX, threshold, hNeg, hPos, yMax, cellKey }) {
+  const spec = getCellHighlightSpec(cellKey);
+  if (!spec) {
+    return;
+  }
+
+  const series = spec.classKey === "pos" ? hPos : hNeg;
+  const stroke = spec.classKey === "pos" ? "var(--pos)" : "var(--neg)";
+  const binWidthScore = (maxX - minX) / bins;
+  const binW = box.width / bins;
+
+  for (let i = 0; i < bins; i += 1) {
+    const count = series[i];
+    if (count <= 0) {
+      continue;
+    }
+    const binCenter = minX + (i + 0.5) * binWidthScore;
+    const inPredPos = binCenter >= threshold;
+    if (inPredPos !== spec.predictedPositive) {
+      continue;
+    }
+
+    const h = (count / yMax) * box.height;
+    const x = box.left + i * binW;
+    const y = box.top + box.height - h;
+
+    svg.appendChild(
+      createSvgEl("rect", {
+        x,
+        y,
+        width: binW - 1,
+        height: h,
+        fill: "none",
+        stroke,
+        "stroke-width": GLOW_OUTER_STROKE,
+        opacity: 0.2,
+        "pointer-events": "none",
+      })
+    );
+    svg.appendChild(
+      createSvgEl("rect", {
+        x,
+        y,
+        width: binW - 1,
+        height: h,
+        fill: "none",
+        stroke,
+        "stroke-width": GLOW_INNER_STROKE,
+        opacity: 0.9,
+        "pointer-events": "none",
+      })
+    );
+  }
+}
+
 function drawLegend({ svg, box }) {
   appendText(
     svg,
@@ -176,7 +249,7 @@ function getLegendAvoidRect(box) {
   };
 }
 
-export function drawDist({ svg, data, threshold, fmt }) {
+export function drawDist({ svg, data, threshold, fmt, highlightCellKey = null }) {
   clear(svg);
 
   const box = DIST_LAYOUT.box;
@@ -191,6 +264,18 @@ export function drawDist({ svg, data, threshold, fmt }) {
 
   drawAxes({ svg, box, minX, maxX, yMax: yMaxWithHeadroom, fmt });
   drawHistogramBars({ svg, box, bins, hNeg, hPos, yMax: yMaxWithHeadroom });
+  drawHistogramHighlightGlow({
+    svg,
+    box,
+    bins,
+    minX,
+    maxX,
+    threshold,
+    hNeg,
+    hPos,
+    yMax: yMaxWithHeadroom,
+    cellKey: highlightCellKey,
+  });
   drawThresholdMarker({
     svg,
     box,

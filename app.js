@@ -36,9 +36,17 @@ const store = createStateStore({
   metricTrendHoverKey: state.ui.metricTrendHoverKey,
   metricTooltipKey: state.ui.metricTooltipKey,
 });
+const MATRIX_CELL_KEYS = new Set(["tp", "fp", "tn", "fn"]);
 
 function getControl(key) {
   return store.get(key);
+}
+
+function normalizeMatrixCellKey(cellKey) {
+  if (!MATRIX_CELL_KEYS.has(cellKey)) {
+    return null;
+  }
+  return cellKey;
 }
 
 const { applyByKey: shapeApplyByKey } = wireShapeControls({
@@ -136,34 +144,67 @@ function renderMetricTrend() {
   });
 }
 
-function renderThresholdViews() {
+function getActiveMatrixCellKey() {
+  return state.ui.matrixHoverCellKey || state.ui.matrixPinnedCellKey;
+}
+
+function renderThresholdViews({ persistUrl = true } = {}) {
   const threshold = getControl("threshold");
+  const matrixHighlightCellKey = getActiveMatrixCellKey();
   updateOperatingPoint();
   view.distView = drawDist({
     svg: ids.distSvg,
     data: state.computed.data,
     threshold,
     fmt,
+    highlightCellKey: matrixHighlightCellKey,
   });
   drawConfusionMatrix({
     svg: ids.confusionSvg,
     op: state.computed.roc.op,
     fmtPct,
+    highlightCellKey: matrixHighlightCellKey,
   });
   view.rocClickBox = drawRoc({
     svg: ids.rocSvg,
     roc: state.computed.roc,
     threshold,
     fmt,
+    highlightCellKey: matrixHighlightCellKey,
   });
   view.prClickBox = drawPr({
     svg: ids.prSvg,
     pr: state.computed.pr,
     threshold,
     fmt,
+    highlightCellKey: matrixHighlightCellKey,
   });
   renderMetricTrend();
-  schedulePersistUrlState();
+  if (persistUrl) {
+    schedulePersistUrlState();
+  }
+}
+
+function applyMatrixHoverCell(nextCellKey) {
+  const next = normalizeMatrixCellKey(nextCellKey);
+  if (Object.is(state.ui.matrixHoverCellKey, next)) {
+    return;
+  }
+  state.ui.matrixHoverCellKey = next;
+  renderThresholdViews({ persistUrl: false });
+}
+
+function toggleMatrixPinnedCell(cellKey) {
+  const normalized = normalizeMatrixCellKey(cellKey);
+  if (!normalized) {
+    return;
+  }
+  const nextPinned = state.ui.matrixPinnedCellKey === normalized ? null : normalized;
+  if (Object.is(state.ui.matrixPinnedCellKey, nextPinned)) {
+    return;
+  }
+  state.ui.matrixPinnedCellKey = nextPinned;
+  renderThresholdViews({ persistUrl: false });
 }
 
 function renderAll() {
@@ -193,6 +234,8 @@ function initAppHandlers() {
       applyThreshold,
       applySeed: applyByKey.seed,
       applyMetricTrendHoverState,
+      applyMatrixHoverCell,
+      toggleMatrixPinnedCell,
     },
     applyByKey,
     deps: {

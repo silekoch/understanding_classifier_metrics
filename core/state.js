@@ -26,8 +26,12 @@ export function createInitialState() {
     ui: {
       metricTrendHoverKey: null,
       metricTooltipKey: null,
+      matrixHoverCellKey: null,
+      matrixPinnedCellKey: null,
       draggingThreshold: false,
       draggingMetricThreshold: false,
+      draggingRocThreshold: false,
+      draggingPrThreshold: false,
       suppressReactiveRegenerate: false,
       urlSyncTimer: null,
     },

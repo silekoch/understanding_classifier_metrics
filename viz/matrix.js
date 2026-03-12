@@ -8,6 +8,8 @@ const cells = [
   { key: "fp", label: "FP", col: 0, row: 1, color: "var(--neg)", denomKey: "N" },
   { key: "tn", label: "TN", col: 1, row: 1, color: "var(--neg)", denomKey: "N" },
 ];
+const HIGHLIGHT_OUTER_STROKE = 10;
+const HIGHLIGHT_INNER_STROKE = 3;
 
 function appendText(svg, attrs, text) {
   svg.appendChild(createSvgEl("text", attrs)).textContent = text;
@@ -91,6 +93,37 @@ function drawCellSquare(svg, { x, y, cell }) {
   );
 }
 
+function drawCellGlow(svg, { x, y, cell }) {
+  svg.appendChild(
+    createSvgEl("rect", {
+      x: x + 1,
+      y: y + 1,
+      width: grid.cellW - 2,
+      height: grid.cellH - 2,
+      fill: "none",
+      stroke: cell.color,
+      "stroke-width": HIGHLIGHT_OUTER_STROKE,
+      opacity: 0.22,
+      "stroke-linejoin": "round",
+      "pointer-events": "none",
+    })
+  );
+  svg.appendChild(
+    createSvgEl("rect", {
+      x: x + 1,
+      y: y + 1,
+      width: grid.cellW - 2,
+      height: grid.cellH - 2,
+      fill: "none",
+      stroke: cell.color,
+      "stroke-width": HIGHLIGHT_INNER_STROKE,
+      opacity: 0.95,
+      "stroke-linejoin": "round",
+      "pointer-events": "none",
+    })
+  );
+}
+
 function drawCellInnerBox(svg, { x, y, cell, rate }) {
   if (rate <= 0) {
     return;
@@ -135,7 +168,23 @@ function drawCellTexts(svg, { x, y, cell, count, rate, fmtPct }) {
   );
 }
 
-function drawCell(svg, { cell, op, fmtPct }) {
+function drawCellHitbox(svg, { x, y, cell }) {
+  svg.appendChild(
+    createSvgEl("rect", {
+      x,
+      y,
+      width: grid.cellW,
+      height: grid.cellH,
+      fill: "transparent",
+      stroke: "none",
+      "data-role": "matrix-cell-hitbox",
+      "data-matrix-cell-key": cell.key,
+      style: "cursor: pointer;",
+    })
+  );
+}
+
+function drawCell(svg, { cell, op, fmtPct, highlighted }) {
   const count = op[cell.key];
   const denom = op[cell.denomKey];
   const rate = denom > 0 ? count / denom : 0;
@@ -144,17 +193,21 @@ function drawCell(svg, { cell, op, fmtPct }) {
 
   drawCellSquare(svg, { x, y, cell });
   drawCellInnerBox(svg, { x, y, cell, rate });
+  if (highlighted) {
+    drawCellGlow(svg, { x, y, cell });
+  }
   drawCellTexts(svg, { x, y, cell, count, rate, fmtPct });
+  drawCellHitbox(svg, { x, y, cell });
 }
 
-export function drawConfusionMatrix({ svg, op, fmtPct }) {
+export function drawConfusionMatrix({ svg, op, fmtPct, highlightCellKey = null }) {
   clear(svg);
 
   const total = op.tp + op.fp + op.tn + op.fn;
   drawAxisLabels(svg);
 
   for (const cell of cells) {
-    drawCell(svg, { cell, op, fmtPct });
+    drawCell(svg, { cell, op, fmtPct, highlighted: cell.key === highlightCellKey });
   }
 
   appendText(
