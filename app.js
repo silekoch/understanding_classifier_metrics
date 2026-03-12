@@ -21,6 +21,7 @@ import { runStartupRender } from "./ui/startup.js";
 import { wireShapeControls } from "./ui/reactive-shape-controls.js";
 import { wireReactiveControls } from "./ui/reactive-controls.js";
 import { clearStatusBanner, showStatusBanner } from "./ui/status-banner.js";
+import { renderMetricTooltip } from "./ui/metric-tooltip.js";
 
 const state = createInitialState();
 const view = {
@@ -127,6 +128,10 @@ function renderMetricTrend() {
     thresholdMin: state.computed.thresholdMin,
     thresholdMax: state.computed.thresholdMax,
     fmt,
+  });
+  renderMetricTooltip({
+    el: ids.metricTooltip,
+    metricKey: state.ui.metricTrendHoverKey,
   });
 }
 

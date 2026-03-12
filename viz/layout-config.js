@@ -56,7 +56,5 @@ export const METRIC_TREND_LAYOUT = {
   legendLine: 18,
   legendLabelGap: 6,
   legendValueOffset: 132,
-  tooltipWidth: 168,
-  tooltipWrapChars: 28,
   axisLabelYOffset: 40,
 };

@@ -68,6 +68,7 @@ const ID_KEYS = [
   "distSvg",
   "confusionSvg",
   "metricTrendSvg",
+  "metricTooltip",
 ];
 
 export function getIds(root = document) {
