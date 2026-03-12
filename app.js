@@ -70,6 +70,7 @@ const {
   regenerateAndRender,
   renderThresholdViews,
   drawMetricTrend: renderMetricTrend,
+  renderConfusionMatrix: renderConfusionMatrixView,
 });
 
 const applyByKey = {
@@ -148,6 +149,16 @@ function getActiveMatrixCellKey() {
   return state.ui.matrixHoverCellKey || state.ui.matrixPinnedCellKey;
 }
 
+function renderConfusionMatrixView() {
+  drawConfusionMatrix({
+    svg: ids.confusionSvg,
+    op: state.computed.roc.op,
+    fmtPct,
+    highlightCellKey: getActiveMatrixCellKey(),
+    highlightMetricKey: state.ui.metricTrendHoverKey,
+  });
+}
+
 function renderThresholdViews({ persistUrl = true } = {}) {
   const threshold = getControl("threshold");
   const matrixHighlightCellKey = getActiveMatrixCellKey();
@@ -159,12 +170,7 @@ function renderThresholdViews({ persistUrl = true } = {}) {
     fmt,
     highlightCellKey: matrixHighlightCellKey,
   });
-  drawConfusionMatrix({
-    svg: ids.confusionSvg,
-    op: state.computed.roc.op,
-    fmtPct,
-    highlightCellKey: matrixHighlightCellKey,
-  });
+  renderConfusionMatrixView();
   view.rocClickBox = drawRoc({
     svg: ids.rocSvg,
     roc: state.computed.roc,

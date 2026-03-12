@@ -8,6 +8,14 @@ const cells = [
   { key: "fp", label: "FP", col: 0, row: 1, color: "var(--neg)", denomKey: "N" },
   { key: "tn", label: "TN", col: 1, row: 1, color: "var(--neg)", denomKey: "N" },
 ];
+const METRIC_CELL_KEYS = {
+  recall: ["tp", "fn"],
+  precision: ["tp", "fp"],
+  specificity: ["tn", "fp"],
+  f1: ["tp", "fp", "fn"],
+  mcc: ["tp", "fp", "tn", "fn"],
+  accuracy: ["tp", "tn"],
+};
 const HIGHLIGHT_OUTER_STROKE = 10;
 const HIGHLIGHT_INNER_STROKE = 3;
 
@@ -200,14 +208,29 @@ function drawCell(svg, { cell, op, fmtPct, highlighted }) {
   drawCellHitbox(svg, { x, y, cell });
 }
 
-export function drawConfusionMatrix({ svg, op, fmtPct, highlightCellKey = null }) {
+function resolveHighlightedCells({ highlightCellKey, highlightMetricKey }) {
+  const out = new Set();
+  if (highlightCellKey && cells.some((cell) => cell.key === highlightCellKey)) {
+    out.add(highlightCellKey);
+  }
+  const metricKeys = METRIC_CELL_KEYS[highlightMetricKey];
+  if (metricKeys) {
+    for (const key of metricKeys) {
+      out.add(key);
+    }
+  }
+  return out;
+}
+
+export function drawConfusionMatrix({ svg, op, fmtPct, highlightCellKey = null, highlightMetricKey = null }) {
   clear(svg);
 
   const total = op.tp + op.fp + op.tn + op.fn;
+  const highlighted = resolveHighlightedCells({ highlightCellKey, highlightMetricKey });
   drawAxisLabels(svg);
 
   for (const cell of cells) {
-    drawCell(svg, { cell, op, fmtPct, highlighted: cell.key === highlightCellKey });
+    drawCell(svg, { cell, op, fmtPct, highlighted: highlighted.has(cell.key) });
   }
 
   appendText(

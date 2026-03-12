@@ -71,4 +71,47 @@ describe("preset reactive wiring", () => {
     expect(ids.muNeg.value).toBe("0.8");
     expect(ids.alphaNeg.value).toBe("6");
   });
+
+  it("re-renders matrix highlights when metric hover key changes", () => {
+    const state = createInitialState();
+    const store = createStateStore({
+      ...createInitialControlValues(),
+      metricTrendHoverKey: state.ui.metricTrendHoverKey,
+      metricTooltipKey: state.ui.metricTooltipKey,
+    });
+    const ids = makeIds();
+    const regenerateAndRender = vi.fn();
+    const drawMetricTrend = vi.fn();
+    const renderConfusionMatrix = vi.fn();
+
+    const { applyMetricTrendHoverState } = wireReactiveControls({
+      store,
+      state,
+      ids,
+      presets: PRESETS,
+      applyPresetValues: ({ name }) => {
+        ids.preset.value = name;
+      },
+      regenerateAndRender,
+      renderThresholdViews: vi.fn(),
+      drawMetricTrend,
+      renderConfusionMatrix,
+    });
+
+    applyMetricTrendHoverState("precision", "precision");
+    expect(drawMetricTrend).toHaveBeenCalledTimes(1);
+    expect(renderConfusionMatrix).toHaveBeenCalledTimes(1);
+
+    applyMetricTrendHoverState("precision", null);
+    expect(drawMetricTrend).toHaveBeenCalledTimes(2);
+    expect(renderConfusionMatrix).toHaveBeenCalledTimes(1);
+
+    applyMetricTrendHoverState("precision", null);
+    expect(drawMetricTrend).toHaveBeenCalledTimes(2);
+    expect(renderConfusionMatrix).toHaveBeenCalledTimes(1);
+
+    applyMetricTrendHoverState(null, null);
+    expect(drawMetricTrend).toHaveBeenCalledTimes(3);
+    expect(renderConfusionMatrix).toHaveBeenCalledTimes(2);
+  });
 });

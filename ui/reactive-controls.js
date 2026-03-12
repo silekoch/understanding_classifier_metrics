@@ -17,6 +17,7 @@ export function wireReactiveControls({
   regenerateAndRender,
   renderThresholdViews,
   drawMetricTrend,
+  renderConfusionMatrix = () => {},
 }) {
   store.subscribe("threshold", () => {
     renderThresholdViews();
@@ -71,14 +72,19 @@ export function wireReactiveControls({
 
   function applyMetricTrendHoverState(nextHoverKey, nextTooltipKey) {
     let changed = false;
+    let hoverChanged = false;
     const hoverKey = nextHoverKey || null;
     const tooltipKey = nextTooltipKey || null;
     store.batch(() => {
-      changed = store.set("metricTrendHoverKey", hoverKey) || changed;
+      hoverChanged = store.set("metricTrendHoverKey", hoverKey) || hoverChanged;
+      changed = hoverChanged || changed;
       changed = store.set("metricTooltipKey", tooltipKey) || changed;
     });
     if (changed) {
       drawMetricTrend();
+      if (hoverChanged) {
+        renderConfusionMatrix();
+      }
     }
   }
 
