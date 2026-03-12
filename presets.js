@@ -8,7 +8,7 @@ export const PRESETS = {
     outlierFrac: 0,
     nPerClass: 500,
     samplePosFrac: 0.5,
-    desc: "Expected ROC shape: close to diagonal baseline (high overlap).\nExpected PR shape: near the prevalence baseline with limited lift.",
+    desc: "Expected ROC shape: close to diagonal baseline (high overlap).\nExpected PR shape: near the prevalence baseline with limited lift.\nE.g. weak-signal models where positives and negatives are hard to separate.",
   },
   separated: {
     mode: "normal",
@@ -19,7 +19,7 @@ export const PRESETS = {
     outlierFrac: 0,
     nPerClass: 500,
     samplePosFrac: 0.5,
-    desc: "Expected ROC shape: pronounced top-left belly (good separation).\nExpected PR shape: high precision over a wide recall range.",
+    desc: "Expected ROC shape: pronounced top-left belly (good separation).\nExpected PR shape: high precision over a wide recall range.\nE.g. a strong model on a clean feature set.",
   },
   unequal: {
     mode: "normal",
@@ -30,7 +30,7 @@ export const PRESETS = {
     outlierFrac: 0,
     nPerClass: 600,
     samplePosFrac: 0.5,
-    desc: "Expected ROC shape: asymmetric curvature from unequal variances.",
+    desc: "Expected ROC shape: asymmetric curvature from unequal variances.\nE.g. settings where one class is much more heterogeneous than the other.",
   },
   lognormal: {
     mode: "lognormal",
@@ -42,7 +42,7 @@ export const PRESETS = {
     nPerClass: 700,
     samplePosFrac: 0.5,
     logSigma: 0.7,
-    desc: "Expected ROC shape: smooth but skew-driven bend (not symmetric like Gaussian).",
+    desc: "Expected ROC shape: smooth but skew-driven bend (not symmetric like Gaussian).\nE.g. workflows with multiplicative effects or strongly right-skewed scores (long tail toward higher scores).",
   },
   heavytail: {
     mode: "student_t",
@@ -55,7 +55,7 @@ export const PRESETS = {
     samplePosFrac: 0.5,
     dfNeg: 3,
     dfPos: 3,
-    desc: "Expected ROC shape: flatter shoulders from heavy tails/outliers.",
+    desc: "Expected ROC shape: flatter shoulders from heavy tails/outliers.\nE.g. domains with occasional extreme-score cases and outlier-prone inputs.",
   },
   mixture: {
     mode: "mixture_pos",
@@ -69,7 +69,7 @@ export const PRESETS = {
     mixWeight: 0.24,
     mixOffset: 0.15,
     mixSdMult: 1.1,
-    desc: "Expected ROC shape: visible kink/shoulder from class heterogeneity.",
+    desc: "Expected ROC shape: visible kink/shoulder from class heterogeneity.\nE.g. one class containing multiple sub-populations with different score behavior.",
   },
   zeroinflated: {
     mode: "zero_inflated",
@@ -83,7 +83,7 @@ export const PRESETS = {
     p0Neg: 0.42,
     p0Pos: 0.12,
     zeroValue: 0,
-    desc: "Expected ROC shape: step-like segments from many tied zero scores.\nExpected PR shape: staircase-like segments from the same score ties.",
+    desc: "Expected ROC shape: step-like segments from many tied zero scores.\nExpected PR shape: staircase-like segments from the same score ties.\nE.g. sparse-trigger systems where many cases receive the same floor score.",
   },
   uniform: {
     mode: "uniform",
@@ -127,7 +127,7 @@ export const PRESETS = {
     outlierFrac: 0,
     nPerClass: 700,
     samplePosFrac: 0.5,
-    desc: "Probability-like scores in [0,1] with substantial overlap.",
+    desc: "Probability-like scores in [0,1] with substantial overlap.\nE.g. early model iterations or inherently ambiguous tasks.",
   },
   probOverconfident: {
     mode: "beta",
@@ -138,7 +138,7 @@ export const PRESETS = {
     outlierFrac: 0,
     nPerClass: 700,
     samplePosFrac: 0.5,
-    desc: "Probability-like scores in [0,1] with many near 0/1 and mostly correct confidence.",
+    desc: "Probability-like scores in [0,1] with many near 0/1 and very sharp confidence.",
   },
   probMidrange: {
     mode: "beta",
@@ -159,6 +159,6 @@ export const PRESETS = {
     outlierFrac: 0,
     nPerClass: 700,
     samplePosFrac: 0.5,
-    desc: "Mostly high-confidence correct scores, with a minority of high-confidence mistakes on both classes.",
+    desc: "Mostly high-confidence correct scores, with a minority of high-confidence mistakes on both classes.\nE.g. distribution shift, label noise, or shortcut learning that creates confident failures.",
   },
 };
