@@ -32,7 +32,7 @@ export const MATRIX_LAYOUT = {
   axisTitleY: 28,
   predictedLabelsY: 52,
   yAxisLabelX: 60,
-  actualLabelsX: 132,
+  actualLabelsRightGap: 12,
   actualLabelOffsetY: 4,
   minInnerSize: 6,
   cellTextXOffset: 10,

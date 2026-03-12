@@ -58,20 +58,20 @@ function drawAxisLabels(svg) {
   appendText(
     svg,
     {
-      x: MATRIX_LAYOUT.actualLabelsX,
+      x: grid.left - MATRIX_LAYOUT.actualLabelsRightGap,
       y: grid.top + grid.cellH * 0.5 + MATRIX_LAYOUT.actualLabelOffsetY,
       class: "legend",
-      "text-anchor": "middle",
+      "text-anchor": "end",
     },
     "Actual Positive"
   );
   appendText(
     svg,
     {
-      x: MATRIX_LAYOUT.actualLabelsX,
+      x: grid.left - MATRIX_LAYOUT.actualLabelsRightGap,
       y: grid.top + grid.cellH * 1.5 + MATRIX_LAYOUT.actualLabelOffsetY,
       class: "legend",
-      "text-anchor": "middle",
+      "text-anchor": "end",
     },
     "Actual Negative"
   );
