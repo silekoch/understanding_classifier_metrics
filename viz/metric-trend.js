@@ -4,12 +4,52 @@ import { METRIC_TREND_LAYOUT, METRIC_TREND_VIEW_FALLBACK } from "./layout-config
 import { drawThresholdMarker } from "./threshold-marker.js";
 
 const METRIC_SERIES = [
-  { key: "recall", label: "Recall", color: "#0D9488", width: 2.6 },
-  { key: "precision", label: "Precision", color: "#2563EB", width: 2.4, dash: "10 5" },
-  { key: "specificity", label: "Specificity", color: "#D97706", width: 2.4, dash: "2 5" },
-  { key: "f1", label: "F1 Score", color: "#7C3AED", width: 2.4, dash: "12 4 2 4" },
-  { key: "mcc", label: "MCC", color: "#111111", width: 3.0 },
-  { key: "accuracy", label: "Accuracy", color: "#7A7062", width: 1.8, dash: "5 4" },
+  {
+    key: "recall",
+    label: "Recall",
+    color: "#0D9488",
+    width: 2.6,
+    tooltip: "Recall: of all truly positive cases, the fraction predicted positive.",
+  },
+  {
+    key: "precision",
+    label: "Precision",
+    color: "#2563EB",
+    width: 2.4,
+    dash: "10 5",
+    tooltip: "Precision: of all predicted positive cases, the fraction truly positive.",
+  },
+  {
+    key: "specificity",
+    label: "Specificity",
+    color: "#D97706",
+    width: 2.4,
+    dash: "2 5",
+    tooltip: "Specificity: of all truly negative cases, the fraction predicted negative (1 - FPR).",
+  },
+  {
+    key: "f1",
+    label: "F1 Score",
+    color: "#7C3AED",
+    width: 2.4,
+    dash: "12 4 2 4",
+    tooltip: "F1 Score: harmonic mean of precision and recall.",
+  },
+  {
+    key: "mcc",
+    label: "MCC",
+    color: "#111111",
+    width: 3.0,
+    tooltip: "MCC: balanced correlation-style score using TP, TN, FP, and FN.",
+  },
+  {
+    key: "accuracy",
+    label: "Accuracy",
+    color: "#7A7062",
+    width: 1.8,
+    dash: "5 4",
+    tooltip: "Accuracy: fraction of all predictions that are correct.",
+  },
 ];
 
 function getMetricTrendYRange(curves) {
@@ -194,19 +234,29 @@ function metricValueAtThreshold(points, threshold, thresholdMin, thresholdMax) {
 }
 
 function metricLegendItems(series, hoveredKey, { threshold, thresholdMin, thresholdMax, fmt }) {
-  return series.map(({ key, label, color, dash, width, points }) => {
+  return series.map(({ key, label, color, dash, width, points, tooltip }) => {
     const value = metricValueAtThreshold(points, threshold, thresholdMin, thresholdMax);
     const valueLabel = value == null ? "n/a" : fmt(value, 2);
     return {
       key,
       label,
       valueLabel,
+      tooltip,
       color,
       dash,
       width: (width || 3) + (hoveredKey === key ? 0.8 : 0),
       opacity: hoveredKey && hoveredKey !== key ? 0.25 : 1,
     };
   });
+}
+
+function attachTitle(el, text) {
+  if (!text) {
+    return;
+  }
+  const title = createSvgEl("title", {});
+  title.textContent = text;
+  el.appendChild(title);
 }
 
 function setLegendKey(el, key) {
@@ -245,6 +295,7 @@ function drawMetricLegend({ svg, box, items }) {
       opacity,
     });
     setLegendKey(line, item.key);
+    attachTitle(line, item.tooltip);
     svg.appendChild(line);
 
     const labelText = createSvgEl("text", {
@@ -255,6 +306,7 @@ function drawMetricLegend({ svg, box, items }) {
     });
     setLegendKey(labelText, item.key);
     labelText.textContent = item.label;
+    attachTitle(labelText, item.tooltip);
     svg.appendChild(labelText);
 
     const valueText = createSvgEl("text", {
@@ -266,6 +318,7 @@ function drawMetricLegend({ svg, box, items }) {
     });
     setLegendKey(valueText, item.key);
     valueText.textContent = item.valueLabel;
+    attachTitle(valueText, item.tooltip);
     svg.appendChild(valueText);
   }
 }
