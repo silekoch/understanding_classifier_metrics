@@ -132,7 +132,7 @@ export function attachMetricTrendHandlers({
   view,
   setThreshold,
   getThreshold,
-  setMetricTrendHoverKey,
+  setMetricTrendHoverState,
   metricTrendHoverKeyFromPointer,
 }) {
   ids.metricTrendSvg.addEventListener("pointerdown", (evt) => {
@@ -155,7 +155,7 @@ export function attachMetricTrendHandlers({
       return;
     }
     evt.preventDefault();
-    setMetricTrendHoverKey(null);
+    setMetricTrendHoverState(null, null);
     state.ui.draggingMetricThreshold = true;
     ids.metricTrendSvg.setPointerCapture(evt.pointerId);
     setThreshold(thresholdFromMetricTrendPointer({ evt, state, ids, view, getThreshold }));
@@ -172,16 +172,17 @@ export function attachMetricTrendHandlers({
         ? evt.target.getAttribute("data-legend-key")
         : null;
     if (legendKey) {
-      setMetricTrendHoverKey(legendKey);
+      setMetricTrendHoverState(legendKey, legendKey);
       return;
     }
-    setMetricTrendHoverKey(
+    setMetricTrendHoverState(
       metricTrendHoverKeyFromPointer({
         evt,
         svg: ids.metricTrendSvg,
         box: view.metricTrendBox,
         curves: state.computed.metricCurves,
-      })
+      }),
+      null
     );
   });
 
@@ -209,7 +210,7 @@ export function attachMetricTrendHandlers({
     if (state.ui.draggingMetricThreshold) {
       return;
     }
-    setMetricTrendHoverKey(null);
+    setMetricTrendHoverState(null, null);
   });
 }
 

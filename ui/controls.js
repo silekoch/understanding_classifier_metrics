@@ -7,7 +7,7 @@ import {
 } from "./chart-interactions.js";
 
 export function initHandlers({ ids, state, view, actions, applyByKey, deps }) {
-  const { applyPreset, applyThreshold, applySeed, applyMetricTrendHoverKey } = actions;
+  const { applyPreset, applyThreshold, applySeed, applyMetricTrendHoverState } = actions;
   const { scheduleUrlSync, metricTrendHoverKeyFromPointer, getControl } = deps;
 
   bindReactiveNumericControls({ ids, applyByKey });
@@ -32,7 +32,7 @@ export function initHandlers({ ids, state, view, actions, applyByKey, deps }) {
     view,
     setThreshold: applyThreshold,
     getThreshold: () => getControl("threshold"),
-    setMetricTrendHoverKey: applyMetricTrendHoverKey,
+    setMetricTrendHoverState: applyMetricTrendHoverState,
     metricTrendHoverKeyFromPointer,
   });
   attachDistThresholdHandlers({

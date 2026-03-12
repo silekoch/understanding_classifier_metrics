@@ -34,6 +34,7 @@ const ids = getIds(document);
 const store = createStateStore({
   ...createInitialControlValues(),
   metricTrendHoverKey: state.ui.metricTrendHoverKey,
+  metricTooltipKey: state.ui.metricTooltipKey,
 });
 
 function getControl(key) {
@@ -50,7 +51,7 @@ const { applyByKey: shapeApplyByKey } = wireShapeControls({
 const {
   applyByKey: nonShapeApplyByKey,
   applyThreshold,
-  applyMetricTrendHoverKey,
+  applyMetricTrendHoverState,
   applyPreset,
 } = wireReactiveControls({
   store,
@@ -131,7 +132,7 @@ function renderMetricTrend() {
   });
   renderMetricTooltip({
     el: ids.metricTooltip,
-    metricKey: state.ui.metricTrendHoverKey,
+    metricKey: state.ui.metricTooltipKey,
   });
 }
 
@@ -191,7 +192,7 @@ function initAppHandlers() {
       applyPreset,
       applyThreshold,
       applySeed: applyByKey.seed,
-      applyMetricTrendHoverKey,
+      applyMetricTrendHoverState,
     },
     applyByKey,
     deps: {

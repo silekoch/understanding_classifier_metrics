@@ -25,6 +25,7 @@ export function createInitialState() {
     },
     ui: {
       metricTrendHoverKey: null,
+      metricTooltipKey: null,
       draggingThreshold: false,
       draggingMetricThreshold: false,
       suppressReactiveRegenerate: false,

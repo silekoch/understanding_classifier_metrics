@@ -45,7 +45,10 @@ export function wireReactiveControls({
 
   store.subscribe("metricTrendHoverKey", (nextHoverKey) => {
     state.ui.metricTrendHoverKey = nextHoverKey;
-    drawMetricTrend();
+  });
+
+  store.subscribe("metricTooltipKey", (nextTooltipKey) => {
+    state.ui.metricTooltipKey = nextTooltipKey;
   });
 
   subscribeRegenerateKeys({
@@ -66,8 +69,17 @@ export function wireReactiveControls({
     store.set("threshold", clampedThreshold);
   }
 
-  function applyMetricTrendHoverKey(nextHoverKey) {
-    store.set("metricTrendHoverKey", nextHoverKey || null);
+  function applyMetricTrendHoverState(nextHoverKey, nextTooltipKey) {
+    let changed = false;
+    const hoverKey = nextHoverKey || null;
+    const tooltipKey = nextTooltipKey || null;
+    store.batch(() => {
+      changed = store.set("metricTrendHoverKey", hoverKey) || changed;
+      changed = store.set("metricTooltipKey", tooltipKey) || changed;
+    });
+    if (changed) {
+      drawMetricTrend();
+    }
   }
 
   function applyPreset(name) {
@@ -77,7 +89,7 @@ export function wireReactiveControls({
   return {
     applyByKey,
     applyThreshold,
-    applyMetricTrendHoverKey,
+    applyMetricTrendHoverState,
     applyPreset,
   };
 }
