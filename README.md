@@ -5,6 +5,12 @@ Drag a threshold and watch the confusion matrix, ROC curve, and PR curve all rea
 
 ## Run locally
 
+Use the pinned Node version first:
+
+```bash
+nvm use
+```
+
 Install dependencies and start the Vite dev server:
 
 ```bash
@@ -44,6 +50,8 @@ npm run test:e2e
 npm run format:check
 npm run format
 npm run build
+npm run verify:core
+npm run verify
 npm run check
 ```
 
@@ -76,16 +84,14 @@ npm run hooks:install
 Installed hooks:
 
 - `pre-commit`: staged Prettier/ESLint checks, then `npm test` and `npm run build`
-- `pre-push`: `npm run lint:strict`, `npm test`, and `npm run build`
+- `pre-push`: `npm run verify` (full gate including e2e)
 
 ### CI
 
-GitHub Actions runs the same core checks on each push and pull request:
+GitHub Actions runs the canonical verification gate on each push and pull request:
 
-- `npm run format:check`
-- `npm run lint:strict`
-- `npm test`
-- `npm run build`
+- `npm run test:e2e:install:ci`
+- `npm run verify`
 
 ### GitHub Pages deployment
 

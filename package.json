@@ -4,11 +4,17 @@
   "private": true,
   "type": "module",
   "description": "Interactive playground for understanding classifier metrics.",
+  "engines": {
+    "node": "22.x",
+    "npm": ">=10 <11"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build --base=./",
     "preview": "vite preview",
-    "check": "npm run format:check && npm run lint:strict && npm test && npm run build",
+    "verify:core": "npm run format:check && npm run lint:strict && npm test && npm run build",
+    "verify": "npm run verify:core && npm run test:e2e",
+    "check": "npm run verify:core",
     "test:e2e:install": "playwright install chromium",
     "test:e2e:install:ci": "playwright install --with-deps chromium",
     "test:e2e": "playwright test -c e2e/playwright.config.js",
