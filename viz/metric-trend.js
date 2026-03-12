@@ -324,19 +324,52 @@ export function metricTrendHoverKeyFromPointer({ evt, svg, box, curves }) {
   }
 
   const { yMin, ySpan } = getMetricTrendYRange(curves);
-  const u = clamp((point.x - box.left) / box.width, 0, 1);
+
+  function pointToScreen(p) {
+    const x = box.left + clamp(p.u, 0, 1) * box.width;
+    const yNorm = clamp((p.v - yMin) / ySpan, 0, 1);
+    const y = box.top + (1 - yNorm) * box.height;
+    return { x, y };
+  }
+
+  function distanceToSegment(px, py, ax, ay, bx, by) {
+    const abx = bx - ax;
+    const aby = by - ay;
+    const abLen2 = abx * abx + aby * aby;
+    if (abLen2 <= 1e-12) {
+      return Math.hypot(px - ax, py - ay);
+    }
+    const apx = px - ax;
+    const apy = py - ay;
+    const t = clamp((apx * abx + apy * aby) / abLen2, 0, 1);
+    const cx = ax + t * abx;
+    const cy = ay + t * aby;
+    return Math.hypot(px - cx, py - cy);
+  }
 
   let bestKey = null;
   let bestDist = Infinity;
   for (const item of METRIC_SERIES) {
-    const points = curves[item.key];
-    if (!points || !points.length) {
+    const unitPoints = curves[item.key];
+    if (!unitPoints || !unitPoints.length) {
       continue;
     }
-    const idx = clamp(Math.round(u * (points.length - 1)), 0, points.length - 1);
-    const yNorm = clamp((points[idx].v - yMin) / ySpan, 0, 1);
-    const y = box.top + (1 - yNorm) * box.height;
-    const dist = Math.abs(point.y - y);
+
+    let dist = Infinity;
+    if (unitPoints.length === 1) {
+      const s = pointToScreen(unitPoints[0]);
+      dist = Math.hypot(point.x - s.x, point.y - s.y);
+    } else {
+      for (let i = 1; i < unitPoints.length; i += 1) {
+        const a = pointToScreen(unitPoints[i - 1]);
+        const b = pointToScreen(unitPoints[i]);
+        const segDist = distanceToSegment(point.x, point.y, a.x, a.y, b.x, b.y);
+        if (segDist < dist) {
+          dist = segDist;
+        }
+      }
+    }
+
     if (dist < bestDist) {
       bestDist = dist;
       bestKey = item.key;
