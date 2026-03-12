@@ -52,6 +52,16 @@ const mocks = vi.hoisted(() => {
       accuracy: [],
     })),
     computeOperatingPoint: vi.fn(() => operatingPoint),
+    generateData: vi.fn(() => ({
+      min: 0,
+      max: 1,
+      neg: [{ score: 0.2, label: 0 }],
+      pos: [{ score: 0.8, label: 1 }],
+      all: [
+        { score: 0.2, label: 0 },
+        { score: 0.8, label: 1 },
+      ],
+    })),
   };
 });
 
@@ -108,16 +118,7 @@ vi.mock("../core/metrics.js", () => ({
 }));
 
 vi.mock("../core/data.js", () => ({
-  generateData: () => ({
-    min: 0,
-    max: 1,
-    neg: [{ score: 0.2, label: 0 }],
-    pos: [{ score: 0.8, label: 1 }],
-    all: [
-      { score: 0.2, label: 0 },
-      { score: 0.8, label: 1 },
-    ],
-  }),
+  generateData: mocks.generateData,
 }));
 
 vi.mock("../viz/roc.js", () => ({
@@ -165,6 +166,7 @@ describe("app threshold fast path", () => {
     mocks.computeThresholdBounds.mockClear();
     mocks.computeMetricCurves.mockClear();
     mocks.computeOperatingPoint.mockClear();
+    mocks.generateData.mockClear();
   });
 
   afterEach(() => {
@@ -183,5 +185,21 @@ describe("app threshold fast path", () => {
 
     expect(mocks.computeCurveState).toHaveBeenCalledTimes(1);
     expect(mocks.computeOperatingPoint.mock.calls.length).toBe(initialOperatingCalls + 1);
+  });
+
+  it("renders from store values instead of unsynchronized DOM control values", async () => {
+    await import("../app.js");
+    expect(capturedActions).toBeTruthy();
+
+    const ids = globalThis.__TEST_IDS__;
+    ids.muNeg.value = "999";
+
+    capturedActions.applySeed(42);
+
+    const latestCall = mocks.generateData.mock.calls.at(-1);
+    expect(latestCall).toBeTruthy();
+    const [params] = latestCall;
+    expect(params.seed).toBe(42);
+    expect(params.muNeg).toBe(0);
   });
 });

@@ -91,16 +91,17 @@ function applyAdvancedOpenParam({ params, ids, issues }) {
   ids.advancedDetails.open = parsed;
 }
 
-export function saveStateToUrl({ state, ids, urlNumKeys, urlBoolKeys }) {
+export function saveStateToUrl({ store, ids, urlNumKeys, urlBoolKeys }) {
   const params = new URLSearchParams();
-  params.set("preset", state.controls.preset);
+  params.set("preset", store.get("preset"));
   for (const key of urlNumKeys) {
-    if (typeof state.controls[key] === "number" && Number.isFinite(state.controls[key])) {
-      params.set(key, String(state.controls[key]));
+    const value = store.get(key);
+    if (typeof value === "number" && Number.isFinite(value)) {
+      params.set(key, String(value));
     }
   }
   for (const key of urlBoolKeys) {
-    params.set(key, state.controls[key] ? "1" : "0");
+    params.set(key, store.get(key) ? "1" : "0");
   }
   params.set("advancedOpen", ids.advancedDetails.open ? "1" : "0");
 

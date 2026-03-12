@@ -63,8 +63,8 @@ function updateConditionalParameterUI({ ids, preset }) {
   setHidden(ids.shapeBetaConf, mode !== "beta_conf_mixture");
 }
 
-export function syncControlOutputs({ ids, state, presets, fmt, fmtPct }) {
-  const preset = presets[state.controls.preset] || presets.separated;
+export function syncControlOutputs({ ids, store, presets, fmt, fmtPct }) {
+  const preset = presets[store.get("preset")] || presets.separated;
   const outlierEnabled = preset.mode === "normal";
 
   for (const [key, spec] of Object.entries(CONTROL_SPECS)) {
@@ -75,7 +75,7 @@ export function syncControlOutputs({ ids, state, presets, fmt, fmtPct }) {
     outputEl.textContent = formatControlOutput({
       key,
       spec,
-      value: state.controls[key],
+      value: store.get(key),
       outlierEnabled,
       fmt,
       fmtPct,
@@ -83,7 +83,7 @@ export function syncControlOutputs({ ids, state, presets, fmt, fmtPct }) {
   }
 
   ids.outlierFrac.disabled = !outlierEnabled;
-  ids.seed.value = String(state.controls.seed);
+  ids.seed.value = String(store.get("seed"));
   ids.presetDesc.textContent = preset.desc || "";
 
   updateConditionalParameterUI({ ids, preset });

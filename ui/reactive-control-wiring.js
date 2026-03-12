@@ -6,7 +6,6 @@ function shouldSkipRegenerate(state) {
 
 function subscribeRegenerateKey({ store, key, state, ids, regenerateAndRender }) {
   store.subscribe(key, (nextValue) => {
-    state.controls[key] = nextValue;
     if (ids[key]) {
       ids[key].value = String(nextValue);
     }

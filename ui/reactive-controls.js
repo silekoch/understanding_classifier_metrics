@@ -19,12 +19,10 @@ export function wireReactiveControls({
   drawMetricTrend,
 }) {
   store.subscribe("threshold", (nextThreshold) => {
-    state.controls.threshold = nextThreshold;
     renderThresholdViews();
   });
 
   store.subscribe("preset", (nextPreset) => {
-    state.controls.preset = nextPreset;
     applyPresetValues({ ids, presets, name: nextPreset });
     const preset = presets[nextPreset];
     if (preset) {

@@ -1,6 +1,7 @@
 import { PRESETS } from "./presets.js";
 import { createInitialState } from "./core/state.js";
 import { createStateStore } from "./core/state-store.js";
+import { CONTROL_SPECS } from "./core/control-specs.js";
 import { assertValidPresets } from "./core/preset-validation.js";
 import { fmt, fmtPct } from "./core/format.js";
 import { computeMetricCurves, computeOperatingPoint } from "./core/metrics.js";
@@ -35,11 +36,21 @@ const store = createStateStore({
   ...state.controls,
   metricTrendHoverKey: state.ui.metricTrendHoverKey,
 });
+const CONTROL_KEYS = Object.keys(CONTROL_SPECS);
 
-function syncControlsFromStore() {
-  for (const key of Object.keys(state.controls)) {
-    state.controls[key] = store.get(key);
+function getControl(key) {
+  return store.get(key);
+}
+
+function getControlSnapshot() {
+  const snapshot = {
+    preset: getControl("preset"),
+    threshold: getControl("threshold"),
+  };
+  for (const key of CONTROL_KEYS) {
+    snapshot[key] = getControl(key);
   }
+  return snapshot;
 }
 
 const { applyByKey: shapeApplyByKey } = wireShapeControls({
@@ -71,13 +82,14 @@ const applyByKey = {
 };
 
 function getActivePreset() {
-  return PRESETS[state.controls.preset] || PRESETS.separated;
+  return PRESETS[getControl("preset")] || PRESETS.separated;
 }
 
 function computeEverything() {
+  const threshold = getControl("threshold");
   const { roc, pr } = computeCurveState({
     samples: state.computed.data.all,
-    threshold: state.controls.threshold,
+    threshold,
   });
   state.computed.roc = roc;
   state.computed.pr = pr;
@@ -87,7 +99,7 @@ function updateOperatingPoint() {
   if (!state.computed.data || !state.computed.roc || !state.computed.pr) {
     return;
   }
-  const op = computeOperatingPoint(state.controls.threshold, state.computed.data.all);
+  const op = computeOperatingPoint(getControl("threshold"), state.computed.data.all);
   state.computed.roc.op = op;
   state.computed.pr.op = { recall: op.recall, precision: op.precision };
 }
@@ -95,18 +107,17 @@ function updateOperatingPoint() {
 function updateThresholdRange() {
   const bounds = computeThresholdBounds({
     data: state.computed.data,
-    threshold: state.controls.threshold,
+    threshold: getControl("threshold"),
   });
   state.computed.thresholdMin = bounds.thresholdMin;
   state.computed.thresholdMax = bounds.thresholdMax;
   state.computed.thresholdStep = bounds.thresholdStep;
   store.set("threshold", bounds.threshold, { silent: true });
-  state.controls.threshold = store.get("threshold");
 }
 
 function persistUrlState() {
   saveStateToUrl({
-    state,
+    store,
     ids,
     urlNumKeys: URL_NUM_KEYS,
     urlBoolKeys: URL_BOOL_KEYS,
@@ -126,7 +137,7 @@ function renderMetricTrend() {
     svg: ids.metricTrendSvg,
     curves: state.computed.metricCurves,
     hoveredKey: state.ui.metricTrendHoverKey,
-    threshold: state.controls.threshold,
+    threshold: getControl("threshold"),
     thresholdMin: state.computed.thresholdMin,
     thresholdMax: state.computed.thresholdMax,
     fmt,
@@ -134,11 +145,12 @@ function renderMetricTrend() {
 }
 
 function renderThresholdViews() {
+  const threshold = getControl("threshold");
   updateOperatingPoint();
   view.distView = drawDist({
     svg: ids.distSvg,
     data: state.computed.data,
-    threshold: state.controls.threshold,
+    threshold,
     fmt,
   });
   drawConfusionMatrix({
@@ -149,13 +161,13 @@ function renderThresholdViews() {
   view.rocClickBox = drawRoc({
     svg: ids.rocSvg,
     roc: state.computed.roc,
-    threshold: state.controls.threshold,
+    threshold,
     fmt,
   });
   view.prClickBox = drawPr({
     svg: ids.prSvg,
     pr: state.computed.pr,
-    threshold: state.controls.threshold,
+    threshold,
     fmt,
   });
   renderMetricsText({
@@ -168,12 +180,12 @@ function renderThresholdViews() {
 }
 
 function renderAll() {
-  syncControlOutputs({ ids, state, presets: PRESETS, fmt, fmtPct });
+  syncControlOutputs({ ids, store, presets: PRESETS, fmt, fmtPct });
   renderThresholdViews();
 }
 
 function regenerateAndRender() {
-  state.computed.data = generateData(state.controls, getActivePreset());
+  state.computed.data = generateData(getControlSnapshot(), getActivePreset());
   updateThresholdRange();
   computeEverything();
   state.computed.metricCurves = computeMetricCurves(
@@ -199,6 +211,7 @@ function initAppHandlers() {
     deps: {
       scheduleUrlSync: schedulePersistUrlState,
       metricTrendHoverKeyFromPointer,
+      getControl,
     },
   });
 }
@@ -231,7 +244,6 @@ function init() {
       }),
   });
   writeControls({ ids, store });
-  syncControlsFromStore();
   runStartupRender({
     regenerateAndRender,
   });

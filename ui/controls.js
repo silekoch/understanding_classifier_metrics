@@ -8,12 +8,12 @@ import {
 
 export function initHandlers({ ids, state, view, actions, applyByKey, deps }) {
   const { applyPreset, applyThreshold, applySeed, applyMetricTrendHoverKey } = actions;
-  const { scheduleUrlSync, metricTrendHoverKeyFromPointer } = deps;
+  const { scheduleUrlSync, metricTrendHoverKeyFromPointer, getControl } = deps;
 
   bindReactiveNumericControls({ ids, applyByKey });
 
   ids.resample.addEventListener("click", () => {
-    applySeed(state.controls.seed + 1);
+    applySeed(getControl("seed") + 1);
   });
 
   ids.preset.addEventListener("change", (e) => {
@@ -31,8 +31,15 @@ export function initHandlers({ ids, state, view, actions, applyByKey, deps }) {
     state,
     view,
     setThreshold: applyThreshold,
+    getThreshold: () => getControl("threshold"),
     setMetricTrendHoverKey: applyMetricTrendHoverKey,
     metricTrendHoverKeyFromPointer,
   });
-  attachDistThresholdHandlers({ ids, state, view, setThreshold: applyThreshold });
+  attachDistThresholdHandlers({
+    ids,
+    state,
+    view,
+    setThreshold: applyThreshold,
+    getThreshold: () => getControl("threshold"),
+  });
 }
