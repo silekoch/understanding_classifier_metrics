@@ -38,3 +38,23 @@ test("clicking score distribution repositions threshold", async ({ page }) => {
   await page.locator("#distSvg").click({ position: { x: 700, y: 120 } });
   await expect.poll(getThreshold).toBeGreaterThan(afterLeftClick);
 });
+
+test("invalid URL params show warning and still render on cold startup", async ({ page }) => {
+  await page.goto("/?preset=doesNotExist&muNeg=abc&advancedOpen=maybe");
+
+  const statusBanner = page.locator("#statusBanner");
+  await expect(statusBanner).toBeVisible();
+  await expect(statusBanner).toContainText('Unknown preset "doesNotExist" was ignored.');
+  await expect(statusBanner).toContainText('Invalid numeric value "abc" for "muNeg" was ignored.');
+
+  for (const id of REQUIRED_SVGS) {
+    await expect
+      .poll(async () => {
+        return page.evaluate((svgId) => {
+          const svg = document.getElementById(svgId);
+          return svg ? svg.childElementCount : 0;
+        }, id);
+      })
+      .toBeGreaterThan(0);
+  }
+});
