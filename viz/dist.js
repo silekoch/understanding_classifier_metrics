@@ -2,7 +2,7 @@ import { clear, createSvgEl } from "./svg.js";
 import { clamp } from "../core/math.js";
 import { computePaddedScoreRange } from "../core/score-range.js";
 import { DIST_LAYOUT } from "./layout-config.js";
-import { drawThresholdMarker } from "./threshold-marker.js";
+import { drawThresholdMarker, raiseThresholdLabel } from "./threshold-marker.js";
 
 const CLASS_FILL_OPACITY = 0.4;
 
@@ -160,6 +160,22 @@ function drawLegend({ svg, box }) {
   }
 }
 
+function getLegendAvoidRect(box) {
+  const legendRight = box.left + box.width - DIST_LAYOUT.legendRightInset;
+  const legendTop = box.top + DIST_LAYOUT.legendTopInset;
+  const swatchSize = DIST_LAYOUT.swatchSize;
+  const swatchGap = DIST_LAYOUT.swatchGap;
+  const rowGap = DIST_LAYOUT.legendRowGap;
+  const maxLabelWidth = "negative class".length * 6.4;
+  const textRight = legendRight - swatchSize - swatchGap;
+  return {
+    left: textRight - maxLabelWidth + 8,
+    top: legendTop - 2,
+    right: legendRight + 2,
+    bottom: legendTop + rowGap + swatchSize + 4,
+  };
+}
+
 export function drawDist({ svg, data, threshold, fmt }) {
   clear(svg);
 
@@ -171,11 +187,22 @@ export function drawDist({ svg, data, threshold, fmt }) {
   const hPos = histogram(data.positives, bins, minX, maxX);
   const yMax = Math.max(...hNeg, ...hPos, 1);
   const yMaxWithHeadroom = yMax * DIST_LAYOUT.yHeadroomFactor;
+  const legendAvoidRect = getLegendAvoidRect(box);
 
   drawAxes({ svg, box, minX, maxX, yMax: yMaxWithHeadroom, fmt });
   drawHistogramBars({ svg, box, bins, hNeg, hPos, yMax: yMaxWithHeadroom });
-  drawThresholdMarker({ svg, box, minX, maxX, threshold, fmt, withAccessibility: true });
+  drawThresholdMarker({
+    svg,
+    box,
+    minX,
+    maxX,
+    threshold,
+    fmt,
+    avoidRect: legendAvoidRect,
+    withAccessibility: true,
+  });
   drawLegend({ svg, box });
+  raiseThresholdLabel(svg);
 
   return { box, minX, maxX };
 }

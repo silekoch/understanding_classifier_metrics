@@ -1,7 +1,7 @@
 import { addPath, clear, createSvgEl, eventToSvgCoordinates, getSvgViewSize } from "./svg.js";
 import { clamp } from "../core/math.js";
 import { METRIC_TREND_LAYOUT, METRIC_TREND_VIEW_FALLBACK } from "./layout-config.js";
-import { drawThresholdMarker } from "./threshold-marker.js";
+import { drawThresholdMarker, raiseThresholdLabel } from "./threshold-marker.js";
 
 const METRIC_SERIES = [
   {
@@ -422,6 +422,7 @@ export function drawMetricTrend({ svg, curves, hoveredKey, threshold, thresholdM
       fmt,
     }),
   });
+  raiseThresholdLabel(svg);
 
   return box;
 }

@@ -53,8 +53,35 @@ function appendThresholdLabel(svg, { x, y, text }) {
       x,
       y,
       class: "legend",
+      "data-role": "threshold-label",
     })
   ).textContent = text;
+}
+
+function placeClampedLabel({ box, x, y, dx, labelWidth }) {
+  return clampPointLabelPosition({
+    box,
+    x,
+    y,
+    dx,
+    dy: 0,
+    // Approximate text width so we can keep the label inside plot bounds
+    // without relying on getBBox (unavailable in some test environments).
+    labelWidth,
+    padX: 6,
+    padTop: 14,
+    padBottom: 6,
+  });
+}
+
+export function raiseThresholdLabel(svg) {
+  if (!svg) {
+    return;
+  }
+  const label = svg.querySelector('[data-role="threshold-label"]');
+  if (label) {
+    svg.appendChild(label);
+  }
 }
 
 export function drawThresholdMarker({
@@ -65,6 +92,7 @@ export function drawThresholdMarker({
   threshold,
   fmt,
   labelY = null,
+  avoidRect = null,
   withAccessibility = false,
 }) {
   const boundedThreshold = clamp(threshold, minX, maxX);
@@ -72,19 +100,24 @@ export function drawThresholdMarker({
   const y = box.top + box.height / 2;
   const labelText = `threshold ${fmt(threshold, 3)}`;
   const labelBaseY = labelY == null ? box.top + 16 : labelY;
-  const labelPos = clampPointLabelPosition({
+  const labelWidth = Math.max(88, labelText.length * 6.4);
+  const labelMinX = box.left + 6;
+  const labelRightGap = 0;
+  let labelPos = placeClampedLabel({
     box,
     x,
     y: labelBaseY,
     dx: 7,
-    dy: 0,
-    // Approximate text width so we can keep the label inside plot bounds
-    // without relying on getBBox (unavailable in some test environments).
-    labelWidth: Math.max(88, labelText.length * 6.4),
-    padX: 6,
-    padTop: 14,
-    padBottom: 6,
+    labelWidth,
   });
+
+  if (avoidRect) {
+    const maxXBeforeLegend = Math.max(labelMinX, avoidRect.left - labelWidth - labelRightGap);
+    labelPos = {
+      ...labelPos,
+      x: Math.max(labelMinX, Math.min(labelPos.x, maxXBeforeLegend)),
+    };
+  }
 
   appendThresholdLine(svg, { x, box });
   appendThresholdHandle(svg, {
