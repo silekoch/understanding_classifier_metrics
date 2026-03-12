@@ -264,6 +264,14 @@ svg {
   font-feature-settings: "tnum" 1;
 }
 
+.legend-tooltip-title {
+  font-weight: 700;
+}
+
+.legend-tooltip-body {
+  font-size: 11px;
+}
+
 @media (max-width: 1100px) {
   .layout {
     grid-template-columns: 1fr;

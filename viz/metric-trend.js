@@ -9,7 +9,8 @@ const METRIC_SERIES = [
     label: "Recall",
     color: "#0D9488",
     width: 2.6,
-    tooltip: "Recall: of all truly positive cases, the fraction predicted positive.",
+    formula: "Recall = TP / (TP + FN)",
+    definition: "Share of actual positives that are correctly detected.",
   },
   {
     key: "precision",
@@ -17,7 +18,8 @@ const METRIC_SERIES = [
     color: "#2563EB",
     width: 2.4,
     dash: "10 5",
-    tooltip: "Precision: of all predicted positive cases, the fraction truly positive.",
+    formula: "Precision = TP / (TP + FP)",
+    definition: "Share of predicted positives that are truly positive.",
   },
   {
     key: "specificity",
@@ -25,7 +27,8 @@ const METRIC_SERIES = [
     color: "#D97706",
     width: 2.4,
     dash: "2 5",
-    tooltip: "Specificity: of all truly negative cases, the fraction predicted negative (1 - FPR).",
+    formula: "Specificity = TN / (TN + FP) = 1 - FPR",
+    definition: "Share of actual negatives that are correctly rejected.",
   },
   {
     key: "f1",
@@ -33,14 +36,16 @@ const METRIC_SERIES = [
     color: "#7C3AED",
     width: 2.4,
     dash: "12 4 2 4",
-    tooltip: "F1 Score: harmonic mean of precision and recall.",
+    formula: "F1 = 2 * (Precision * Recall) / (Precision + Recall)",
+    definition: "Harmonic mean of precision and recall.",
   },
   {
     key: "mcc",
     label: "MCC",
     color: "#111111",
     width: 3.0,
-    tooltip: "MCC: balanced correlation-style score using TP, TN, FP, and FN.",
+    formula: "MCC = (TP*TN - FP*FN) / sqrt((TP+FP) (TP+FN) (TN+FP) (TN+FN))",
+    definition: "Balanced correlation-like score; robust to class imbalance.",
   },
   {
     key: "accuracy",
@@ -48,7 +53,8 @@ const METRIC_SERIES = [
     color: "#7A7062",
     width: 1.8,
     dash: "5 4",
-    tooltip: "Accuracy: fraction of all predictions that are correct.",
+    formula: "Accuracy = (TP + TN) / (TP + TN + FP + FN)",
+    definition: "Share of all predictions that are correct.",
   },
 ];
 
@@ -234,29 +240,21 @@ function metricValueAtThreshold(points, threshold, thresholdMin, thresholdMax) {
 }
 
 function metricLegendItems(series, hoveredKey, { threshold, thresholdMin, thresholdMax, fmt }) {
-  return series.map(({ key, label, color, dash, width, points, tooltip }) => {
+  return series.map(({ key, label, color, dash, width, points, formula, definition }) => {
     const value = metricValueAtThreshold(points, threshold, thresholdMin, thresholdMax);
     const valueLabel = value == null ? "n/a" : fmt(value, 2);
     return {
       key,
       label,
       valueLabel,
-      tooltip,
+      formula,
+      definition,
       color,
       dash,
       width: (width || 3) + (hoveredKey === key ? 0.8 : 0),
       opacity: hoveredKey && hoveredKey !== key ? 0.25 : 1,
     };
   });
-}
-
-function attachTitle(el, text) {
-  if (!text) {
-    return;
-  }
-  const title = createSvgEl("title", {});
-  title.textContent = text;
-  el.appendChild(title);
 }
 
 function setLegendKey(el, key) {
@@ -295,7 +293,6 @@ function drawMetricLegend({ svg, box, items }) {
       opacity,
     });
     setLegendKey(line, item.key);
-    attachTitle(line, item.tooltip);
     svg.appendChild(line);
 
     const labelText = createSvgEl("text", {
@@ -306,7 +303,6 @@ function drawMetricLegend({ svg, box, items }) {
     });
     setLegendKey(labelText, item.key);
     labelText.textContent = item.label;
-    attachTitle(labelText, item.tooltip);
     svg.appendChild(labelText);
 
     const valueText = createSvgEl("text", {
@@ -318,8 +314,86 @@ function drawMetricLegend({ svg, box, items }) {
     });
     setLegendKey(valueText, item.key);
     valueText.textContent = item.valueLabel;
-    attachTitle(valueText, item.tooltip);
     svg.appendChild(valueText);
+  }
+}
+
+function findMetricByKey(key) {
+  return METRIC_SERIES.find((item) => item.key === key) || null;
+}
+
+function wrapText(text, maxChars) {
+  const words = String(text || "")
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!words.length) {
+    return [];
+  }
+  const lines = [];
+  let current = words[0];
+  for (let i = 1; i < words.length; i += 1) {
+    const next = `${current} ${words[i]}`;
+    if (next.length <= maxChars) {
+      current = next;
+      continue;
+    }
+    lines.push(current);
+    current = words[i];
+  }
+  lines.push(current);
+  return lines;
+}
+
+function drawMetricDefinitionCard({ svg, box, hoveredKey }) {
+  const item = findMetricByKey(hoveredKey);
+  if (!item) {
+    return;
+  }
+
+  const x = box.left + box.width + 10;
+  const y = box.top + 8;
+  const width = METRIC_TREND_LAYOUT.tooltipWidth || 168;
+  const wrapChars = METRIC_TREND_LAYOUT.tooltipWrapChars || 28;
+  const formulaLines = wrapText(item.formula, wrapChars);
+  const definitionLines = wrapText(item.definition, wrapChars);
+  const bodyLines = [...formulaLines, ...definitionLines];
+  const titleHeight = 16;
+  const lineHeight = 12;
+  const innerPad = 8;
+  const height = innerPad * 2 + titleHeight + bodyLines.length * lineHeight;
+
+  svg.appendChild(
+    createSvgEl("rect", {
+      x,
+      y,
+      width,
+      height,
+      rx: 8,
+      ry: 8,
+      fill: "rgba(255,255,255,0.95)",
+      stroke: "rgba(0,0,0,0.22)",
+      "pointer-events": "none",
+    })
+  );
+
+  svg.appendChild(
+    createSvgEl("text", {
+      x: x + innerPad,
+      y: y + innerPad + 4,
+      class: "legend legend-tooltip-title",
+      "pointer-events": "none",
+    })
+  ).textContent = item.label;
+
+  for (let i = 0; i < bodyLines.length; i += 1) {
+    svg.appendChild(
+      createSvgEl("text", {
+        x: x + innerPad,
+        y: y + innerPad + titleHeight + 2 + i * lineHeight,
+        class: "tick legend-tooltip-body",
+        "pointer-events": "none",
+      })
+    ).textContent = bodyLines[i];
   }
 }
 
@@ -408,6 +482,7 @@ export function drawMetricTrend({ svg, curves, hoveredKey, threshold, thresholdM
       fmt,
     }),
   });
+  drawMetricDefinitionCard({ svg, box, hoveredKey });
 
   return box;
 }
