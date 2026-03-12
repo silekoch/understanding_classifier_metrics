@@ -9,7 +9,7 @@ const METRIC_SERIES = [
     label: "Recall",
     color: "#0D9488",
     width: 2.6,
-    formula: "Recall = TP / (TP + FN)",
+    formulaLines: ["TP / (TP + FN)"],
     definition: "Share of actual positives that are correctly detected.",
   },
   {
@@ -18,7 +18,7 @@ const METRIC_SERIES = [
     color: "#2563EB",
     width: 2.4,
     dash: "10 5",
-    formula: "Precision = TP / (TP + FP)",
+    formulaLines: ["TP / (TP + FP)"],
     definition: "Share of predicted positives that are truly positive.",
   },
   {
@@ -27,7 +27,7 @@ const METRIC_SERIES = [
     color: "#D97706",
     width: 2.4,
     dash: "2 5",
-    formula: "Specificity = TN / (TN + FP) = 1 - FPR",
+    formulaLines: ["TN / (TN + FP)", "1 - FPR"],
     definition: "Share of actual negatives that are correctly rejected.",
   },
   {
@@ -36,7 +36,7 @@ const METRIC_SERIES = [
     color: "#7C3AED",
     width: 2.4,
     dash: "12 4 2 4",
-    formula: "F1 = 2 * (Precision * Recall) / (Precision + Recall)",
+    formulaLines: ["2*Precision*Recall", "--------------------", "Precision + Recall"],
     definition: "Harmonic mean of precision and recall.",
   },
   {
@@ -44,7 +44,11 @@ const METRIC_SERIES = [
     label: "MCC",
     color: "#111111",
     width: 3.0,
-    formula: "MCC = (TP*TN - FP*FN) / sqrt((TP+FP) (TP+FN) (TN+FP) (TN+FN))",
+    formulaLines: [
+      "(TP*TN - FP*FN)",
+      "--------------------------------",
+      "sqrt((TP+FP)(TP+FN)(TN+FP)(TN+FN))",
+    ],
     definition: "Balanced correlation-like score; robust to class imbalance.",
   },
   {
@@ -53,7 +57,7 @@ const METRIC_SERIES = [
     color: "#7A7062",
     width: 1.8,
     dash: "5 4",
-    formula: "Accuracy = (TP + TN) / (TP + TN + FP + FN)",
+    formulaLines: ["(TP + TN)", "-------------------", "TP + TN + FP + FN"],
     definition: "Share of all predictions that are correct.",
   },
 ];
@@ -240,14 +244,14 @@ function metricValueAtThreshold(points, threshold, thresholdMin, thresholdMax) {
 }
 
 function metricLegendItems(series, hoveredKey, { threshold, thresholdMin, thresholdMax, fmt }) {
-  return series.map(({ key, label, color, dash, width, points, formula, definition }) => {
+  return series.map(({ key, label, color, dash, width, points, formulaLines, definition }) => {
     const value = metricValueAtThreshold(points, threshold, thresholdMin, thresholdMax);
     const valueLabel = value == null ? "n/a" : fmt(value, 2);
     return {
       key,
       label,
       valueLabel,
-      formula,
+      formulaLines,
       definition,
       color,
       dash,
@@ -354,13 +358,16 @@ function drawMetricDefinitionCard({ svg, box, hoveredKey }) {
   const y = box.top + 8;
   const width = METRIC_TREND_LAYOUT.tooltipWidth || 168;
   const wrapChars = METRIC_TREND_LAYOUT.tooltipWrapChars || 28;
-  const formulaLines = wrapText(item.formula, wrapChars);
+  const formulaLines = item.formulaLines || [];
   const definitionLines = wrapText(item.definition, wrapChars);
-  const bodyLines = [...formulaLines, ...definitionLines];
-  const titleHeight = 16;
-  const lineHeight = 12;
+  const bodyLineHeight = 12;
+  const sectionGap = 4;
   const innerPad = 8;
-  const height = innerPad * 2 + titleHeight + bodyLines.length * lineHeight;
+  const height =
+    innerPad * 2 +
+    definitionLines.length * bodyLineHeight +
+    sectionGap +
+    formulaLines.length * bodyLineHeight;
 
   svg.appendChild(
     createSvgEl("rect", {
@@ -376,24 +383,30 @@ function drawMetricDefinitionCard({ svg, box, hoveredKey }) {
     })
   );
 
-  svg.appendChild(
-    createSvgEl("text", {
-      x: x + innerPad,
-      y: y + innerPad + 4,
-      class: "legend legend-tooltip-title",
-      "pointer-events": "none",
-    })
-  ).textContent = item.label;
-
-  for (let i = 0; i < bodyLines.length; i += 1) {
+  let cursorY = y + innerPad + 4;
+  for (let i = 0; i < definitionLines.length; i += 1) {
     svg.appendChild(
       createSvgEl("text", {
         x: x + innerPad,
-        y: y + innerPad + titleHeight + 2 + i * lineHeight,
+        y: cursorY,
         class: "tick legend-tooltip-body",
         "pointer-events": "none",
       })
-    ).textContent = bodyLines[i];
+    ).textContent = definitionLines[i];
+    cursorY += bodyLineHeight;
+  }
+
+  cursorY += sectionGap;
+  for (let i = 0; i < formulaLines.length; i += 1) {
+    svg.appendChild(
+      createSvgEl("text", {
+        x: x + innerPad,
+        y: cursorY,
+        class: "tick legend-tooltip-formula",
+        "pointer-events": "none",
+      })
+    ).textContent = formulaLines[i];
+    cursorY += bodyLineHeight;
   }
 }
 
